@@ -7,12 +7,19 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 
 | Task | Status | Notes |
 |---|---|---|
-| 1 scaffold | ✅ merged (91d68db) | TS 7.0.2 works; js-yaml 5.2.3 (types gate deferred to first import); spec review ✅; quality review N/A (config-only — covered by spec reviewer's live verification) |
+| 1 scaffold | ✅ merged (91d68db) | TS 7.0.2 works; js-yaml 5.2.3 bundled types confirmed at first import (T4); spec review ✅; quality review N/A (config-only — covered by spec reviewer's live verification) |
 | 2 fixtures+oracle | ✅ merged (7422971) | All bucket counts/problem lists matched intent on first generation; reproducibility verified twice; spec review ✅ |
-| 3 py-compat | 🔄 fixing | Implementer caught an inverted assertion in the PLAN's test (`comparePathSegments("a b","a/b")` is > 0 per live Python); plan fixed (42e89d5); corrected-test commit in flight |
+| 3 py-compat | ✅ merged (e0ace00) | Spec review found 2 real bugs (JS Date 0–99 year fold in parseIsoDate; unpadded year in isoDate) + VaultView coverage gap — all fixed, re-verified. Implementer also caught an inverted assertion in the PLAN itself (verified vs live Python) |
+| 4 frontmatter | ✅ merged (8ad9436) | Byte-identical parity probes vs Python on 8 edge cases incl. the BOM/pyStrip subtlety; js-yaml 5 bundled types work |
+| 5 notes | 🔄 in flight | task/t5-notes |
+| 6 discovery | ✅ merged | 78/78 after merge; implementer verified walk asymmetry vs both oracle scripts |
+| 11 openTasks | ✅ merged (e27053b) | Spec review caught the CRLF divergence (split("\n") vs splitlines) — empirically shown to drop ALL tasks in CRLF files; fixed to self-normalize |
+| 12 grading | ✅ merged | 84/84 after merge; line-for-line Python parity confirmed by implementer |
 | 15 permissions | ✅ merged (32afaec) | Spec review ✅ incl. adversarial probes: traversal, prefix-confusion, UNC all fail closed |
-| 11 openTasks | 🔄 in flight | Background implementer on task/t11-opentasks |
-| 4–10, 12–14, 16–24 | pending | Per plan wave schedule (note: Task 20 moved after Task 3 — transcript.ts imports graph/types) |
+| 20 transcript | ✅ merged | Pure reducer, exhaustive-switch clean |
+| 7–10 validation chain | next | Sequential (all append to validation.ts); starts when 5 merges |
+| 13 register, 14 GraphModel | pending | 13 needs 6+12 (ready when dispatched); 14 needs 10+13 |
+| 16–19 (M2), 21–24 (M3–M5) | pending | Per plan wave schedule |
 
 ## Protocol adaptations (recorded deviations)
 
