@@ -35,7 +35,7 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 | M2 hardening | ✅ merged (e2b4efa) | ab3a0bc + c526662. All Criticals+Importants except symlink-realpath (deferred, noted below). THREE live-run discoveries: relative targets must resolve against cwd; drive-relative \\x paths bounce to the model with a correction (deny, not ask); no-surface approvals fail closed. Live smoke green: zero approval cards, "Smoke done", apiKeySource none |
 | M3/M4 milestone review | ✅ closed | Opus: 0 Critical, 4 Important (all lifecycle: model-ready cb outlives view, picker dead end while indexing, dead-session approval cards lie, badge broken on deferred leaves), rich minors, triage of 6 known items |
 | M3/M4 review fixes | ✅ ccb8e0e | All 4 Importants + fix-now triage (tool-input trim, layout-change badge, rebind guard) + minors (wrap-up out of render, onStatus indicator, promise handling, ghost graphDir, panel title, alt-click tooltip) |
-| 24 docs+finish | 🔄 | README + manual checklist written; final verification next |
+| 24 docs+finish | ✅ done | README + checklist committed (950ebeb); full verification green on final head incl. live smoke; KB promoted (7c43ceb); merged to main (5152a10) and re-verified there. Worktree + branch kept for the user's manual checklist |
 
 ## Protocol adaptations (recorded deviations)
 
