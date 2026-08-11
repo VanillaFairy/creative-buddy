@@ -42,4 +42,15 @@ describe("openTasks", () => {
     const text = lines("```", "- [ ] in", "``` python", "- [ ] still in");
     expect([...openTasks(text)]).toEqual([]);
   });
+
+  it("CRLF and lone-CR input behaves like Python splitlines", () => {
+    expect([...openTasks("- [ ] task one\r\n- [ ] task two\r\n")]).toEqual([
+      [1, "task one"],
+      [2, "task two"],
+    ]);
+    expect([...openTasks("- [ ] a\r- [ ] b")]).toEqual([
+      [1, "a"],
+      [2, "b"],
+    ]);
+  });
 });

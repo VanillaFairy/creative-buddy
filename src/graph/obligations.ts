@@ -1,4 +1,5 @@
 /** The graded-question register, ported line-for-line from oracle/obligations.py. */
+import { normalizeContent } from "./reader";
 
 const TASK = /^\s*[-*+]\s+\[(?<status>.)\]\s+(?<text>\S.*)$/;
 const FENCE = /^(?<mark>`{3,}|~{3,})(?<info>.*)$/;
@@ -6,7 +7,11 @@ const FENCE = /^(?<mark>`{3,}|~{3,})(?<info>.*)$/;
 /** Yield [1-based line, task text] for every open task; fenced examples are stepped over. */
 export function* openTasks(text: string): Generator<[number, string]> {
   let fence: string | null = null;
-  const lines = text.split("\n");
+  // Python's splitlines() breaks on CRLF and lone CR too; normalize here so the
+  // scanner honours the same boundaries whatever a caller feeds it. (Exotic
+  // terminators like vertical-tab or the Unicode line separator are a known,
+  // accepted divergence.)
+  const lines = normalizeContent(text).split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
     const marker = FENCE.exec(line.trim());
