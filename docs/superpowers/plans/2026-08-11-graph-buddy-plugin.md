@@ -941,7 +941,9 @@ export interface DateOnly {
   d: number;
 }
 
-/** strptime("%Y-%m-%d") — real calendar dates only; 1–2 digit month/day accepted. */
+/** strptime("%Y-%m-%d") — real calendar dates only; 1–2 digit month/day accepted.
+ *  Uses setUTCFullYear (not Date.UTC) to dodge the JS 0–99 → 1900+y folding quirk,
+ *  and bounds the year to Python datetime's 1–9999 range. */
 export function parseIsoDate(stamp: string): DateOnly | null {
   const parts = stamp.split("-");
   if (parts.length !== 3) return null;
@@ -949,17 +951,21 @@ export function parseIsoDate(stamp: string): DateOnly | null {
   const m = Number(parts[1]);
   const d = Number(parts[2]);
   if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return null;
-  const probe = new Date(Date.UTC(y, m - 1, d));
+  if (y < 1 || y > 9999) return null;
+  const probe = new Date(0);
+  probe.setUTCFullYear(y, m - 1, d);
   if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== m - 1 || probe.getUTCDate() !== d) return null;
   return { y, m, d };
 }
 
 export function epochDays(date: DateOnly): number {
-  return Date.UTC(date.y, date.m - 1, date.d) / 86_400_000;
+  const probe = new Date(0);
+  probe.setUTCFullYear(date.y, date.m - 1, date.d);
+  return probe.getTime() / 86_400_000;
 }
 
 export function isoDate(date: DateOnly): string {
-  return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+  return `${String(date.y).padStart(4, "0")}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
 }
 ```
 
@@ -2041,13 +2047,18 @@ describe("openTasks", () => {
 ```ts
 /** The graded-question register, ported line-for-line from oracle/obligations.py. */
 
+import { normalizeContent } from "./reader";
+
 const TASK = /^\s*[-*+]\s+\[(?<status>.)\]\s+(?<text>\S.*)$/;
 const FENCE = /^(?<mark>`{3,}|~{3,})(?<info>.*)$/;
 
 /** Yield [1-based line, task text] for every open task; fenced examples are stepped over. */
 export function* openTasks(text: string): Generator<[number, string]> {
   let fence: string | null = null;
-  const lines = text.split("\n");
+  // Python's splitlines() breaks on \r\n and lone \r too; normalize here so the
+  // scanner honours the same boundaries whatever a caller feeds it. (Exotic
+  // terminators like \v /   are a known, accepted divergence.)
+  const lines = normalizeContent(text).split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
     const marker = FENCE.exec(line.trim());
@@ -4029,11 +4040,9 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
       }
       return next;
 
-    case "tool-use": {
-      const { content: _dropped, ...inputForDisplay } = event.input as { content?: unknown } & Record<string, unknown>;
-      next.push({ kind: "tool", id: event.id, name: event.name, line: formatToolLine(event.name, event.input), input: inputForDisplay, done: false });
+    case "tool-use":
+      next.push({ kind: "tool", id: event.id, name: event.name, line: formatToolLine(event.name, event.input), input: event.input, done: false });
       return next;
-    }
 
     case "tool-result":
       return next.map((item) => (item.kind === "tool" && item.id === event.toolUseId ? { ...item, done: true } : item));
@@ -4062,7 +4071,7 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
 }
 ```
 
-Note for Step 3: the test expects the tool item's `input` **with** `content` retained in the first tool test — reconcile by keeping `input` complete (drop the `content`-stripping) OR adjust the test to expect stripped input. Decide for **keeping the full input** (the expandable raw view wants it) and make the test's expected object match `input: { file_path: "C:/v/Noir game/X.md", content: "..." }`. The implementation then stores `event.input` unmodified.
+(The tool item stores `event.input` unmodified — the expandable raw view wants the complete input, `content` included.)
 
 - [ ] **Step 4: Run to verify green.**
 
