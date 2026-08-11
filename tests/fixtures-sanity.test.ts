@@ -18,8 +18,8 @@ describe("fixture integrity", () => {
     expect(bom!.charCodeAt(0)).toBe(0xfeff);
   });
 
-  it("fixtures use LF endings", () => {
-    const vault = loadFixtureVault("simple");
+  it.each(FIXTURES)("%s fixture uses LF endings", (name) => {
+    const vault = loadFixtureVault(name);
     for (const [, content] of vault.files) expect(content).not.toContain("\r");
   });
 });

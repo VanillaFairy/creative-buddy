@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { casefold, pyRepr, pyStr, sortKeyWindows, comparePathSegments, parseIsoDate, epochDays, isoDate } from "../src/graph/py-compat";
+import { casefold, pyRepr, pyStr, sortKeyWindows, comparePathSegments, comparePyStrings, parseIsoDate, epochDays, isoDate } from "../src/graph/py-compat";
 import { normalizeContent, stripBom } from "../src/graph/reader";
 import { baseName, dirName, stemOf, VaultView } from "../src/graph/types";
 
@@ -22,6 +22,13 @@ describe("sort compat", () => {
     expect(comparePathSegments("a b", "a/b")).toBeGreaterThan(0);
     expect(comparePathSegments("a/b", "a")).toBeGreaterThan(0);
     expect(comparePathSegments("Alpha", "Beta")).toBeLessThan(0);
+  });
+  it("comparePathSegments is case-insensitive like Python's _parts_normcase", () => {
+    expect(comparePathSegments("alpha", "Beta")).toBeLessThan(0);
+    expect(comparePathSegments("Beta", "alpha")).toBeGreaterThan(0);
+  });
+  it("comparePyStrings uses code-point order (astral chars)", () => {
+    expect(comparePyStrings("\u{1F600}.md", "！.md")).toBeGreaterThan(0); // U+1F600 > U+FF01
   });
 });
 
@@ -63,6 +70,10 @@ describe("path pieces", () => {
   it("pyStr renders yaml dates like Python str()", () => {
     expect(pyStr(new Date(Date.UTC(2024, 0, 1)))).toBe("2024-01-01");
     expect(pyStr(42)).toBe("42");
+  });
+  it("pyStr renders booleans like Python str() (True/False, not JS true/false)", () => {
+    expect(pyStr(true)).toBe("True");
+    expect(pyStr(false)).toBe("False");
   });
 });
 

@@ -52,3 +52,14 @@ describe("markdownFiles ordering", () => {
     expect(markdownFiles(view, "G")).toEqual(["G/Act2/y.md", "G/Act/x.md", "G/G.md"]);
   });
 });
+
+describe("isMarkdown suffix semantics", () => {
+  it("a file named exactly `.md` has no suffix in Python, so it is not collected", () => {
+    const files = new Map<string, string>([
+      ["G/G.md", "## Charter\n"],
+      ["G/.md", "not a markdown suffix"],
+    ]);
+    const view = new VaultView({ rootName: "V", files });
+    expect(collectNoteFiles(view, "G")).toEqual(["G/G.md"]);
+  });
+});

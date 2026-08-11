@@ -1,10 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { Vault } from "../../src/graph/types";
 
-export interface Vault {
-  rootName: string;
-  files: Map<string, string>; // vault-relative posix path → raw content (exact bytes as UTF-8 string)
-}
+export type { Vault };
 
 export function loadFixtureVault(name: string): Vault {
   const root = path.join(__dirname, "..", "fixtures", name);

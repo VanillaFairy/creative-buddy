@@ -1,6 +1,6 @@
 /** The graded-question register, ported line-for-line from oracle/obligations.py. */
 import { normalizeContent, stripBom } from "./reader";
-import { DateOnly, epochDays, isoDate, parseIsoDate } from "./py-compat";
+import { DateOnly, comparePyStrings, epochDays, isoDate, parseIsoDate } from "./py-compat";
 import { VaultView } from "./types";
 import { findGraphs, markdownFiles } from "./discovery";
 
@@ -116,7 +116,9 @@ export function collectObligations(view: VaultView, today: DateOnly): Record<Buc
   ) as Record<Bucket, ObligationEntry[]>;
   for (const graphDir of findGraphs(view)) {
     for (const path of markdownFiles(view, graphDir)) {
-      const text = stripBom(normalizeContent(view.get(path)!));
+      // openTasks owns line-ending normalization (it self-normalizes internally),
+      // so only the BOM strip belongs here.
+      const text = stripBom(view.get(path)!);
       for (const [line, task] of openTasks(text)) {
         const verdict = grade(task, today);
         if (verdict === null) continue;
@@ -134,8 +136,8 @@ export function inReadingOrder(entries: ObligationEntry[]): ObligationEntry[] {
   return [...entries].sort((a, b) => {
     const da = a.date ?? "";
     const db = b.date ?? "";
-    if (da !== db) return da < db ? -1 : 1;
-    if (a.note !== b.note) return a.note < b.note ? -1 : 1;
+    if (da !== db) return comparePyStrings(da, db);
+    if (a.note !== b.note) return comparePyStrings(a.note, b.note);
     return a.line - b.line;
   });
 }

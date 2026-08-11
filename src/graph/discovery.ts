@@ -1,6 +1,6 @@
 import { VaultView, baseName } from "./types";
 import { normalizeContent, stripBom } from "./reader";
-import { casefold, comparePathSegments, sortKeyWindows } from "./py-compat";
+import { casefold, comparePathSegments, comparePyStrings, sortKeyWindows } from "./py-compat";
 
 export const SKIP_DIRS: ReadonlySet<string> = new Set([".obsidian", ".claude", ".git", ".trash", "node_modules"]);
 const LOG_DIR = "log";
@@ -64,8 +64,11 @@ export function findGraphs(view: VaultView): string[] {
   return found.sort(comparePathSegments);
 }
 
+/** Python Path(".md").suffix is "" — a leading-dot name has no suffix, so it never counts as markdown. */
 function isMarkdown(path: string): boolean {
-  return casefold(path).endsWith(".md");
+  const b = baseName(path);
+  const i = b.lastIndexOf(".");
+  return i > 0 && casefold(b.slice(i)) === ".md";
 }
 
 /** graph_check.py collect_notes: everything under the graph, only Log/ excluded. */
@@ -81,7 +84,7 @@ export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
       if (isMarkdown(file)) out.push(file);
     }
   }
-  return out.sort((a, b) => (sortKeyWindows(a) < sortKeyWindows(b) ? -1 : sortKeyWindows(a) > sortKeyWindows(b) ? 1 : 0));
+  return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
 }
 
 /** obligations.py markdown_files: SKIP_DIRS and log/ both excluded. */
@@ -98,5 +101,5 @@ export function markdownFiles(view: VaultView, graphDir: string): string[] {
       if (isMarkdown(file)) out.push(file);
     }
   }
-  return out.sort((a, b) => (sortKeyWindows(a) < sortKeyWindows(b) ? -1 : sortKeyWindows(a) > sortKeyWindows(b) ? 1 : 0));
+  return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
 }

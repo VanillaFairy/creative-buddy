@@ -54,6 +54,22 @@ describe("GraphModel", () => {
     expect(calls).toBe(2);
   });
 
+  it("a listener that subscribes another mid-notification excludes the new one from that same mutation", () => {
+    const model = modelFrom("simple");
+    let lateCalls = 0;
+    let subscribed = false;
+    model.onChange(() => {
+      if (!subscribed) {
+        subscribed = true;
+        model.onChange(() => lateCalls++);
+      }
+    });
+    model.setFile("Noir game/X.md", "x"); // late listener subscribes here — must NOT fire for this mutation
+    expect(lateCalls).toBe(0);
+    model.setFile("Noir game/Y.md", "y"); // but must fire for the next one
+    expect(lateCalls).toBe(1);
+  });
+
   it("obligations flow through with an injected today", () => {
     const model = modelFrom("simple");
     expect(model.obligations(TODAY).counts.owed).toBe(2);
@@ -67,5 +83,10 @@ describe("GraphModel", () => {
     expect(model.hubPathOf("Noir game")).toBe("Noir game/Noir game.md");
     const rooty = modelFrom("rooty");
     expect(rooty.hubPathOf("")).toBe("rooty.md");
+  });
+
+  it("stats of a nonexistent graph dir is null (no hub file to count against)", () => {
+    const model = modelFrom("simple");
+    expect(model.stats("Nonexistent")).toBeNull();
   });
 });

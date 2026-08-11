@@ -1,6 +1,6 @@
 import { Note, noteFromFile } from "./notes";
 import { Problem, VaultView, baseName, dirName } from "./types";
-import { casefold, pyRepr } from "./py-compat";
+import { casefold, comparePyStrings, pyRepr } from "./py-compat";
 import { collectNoteFiles, findGraphs, hubPath } from "./discovery";
 
 /** Path equality with the filesystem's own case rules (the oracle runs on NTFS). */
@@ -86,7 +86,7 @@ export function findCycles(notes: Note[], edges: Map<Note, Note>): Note[][] {
 export function cycleProblem(ring: Note[]): Problem {
   let head = ring[0]!;
   for (const note of ring) {
-    if (casefold(baseName(note.path)) < casefold(baseName(head.path))) head = note;
+    if (comparePyStrings(casefold(baseName(note.path)), casefold(baseName(head.path))) < 0) head = note;
   }
   const start = ring.indexOf(head);
   const ordered = [...ring.slice(start), ...ring.slice(0, start)];
@@ -218,10 +218,11 @@ export interface GraphStats {
   hubChildren: number;
 }
 
-/** The --tree footer: node count (hub excluded) and direct hub children. */
-export function graphStats(view: VaultView, graphDir: string): GraphStats {
-  const notes = loadGraphNotes(view, graphDir);
+/** The --tree footer: node count (hub excluded) and direct hub children. Null when the graph dir has no hub file. */
+export function graphStats(view: VaultView, graphDir: string): GraphStats | null {
   const hub = hubPath(view, graphDir);
+  if (view.get(hub) === undefined) return null;
+  const notes = loadGraphNotes(view, graphDir);
   const { edges } = resolveParents(notes, hub);
   let hubChildren = 0;
   for (const parent of edges.values()) {
