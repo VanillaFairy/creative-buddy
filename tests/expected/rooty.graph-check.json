@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "root": ".",
+  "graphs": [
+    {
+      "graph": "rooty",
+      "path": ".",
+      "counts": {
+        "notes": 2,
+        "problems": 0
+      },
+      "problems": []
+    }
+  ]
+}
