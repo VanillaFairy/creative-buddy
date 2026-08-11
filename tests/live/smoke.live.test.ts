@@ -74,6 +74,9 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
     expect(init?.apiKeySource).not.toMatch(/api.?key/i);
     expect(toolUses).toContain("Read");
     expect(resultText.toLowerCase()).toContain("smoke");
+    // strictMcpConfig must keep the user's personal connectors (claude.ai MCP
+    // servers, .mcp.json, plugins) out of the session's tool surface entirely.
+    expect(init?.tools.filter((t) => t.startsWith("mcp__"))).toEqual([]);
     fs.rmSync(root, { recursive: true, force: true });
   }, 180_000);
 });

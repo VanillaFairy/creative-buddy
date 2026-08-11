@@ -160,6 +160,10 @@ export class AgentService {
       pathToClaudeCodeExecutable: config.claudePath,
       env,
       settingSources: [],
+      // settingSources: [] isolates settings files, but MCP servers from user
+      // config are gated separately — without this the user's claude.ai
+      // connectors leak into the session's tool surface.
+      strictMcpConfig: true,
       systemPrompt,
       model: config.model,
       tools: CONTRACT_TOOLS,
