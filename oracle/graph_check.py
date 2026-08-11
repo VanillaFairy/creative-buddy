@@ -327,9 +327,19 @@ def misfiled(notes: list[Note], graph_dir: Path, hub: Path) -> list[dict]:
         if same_path(note.path, hub):
             continue
 
+        # LOCAL FIX (graph-buddy, 2026-08-11): the original guard
+        # `len(ancestors) < len(notes)` never terminates when the ancestor
+        # chain enters a parent ring — the set saturates below len(notes) and
+        # the walk loops forever. Track visited notes instead. Non-ring
+        # behavior is unchanged (a chain visits each note at most once).
         ancestors: set[str] = set()
+        walked: set[str] = set()
         current = note
         while current.parent is not None and len(ancestors) < len(notes):
+            key = os.path.normcase(str(current.path))
+            if key in walked:
+                break
+            walked.add(key)
             parent = by_name.get(current.parent.casefold())
             if parent is None:
                 break
