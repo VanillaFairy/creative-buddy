@@ -98,5 +98,5 @@ export function markdownFiles(view: VaultView, graphDir: string): string[] {
       if (isMarkdown(file)) out.push(file);
     }
   }
-  return out.sort();
+  return out.sort((a, b) => (sortKeyWindows(a) < sortKeyWindows(b) ? -1 : sortKeyWindows(a) > sortKeyWindows(b) ? 1 : 0));
 }

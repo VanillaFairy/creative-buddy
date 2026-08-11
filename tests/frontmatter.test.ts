@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter, innermostScalar, parentName } from "../src/graph/frontmatter";
+import { parseFrontmatter, innermostScalar, parentName, stripFrontmatterBlock } from "../src/graph/frontmatter";
 
 describe("parseFrontmatter", () => {
   it("reads a simple mapping", () => {
@@ -47,4 +47,26 @@ describe("parentName", () => {
     expect(parentName("   ")).toBeNull();
   });
   it("plain names pass through trimmed", () => expect(parentName("  Noir game  ")).toBe("Noir game"));
+});
+
+describe("pyStrip semantics via parseFrontmatter", () => {
+  it("strips FS/GS/RS/US like Python str.strip()", () => {
+    // U+001C..U+001F (FS/GS/RS/US) built via fromCharCode so the source stays
+    // free of raw control bytes; Python's str.strip() treats them as whitespace.
+    const fs = String.fromCharCode(0x1c);
+    expect(parseFrontmatter(`${fs}---${fs}\nparent: X\n---\n`)).toEqual({ parent: "X" });
+  });
+});
+
+describe("stripFrontmatterBlock", () => {
+  it("removes a well-formed block", () => {
+    expect(stripFrontmatterBlock("---\nparent: X\n---\nbody")).toBe("body");
+  });
+  it("does not treat a BOM-prefixed line as a delimiter (same rule as parseFrontmatter)", () => {
+    const text = "﻿---\nparent: X\n---\nbody";
+    expect(stripFrontmatterBlock(text)).toBe(text);
+  });
+  it("returns text unchanged when the block never closes", () => {
+    expect(stripFrontmatterBlock("---\nparent: X\nno closer")).toBe("---\nparent: X\nno closer");
+  });
 });

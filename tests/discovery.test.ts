@@ -40,3 +40,15 @@ describe("markdownFiles (obligations walk)", () => {
     expect(files).toContain("Edge/Inner/Leaf.md");
   });
 });
+
+describe("markdownFiles ordering", () => {
+  it("sorts with the Windows key like the oracle (prefix-sibling case)", () => {
+    const files = new Map<string, string>([
+      ["G/G.md", "## Charter\n"],
+      ["G/Act/x.md", "x"],
+      ["G/Act2/y.md", "y"],
+    ]);
+    const view = new VaultView({ rootName: "V", files });
+    expect(markdownFiles(view, "G")).toEqual(["G/Act2/y.md", "G/Act/x.md", "G/G.md"]);
+  });
+});
