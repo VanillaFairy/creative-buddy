@@ -30,9 +30,11 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 | 21 ChatView | ✅ merged (e8e699e) | All 5 deltas applied; +1 transcript TDD test; 9 self-review findings logged (fed into polish + M3 review) |
 | chat quick fixes | ✅ 9bb99cb | NODE_ENV define (React prod build, main.js 3.4MB→2.3MB); approvalSeq seeded from restored items |
 | 22 mindmap layout | ✅ merged (9d1e737) | All 3 deltas applied; implementer simplified further — public GraphModel accessors instead of hand-built VaultView; 169/169 |
-| M2 milestone review | 🔄 in flight | opus, read-only, scope src/agent + locator + settings + wiring + live smoke |
-| 23 MindmapView | 🔄 in flight | task/t23-mindmapview (opus); deltas: stats nullable, apply onto post-T21 main.ts/styles.css |
-| 24 docs+finish | pending | After M2–M4 reviews + polish |
+| 23 MindmapView | ✅ merged (fbfc481) | Plan's links() typing was real drift (fixed in flextree.d.ts); headless esbuild probe of the flextree call; pan/zoom + zero-height fixes followed (7299742) |
+| M2 milestone review | ✅ closed | Opus found 2 Critical (C1 .obsidian auto-allow with vault-root graph; C2 allowedTools made the read gate dead code), 4 Important (digest injection, silent session death, symlink lexicality, env gaps), 16 minors |
+| M2 hardening | ✅ merged (e2b4efa) | ab3a0bc + c526662. All Criticals+Importants except symlink-realpath (deferred, noted below). THREE live-run discoveries: relative targets must resolve against cwd; drive-relative \\x paths bounce to the model with a correction (deny, not ask); no-surface approvals fail closed. Live smoke green: zero approval cards, "Smoke done", apiKeySource none |
+| M3/M4 milestone review | 🔄 in flight | opus, read-only, scope chat + mindmap + main.ts + styles |
+| 24 docs+finish | pending | After M3/M4 review |
 
 ## Protocol adaptations (recorded deviations)
 
@@ -46,19 +48,17 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 
 ## Suite state at last merge
 
-170/170 tests green on feature/graph-buddy (9bb99cb); `tsc --noEmit` clean; build clean at 2.3MB.
+192/192 tests green on feature/graph-buddy (e2b4efa); `tsc --noEmit` clean; build clean at ~2.4MB; live smoke green (3 paid verification runs this pass, ≤ $0.02 each).
 
-## Polish backlog (from T21 self-review, pending M2/M3 review triage)
+## Open items (for M3/M4 review triage or the finish notes)
 
-1. Streaming markdown interleave: MarkdownBlock re-renders per delta; async render N can append after render N+1's empty(). Fix shape: plain text while streaming, MarkdownRenderer only on finalized text.
-2. `busy` never clears on fatal error (onResult only); composer dead-locks. Needs fatal-vs-stderr-noise distinction in AgentService before it's fixable.
-3. stderr lines render as red error bubbles in the transcript.
-4. getState() persists full tool inputs (whole note bodies) into workspace.json on every delta.
-5. Silent no-op send while model is still indexing (no Notice on the plugin.model===null path).
-6. duplicateTab badge only recomputes on the tab's own render.
-7. setState with different graphDir doesn't dispose the live session (unreachable today; trap).
-8. Cosmetic: MarkdownBlock double-clear; ensureSession builds VaultView where hubPathOf() exists; renderMarkdown sourcePath should be the hub path, not the folder.
-9. main.ts buildModel(): one cachedRead rejection aborts seeding, model stays null forever, no Notice.
+1. getState() persists full tool inputs (whole note bodies) into workspace.json on every delta — trim on persist.
+2. duplicateTab badge only recomputes on the tab's own render.
+3. setState with different graphDir doesn't dispose the live session (unreachable today; trap).
+4. interrupt() ignores the SDK receipt (still_queued); Stop clears busy optimistically.
+5. Mindmap obligations panel shows every graph, not the selected one (plan-intended).
+6. Symlink/junction escape stays lexical in permissions.ts (M2 review I3): a realpath check in AgentService was deferred — needs fs plumbing and a design sentence about mounted folders; noted for the finish report.
+7. d3-flextree's prebuilt CJS bundle inlines d3-hierarchy v1 next to our v3 (dead weight, harmless).
 
 ## Out-of-band
 
