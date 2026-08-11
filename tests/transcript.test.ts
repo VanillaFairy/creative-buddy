@@ -38,10 +38,36 @@ describe("reduceTranscript", () => {
   });
 
   it("approvals resolve in place", () => {
-    let items = apply([{ type: "approval", id: "a1", toolName: "Edit", targetPath: "Здоровье/n.md", reason: "outside the graph" }]);
+    let items = apply([
+      { type: "approval", id: "a1", toolName: "Edit", targetPath: "Здоровье/n.md", reason: "outside the graph", title: null },
+    ]);
     items = reduceTranscript(items, { type: "approval-resolved", id: "a1", allowed: false });
     expect(items).toEqual([
-      { kind: "approval", id: "a1", toolName: "Edit", targetPath: "Здоровье/n.md", reason: "outside the graph", resolution: "denied" },
+      { kind: "approval", id: "a1", toolName: "Edit", targetPath: "Здоровье/n.md", reason: "outside the graph", title: null, resolution: "denied" },
+    ]);
+  });
+
+  it("carries the SDK's own prompt line when there is one", () => {
+    const items = apply([
+      {
+        type: "approval",
+        id: "a2",
+        toolName: "Write",
+        targetPath: "Здоровье/n.md",
+        reason: "outside the graph",
+        title: "Claude wants to write Здоровье/n.md",
+      },
+    ]);
+    expect(items).toEqual([
+      {
+        kind: "approval",
+        id: "a2",
+        toolName: "Write",
+        targetPath: "Здоровье/n.md",
+        reason: "outside the graph",
+        title: "Claude wants to write Здоровье/n.md",
+        resolution: "pending",
+      },
     ]);
   });
 
