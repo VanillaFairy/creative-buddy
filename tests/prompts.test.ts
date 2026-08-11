@@ -35,6 +35,9 @@ describe("buildSystemPrompt", () => {
     expect(full).toContain("# Grill — the interview loop");
     expect(full).toContain("# Consult — answering from the graph");
   });
+  it("warns the model that the file references are inline", () => {
+    expect(buildSystemPrompt()).toContain("points within this one document");
+  });
 });
 
 describe("buildSessionPreamble", () => {

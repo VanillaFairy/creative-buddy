@@ -3,9 +3,14 @@ import grillMd from "../../assets/prompts/grill.md";
 import consultMd from "../../assets/prompts/consult.md";
 import { GraphStats } from "../graph/validation";
 
+const STITCH_NOTE =
+  "_(The Grill and Consult references follow inline below. Any mention of `SKILL.md`, " +
+  "`references/grill.md`, or `references/consult.md` points within this one document — " +
+  "never try to Read them as files.)_";
+
 /** The full embedded interviewer instructions (spec decision: inlined, not lazy-loaded). */
 export function buildSystemPrompt(): string {
-  return [systemMd, "---", grillMd, "---", consultMd].join("\n\n");
+  return [systemMd, STITCH_NOTE, grillMd, consultMd].join("\n\n---\n\n");
 }
 
 export interface PreambleInput {
