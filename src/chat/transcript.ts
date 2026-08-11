@@ -21,7 +21,7 @@ export type TranscriptEvent =
   | { type: "user-sent"; text: string }
   | { type: "text-delta"; text: string }
   | { type: "assistant-final"; text: string }
-  | { type: "tool-use"; id: string; name: string; input: Record<string, unknown> }
+  | { type: "tool-use"; id: string; name: string; input: Record<string, unknown>; subagent?: boolean }
   | { type: "tool-result"; toolUseId: string }
   | { type: "approval"; id: string; toolName: string; targetPath: string | null; reason: string; title: string | null }
   | { type: "approval-resolved"; id: string; allowed: boolean }
@@ -72,9 +72,11 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
       }
       return next;
 
-    case "tool-use":
-      next.push({ kind: "tool", id: event.id, name: event.name, line: formatToolLine(event.name, event.input), input: event.input, done: false });
+    case "tool-use": {
+      const line = (event.subagent === true ? "scout · " : "") + formatToolLine(event.name, event.input);
+      next.push({ kind: "tool", id: event.id, name: event.name, line, input: event.input, done: false });
       return next;
+    }
 
     case "tool-result":
       return next.map((item) => (item.kind === "tool" && item.id === event.toolUseId ? { ...item, done: true } : item));

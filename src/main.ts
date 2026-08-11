@@ -1,4 +1,4 @@
-import { Plugin, TFile } from "obsidian";
+import { Notice, Plugin, TFile } from "obsidian";
 import { GraphModel } from "./graph/graph-model";
 import { GraphBuddySettings, DEFAULT_SETTINGS, GraphBuddySettingTab } from "./settings";
 import { findClaudeExecutable } from "./claude-locator";
@@ -9,6 +9,19 @@ import { existsSync } from "node:fs";
 export default class GraphBuddyPlugin extends Plugin {
   settings: GraphBuddySettings = DEFAULT_SETTINGS;
   model: GraphModel | null = null;
+  private modelReadyCallbacks: Array<() => void> = [];
+
+  /**
+   * Runs cb once the vault index exists — immediately if it already does.
+   * Views opened before seeding finishes use this to wake up.
+   */
+  onModelReady(cb: () => void): void {
+    if (this.model !== null) {
+      cb();
+      return;
+    }
+    this.modelReadyCallbacks.push(cb);
+  }
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -52,14 +65,17 @@ export default class GraphBuddyPlugin extends Plugin {
     const vaultName = this.app.vault.getName();
     const model = new GraphModel(vaultName);
 
-    const refresh = async (file: TFile): Promise<void> => {
+    const refresh = (file: TFile): void => {
       if (!file.path.toLowerCase().endsWith(".md")) return;
-      model.setFile(file.path, await this.app.vault.cachedRead(file));
+      this.app.vault.cachedRead(file).then(
+        (content) => model.setFile(file.path, content),
+        () => undefined, // the file vanished between the event and the read
+      );
     };
     // Subscribed before the seeding loop below: an edit that lands mid-seed then costs
     // one harmless re-read instead of being dropped on the floor.
-    this.registerEvent(this.app.vault.on("create", (f) => f instanceof TFile && void refresh(f)));
-    this.registerEvent(this.app.vault.on("modify", (f) => f instanceof TFile && void refresh(f)));
+    this.registerEvent(this.app.vault.on("create", (f) => f instanceof TFile && refresh(f)));
+    this.registerEvent(this.app.vault.on("modify", (f) => f instanceof TFile && refresh(f)));
     this.registerEvent(
       this.app.vault.on("delete", (f) => {
         if (f instanceof TFile) model.deleteFile(f.path);
@@ -69,16 +85,25 @@ export default class GraphBuddyPlugin extends Plugin {
       this.app.vault.on("rename", (f, oldPath) => {
         if (f instanceof TFile) {
           model.renameFile(oldPath, f.path);
-          void refresh(f);
+          refresh(f);
         }
       }),
     );
 
+    let failures = 0;
     for (const file of this.app.vault.getFiles()) {
       if (!file.path.toLowerCase().endsWith(".md")) continue;
-      model.setFile(file.path, await this.app.vault.cachedRead(file));
+      try {
+        model.setFile(file.path, await this.app.vault.cachedRead(file));
+      } catch {
+        failures += 1; // a vanished or unreadable file must not abort the whole index
+      }
     }
+    if (failures > 0) new Notice(`Graph Buddy: ${failures} file(s) could not be read while indexing.`);
     this.model = model;
+    const waiting = this.modelReadyCallbacks;
+    this.modelReadyCallbacks = [];
+    for (const cb of waiting) cb();
   }
 
   resolveClaudePath(): string | null {
@@ -88,7 +113,11 @@ export default class GraphBuddyPlugin extends Plugin {
 
   vaultRootPath(): string {
     const adapter = this.app.vault.adapter as { getBasePath?: () => string };
-    return adapter.getBasePath ? adapter.getBasePath() : "";
+    if (!adapter.getBasePath) {
+      new Notice("Graph Buddy needs a vault on the local filesystem — this vault's storage adapter has no disk path.");
+      return "";
+    }
+    return adapter.getBasePath();
   }
 
   async loadSettings(): Promise<void> {

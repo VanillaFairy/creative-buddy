@@ -55,13 +55,17 @@ export class GraphBuddySettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("API key override")
-      .setDesc("Not the path. Only set this if you deliberately want API billing instead of your subscription.")
-      .addText((text) =>
+      .setDesc(
+        "Not the path. Only set this if you deliberately want API billing instead of your subscription. " +
+          "Stored unencrypted in this vault's .obsidian folder — leave empty on synced or shared vaults.",
+      )
+      .addText((text) => {
+        text.inputEl.type = "password";
         text.setValue(this.plugin.settings.apiKeyOverride).onChange(async (value) => {
           this.plugin.settings.apiKeyOverride = value.trim();
           await this.plugin.saveSettings();
-        }),
-      );
+        });
+      });
 
     new Setting(containerEl)
       .setName("Health check")

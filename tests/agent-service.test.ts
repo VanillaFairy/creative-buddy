@@ -238,3 +238,106 @@ describe("AgentService permission wiring", () => {
     expect(String(specific["updatedToolOutput"])).toContain("empty file");
   });
 });
+
+describe("M2 hardening", () => {
+  it("only Task is auto-allowed — reads must flow through canUseTool", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start(CONFIG, {});
+    session.sendUserMessage("hi");
+    await session.done();
+    expect(captured.options!["allowedTools"]).toEqual(["Task"]);
+  });
+
+  it("strips every ambient auth/routing/model lever from the child env", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    process.env["ANTHROPIC_CUSTOM_HEADERS"] = "x-api-key: evil";
+    process.env["ANTHROPIC_MODEL"] = "other-model";
+    process.env["ANTHROPIC_BEDROCK_BASE_URL"] = "http://x";
+    process.env["ANTHROPIC_DEFAULT_SONNET_MODEL"] = "other";
+    const session = new AgentService({ queryFn }).start(CONFIG, {});
+    session.sendUserMessage("hi");
+    await session.done();
+    for (const k of ["ANTHROPIC_CUSTOM_HEADERS", "ANTHROPIC_MODEL", "ANTHROPIC_BEDROCK_BASE_URL", "ANTHROPIC_DEFAULT_SONNET_MODEL"]) {
+      delete process.env[k];
+    }
+    const env = captured.options!["env"] as Record<string, string | undefined>;
+    expect(env["ANTHROPIC_CUSTOM_HEADERS"]).toBeUndefined();
+    expect(env["ANTHROPIC_MODEL"]).toBeUndefined();
+    expect(env["ANTHROPIC_BEDROCK_BASE_URL"]).toBeUndefined();
+    expect(env["ANTHROPIC_DEFAULT_SONNET_MODEL"]).toBeUndefined();
+  });
+
+  it("announces the end of the message stream, and a dead handle refuses new messages", async () => {
+    const { queryFn } = fakeQuery([INIT, RESULT]);
+    const events = { onEnd: vi.fn(), onError: vi.fn() };
+    const session = new AgentService({ queryFn }).start(CONFIG, events);
+    session.sendUserMessage("hi");
+    await session.done();
+    expect(events.onEnd).toHaveBeenCalledTimes(1);
+    session.sendUserMessage("into the void");
+    expect(events.onError).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining("ended") }));
+  });
+
+  it("does not announce the end after an explicit dispose", async () => {
+    const { queryFn } = fakeQuery([INIT, RESULT]);
+    const events = { onEnd: vi.fn() };
+    const session = new AgentService({ queryFn }).start(CONFIG, events);
+    session.sendUserMessage("hi");
+    session.dispose();
+    await session.done();
+    expect(events.onEnd).not.toHaveBeenCalled();
+  });
+
+  it("routes stderr to its own channel, not onError", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const events = { onStderr: vi.fn(), onError: vi.fn() };
+    const session = new AgentService({ queryFn }).start(CONFIG, events);
+    session.sendUserMessage("hi");
+    await session.done();
+    (captured.options!["stderr"] as (d: string) => void)("some debug chatter");
+    expect(events.onStderr).toHaveBeenCalledWith("some debug chatter");
+    expect(events.onError).not.toHaveBeenCalled();
+  });
+
+  it("marks tool uses coming from a subagent", async () => {
+    const script: SdkMessage[] = [
+      INIT,
+      { type: "assistant", parent_tool_use_id: "task-1", message: { content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: "x.md" } }] } },
+      RESULT,
+    ];
+    const { queryFn } = fakeQuery(script);
+    const events = { onToolUse: vi.fn() };
+    const session = new AgentService({ queryFn }).start(CONFIG, events);
+    session.sendUserMessage("hi");
+    await session.done();
+    expect(events.onToolUse).toHaveBeenCalledWith(expect.objectContaining({ name: "Read", subagent: true }));
+  });
+
+  it("approval cards resolve the target path for every path-shaped input, not just file_path", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const events = { onApproval: vi.fn() };
+    const session = new AgentService({ queryFn }).start(CONFIG, events);
+    session.sendUserMessage("hi");
+    await session.done();
+    type CanUse = (t: string, i: Record<string, unknown>, o?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    const canUse = captured.options!["canUseTool"] as CanUse;
+    const pending = canUse("Glob", { pattern: "*", path: "C:/elsewhere" });
+    expect(events.onApproval).toHaveBeenCalledWith(expect.objectContaining({ targetPath: "C:/elsewhere" }));
+    events.onApproval.mock.calls[0]![0].respond(false);
+    await pending;
+    void session;
+  });
+});
+
+describe("approval without a surface", () => {
+  it("denies instead of hanging when no onApproval handler exists", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start(CONFIG, {});
+    session.sendUserMessage("hi");
+    await session.done();
+    type CanUse = (t: string, i: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    const canUse = captured.options!["canUseTool"] as CanUse;
+    const result = await canUse("Write", { file_path: "C:/elsewhere/x.md", content: "x" });
+    expect(result["behavior"]).toBe("deny");
+  });
+});

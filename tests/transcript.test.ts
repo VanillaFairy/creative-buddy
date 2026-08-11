@@ -93,3 +93,12 @@ describe("formatToolLine", () => {
     expect(formatToolLine("Task", { description: "scout the graph" })).toBe("Scout: scout the graph");
   });
 });
+
+describe("subagent tool lines (M2 hardening)", () => {
+  it("labels tool calls made by the scout, not the interviewer", () => {
+    const items = reduceTranscript([], { type: "tool-use", id: "t1", name: "Read", input: { file_path: "N/x.md" }, subagent: true });
+    expect(items[0]).toMatchObject({ kind: "tool", line: "scout · Read x.md" });
+    const own = reduceTranscript([], { type: "tool-use", id: "t2", name: "Read", input: { file_path: "N/x.md" } });
+    expect(own[0]).toMatchObject({ kind: "tool", line: "Read x.md" });
+  });
+});

@@ -57,9 +57,46 @@ export function isInsidePath(relPath: string, scopeDir: string): boolean {
 const READ_TOOLS = new Set(["Read", "Glob", "Grep"]);
 const WRITE_TOOLS = new Set(["Write", "Edit"]);
 
-function targetPathOf(tool: string, input: Record<string, unknown>): string | null {
+/** Reserved DOS device names Windows refuses (or worse, aliases) as filenames. */
+const RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+
+/**
+ * Dot-directories (.obsidian, .git, .trash) hold plugin code and app state,
+ * not notes — never auto-allowed, whatever graph the tab is bound to.
+ */
+function hasHiddenSegment(relPath: string): boolean {
+  return relPath.split("/").some((segment) => segment.startsWith(".") && segment !== "");
+}
+
+export function targetPathOf(tool: string, input: Record<string, unknown>): string | null {
   const candidate = input["file_path"] ?? input["path"] ?? input["notebook_path"];
   return typeof candidate === "string" && candidate !== "" ? candidate : null;
+}
+
+function isAbsoluteFsPath(p: string): boolean {
+  return /^[a-zA-Z]:[\\/]/.test(p) || p.startsWith("/") || p.startsWith("\\");
+}
+
+/**
+ * A single leading slash means "root of the current drive" on Windows — almost
+ * always a model writing a POSIX-flavoured vault path. Treating it as in-vault
+ * would let \foo alias the real drive root, so it is refused with a correction
+ * instead of being judged (deny, not ask: the model can fix it without the user).
+ */
+function isDriveRelative(p: string): boolean {
+  return (p.startsWith("/") && !p.startsWith("//")) || (p.startsWith("\\") && !p.startsWith("\\\\"));
+}
+
+function driveRelativeMessage(target: string, vaultRoot: string): string {
+  return (
+    `The path ${target} starts at a bare drive root, which is ambiguous. ` +
+    `Use a vault-relative path (no leading slash) or the full absolute path — the vault lives at ${vaultRoot}.`
+  );
+}
+
+/** The session's cwd is the vault root, so relative tool targets live there. */
+function resolveTarget(vaultRoot: string, target: string): string {
+  return isAbsoluteFsPath(target) ? target : `${vaultRoot.replace(/[\\/]+$/, "")}/${target}`;
 }
 
 function filenameProblem(relPath: string, graphDir: string): string | null {
@@ -76,6 +113,16 @@ function filenameProblem(relPath: string, graphDir: string): string | null {
         `Rename the note with an oblique or punctuation-free title and put the exact wording in the note's aliases instead.`
       );
     }
+    // The same "Windows silently mangles it" rule, beyond punctuation.
+    if (/[\u0000-\u001f]/.test(title)) {
+      return `The title "${title}" contains control characters Windows cannot store in a filename. Pick a plain title.`;
+    }
+    if (title !== title.replace(/[. ]+$/, "")) {
+      return `The title "${title}" ends with a dot or space, which Windows silently strips. Rename the note without the trailing character.`;
+    }
+    if (RESERVED_NAMES.test(title)) {
+      return `The title "${title}" is a reserved Windows device name. Pick a different title and keep the wording in aliases.`;
+    }
   }
   return null;
 }
@@ -86,16 +133,21 @@ export function decideToolUse(tool: string, input: Record<string, unknown>, ctx:
   if (READ_TOOLS.has(tool)) {
     const target = targetPathOf(tool, input);
     if (target === null) return { behavior: "allow" }; // Glob/Grep default to cwd = vault root
-    return vaultRelative(ctx.vaultRoot, target) !== null
-      ? { behavior: "allow" }
-      : { behavior: "ask", reason: `${tool} outside the vault: ${target}` };
+    if (isDriveRelative(target)) return { behavior: "deny", message: driveRelativeMessage(target, ctx.vaultRoot) };
+    const rel = vaultRelative(ctx.vaultRoot, resolveTarget(ctx.vaultRoot, target));
+    if (rel === null) return { behavior: "ask", reason: `${tool} outside the vault: ${target}` };
+    if (hasHiddenSegment(rel)) return { behavior: "ask", reason: `${tool} in a hidden folder (app state, not notes): ${rel}` };
+    return { behavior: "allow" };
   }
 
   if (WRITE_TOOLS.has(tool)) {
     const target = targetPathOf(tool, input);
     if (target === null) return { behavior: "deny", message: `${tool} call carried no file path.` };
-    const rel = vaultRelative(ctx.vaultRoot, target);
+    if (isDriveRelative(target)) return { behavior: "deny", message: driveRelativeMessage(target, ctx.vaultRoot) };
+    const rel = vaultRelative(ctx.vaultRoot, resolveTarget(ctx.vaultRoot, target));
     if (rel === null) return { behavior: "ask", reason: `${tool} outside the vault: ${target}` };
+    if (hasHiddenSegment(rel)) return { behavior: "ask", reason: `${tool} in a hidden folder (app state, not notes): ${rel}` };
+    if (rel === ctx.graphDir) return { behavior: "ask", reason: `${tool} targets the graph folder itself, not a note: ${rel === "" ? "(vault root)" : rel}` };
     if (!isInsidePath(rel, ctx.graphDir)) {
       return { behavior: "ask", reason: `${tool} outside the bound graph (${ctx.graphDir === "" ? "vault root" : ctx.graphDir}): ${rel}` };
     }

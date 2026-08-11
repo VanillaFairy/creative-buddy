@@ -1,6 +1,6 @@
 import { GraphStats } from "../graph/validation";
 import { buildSystemPrompt, buildSessionPreamble } from "./prompts";
-import { decideToolUse, zeroByteWriteMessage, PermissionContext } from "./permissions";
+import { decideToolUse, targetPathOf, zeroByteWriteMessage, PermissionContext } from "./permissions";
 import { KG_SCOUT } from "./kg-scout";
 import { MessageChannel, QueryFn, SdkMessage, SdkQueryHandle } from "./sdk-types";
 
@@ -30,12 +30,16 @@ export interface SessionEvents {
   onInit?: (info: { sessionId: string; tools: string[]; model: string; apiKeySource: string }) => void;
   onTextDelta?: (text: string) => void;
   onAssistantText?: (fullText: string) => void;
-  onToolUse?: (use: { id: string; name: string; input: Record<string, unknown> }) => void;
+  onToolUse?: (use: { id: string; name: string; input: Record<string, unknown>; subagent: boolean }) => void;
   onToolResult?: (result: { toolUseId: string; content: unknown }) => void;
   onApproval?: (request: ApprovalRequest) => void;
   onResult?: (result: { totalCostUsd: number; isError: boolean; resultText: string }) => void;
   onStatus?: (status: string | null) => void;
   onError?: (error: Error) => void;
+  /** The message stream is over (claude.exe exited). Not fired after an explicit dispose(). */
+  onEnd?: () => void;
+  /** Raw stderr from the CLI — diagnostics, not necessarily errors. */
+  onStderr?: (line: string) => void;
 }
 
 export interface AgentServiceDeps {
@@ -53,7 +57,27 @@ export interface SessionHandle {
 }
 
 const CONTRACT_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Task"];
-const AUTO_ALLOWED = ["Read", "Glob", "Grep", "Task"];
+// Bare allowedTools entries auto-approve BEFORE canUseTool, so anything listed
+// here bypasses decideToolUse entirely. Only Task (kg-scout dispatch) is safe
+// to exempt; reads must flow through the permission table to keep its
+// outside-the-vault and hidden-folder branches alive at runtime.
+const AUTO_ALLOWED = ["Task"];
+
+/** Ambient levers that could reroute auth, billing, or model selection. */
+const ENV_DENY = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+  "ANTHROPIC_CUSTOM_HEADERS",
+  "ANTHROPIC_MODEL",
+  "ANTHROPIC_SMALL_FAST_MODEL",
+  "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+  "ANTHROPIC_DEFAULT_SONNET_MODEL",
+  "ANTHROPIC_DEFAULT_OPUS_MODEL",
+  "ANTHROPIC_BEDROCK_BASE_URL",
+  "ANTHROPIC_VERTEX_BASE_URL",
+  "CLAUDE_CODE_USE_BEDROCK",
+  "CLAUDE_CODE_USE_VERTEX",
+];
 
 export class AgentService {
   private readonly queryFn: QueryFn;
@@ -80,6 +104,10 @@ export class AgentService {
       const decision = decideToolUse(toolName, input, permissionCtx);
       if (decision.behavior === "allow") return { behavior: "allow" };
       if (decision.behavior === "deny") return { behavior: "deny", message: decision.message };
+      // No approval surface (headless / tests): fail closed instead of hanging forever.
+      if (events.onApproval === undefined) {
+        return { behavior: "deny", message: `No approval surface is attached to this session, so the action was declined. (${decision.reason})` };
+      }
       // ask → surface to the UI; resolve deny on dispose OR SDK abort so the session can never hang.
       return await new Promise<Record<string, unknown>>((resolve) => {
         const respond = (allow: boolean, denyMessage?: string): void => {
@@ -95,7 +123,7 @@ export class AgentService {
         }
         events.onApproval?.({
           toolName,
-          targetPath: typeof input["file_path"] === "string" ? (input["file_path"] as string) : null,
+          targetPath: targetPathOf(toolName, input),
           reason: decision.reason,
           title: options?.title ?? null,
           respond,
@@ -137,10 +165,7 @@ export class AgentService {
     // API-key override may legitimately pair with a custom base URL, so that one survives.
     const env: Record<string, string | undefined> = { ...process.env };
     const hasKeyOverride = config.apiKeyOverride !== undefined && config.apiKeyOverride !== "";
-    delete env["ANTHROPIC_API_KEY"];
-    delete env["ANTHROPIC_AUTH_TOKEN"];
-    delete env["CLAUDE_CODE_USE_BEDROCK"];
-    delete env["CLAUDE_CODE_USE_VERTEX"];
+    for (const name of ENV_DENY) delete env[name];
     if (!hasKeyOverride) delete env["ANTHROPIC_BASE_URL"];
     if (hasKeyOverride) env["ANTHROPIC_API_KEY"] = config.apiKeyOverride;
 
@@ -148,7 +173,6 @@ export class AgentService {
       buildSystemPrompt() +
       "\n\n---\n\n" +
       buildSessionPreamble({
-        graphDir: config.graphDir,
         hubPath: config.hubPath,
         todayIso: config.todayIso,
         stats: config.stats,
@@ -176,7 +200,7 @@ export class AgentService {
         PreToolUse: [{ hooks: [preToolUse] }],
         PostToolUse: [{ matcher: "Write", hooks: [postWrite] }],
       },
-      stderr: (data: string) => events.onError?.(new Error(`claude stderr: ${data.slice(0, 400)}`)),
+      stderr: (data: string) => events.onStderr?.(data),
     };
     if (config.resumeSessionId !== undefined) options["resume"] = config.resumeSessionId;
 
@@ -188,6 +212,7 @@ export class AgentService {
       throw error;
     }
 
+    let ended = false;
     const donePromise = (async () => {
       try {
         for await (const message of handle) {
@@ -195,11 +220,20 @@ export class AgentService {
         }
       } catch (error) {
         if (!disposed) events.onError?.(error instanceof Error ? error : new Error(String(error)));
+      } finally {
+        ended = true;
+        if (!disposed) events.onEnd?.();
       }
     })();
 
     return {
-      sendUserMessage: (text) => channel.enqueue(text),
+      sendUserMessage: (text) => {
+        if (ended || disposed) {
+          events.onError?.(new Error("The session has ended — this tab can no longer send messages."));
+          return;
+        }
+        channel.enqueue(text);
+      },
       interrupt: async () => {
         await handle.interrupt();
       },
@@ -245,6 +279,7 @@ function routeMessage(message: SdkMessage, events: SessionEvents, setSessionId: 
     }
     case "assistant": {
       const content = (message["message"] as { content?: Array<Record<string, unknown>> } | undefined)?.content ?? [];
+      const subagent = message["parent_tool_use_id"] != null; // kg-scout's tool calls are forwarded by default
       for (const block of content) {
         if (block["type"] === "text" && typeof block["text"] === "string") events.onAssistantText?.(block["text"]);
         if (block["type"] === "tool_use") {
@@ -252,6 +287,7 @@ function routeMessage(message: SdkMessage, events: SessionEvents, setSessionId: 
             id: String(block["id"] ?? ""),
             name: String(block["name"] ?? ""),
             input: (block["input"] as Record<string, unknown>) ?? {},
+            subagent,
           });
         }
       }
