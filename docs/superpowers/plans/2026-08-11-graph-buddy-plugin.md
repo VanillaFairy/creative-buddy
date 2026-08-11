@@ -1495,7 +1495,9 @@ export function markdownFiles(view: VaultView, graphDir: string): string[] {
       if (isMarkdown(file)) out.push(file);
     }
   }
-  return out.sort();
+  // Same Windows-key sort as collectNoteFiles — the oracle sorts str(Path)
+  // with backslash separators (review-driven fix; plain sort() diverged).
+  return out.sort((a, b) => (sortKeyWindows(a) < sortKeyWindows(b) ? -1 : sortKeyWindows(a) > sortKeyWindows(b) ? 1 : 0));
 }
 ```
 
