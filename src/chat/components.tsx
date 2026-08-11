@@ -90,14 +90,20 @@ function TranscriptRow({ item, callbacks }: { item: TranscriptItem; callbacks: C
 
 function MarkdownBlock({ markdown, streaming, render }: { markdown: string; streaming: boolean; render: (el: HTMLElement, md: string) => void }): React.JSX.Element {
   const ref = React.useRef<HTMLDivElement>(null);
+  // MarkdownRenderer.render is async-append; re-running it per delta lets an
+  // old render's continuation land after a newer clear. So the streaming
+  // bubble is plain text, and markdown renders once on the finalized message.
   React.useEffect(() => {
-    if (ref.current !== null) {
-      ref.current.empty?.();
-      ref.current.innerHTML = "";
-      render(ref.current, markdown);
-    }
-  }, [markdown, render]);
-  return <div className={`gb-msg gb-msg-assistant${streaming ? " gb-streaming" : ""}`} ref={ref} />;
+    const el = ref.current;
+    if (el === null || streaming) return;
+    el.replaceChildren();
+    render(el, markdown);
+  }, [markdown, streaming, render]);
+  return (
+    <div className={`gb-msg gb-msg-assistant${streaming ? " gb-streaming" : ""}`} ref={ref}>
+      {streaming ? markdown : null}
+    </div>
+  );
 }
 
 function ToolRow({ item }: { item: Extract<TranscriptItem, { kind: "tool" }> }): React.JSX.Element {
