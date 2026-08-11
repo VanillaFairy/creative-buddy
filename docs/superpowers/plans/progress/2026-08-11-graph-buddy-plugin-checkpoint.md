@@ -33,8 +33,9 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 | 23 MindmapView | ✅ merged (fbfc481) | Plan's links() typing was real drift (fixed in flextree.d.ts); headless esbuild probe of the flextree call; pan/zoom + zero-height fixes followed (7299742) |
 | M2 milestone review | ✅ closed | Opus found 2 Critical (C1 .obsidian auto-allow with vault-root graph; C2 allowedTools made the read gate dead code), 4 Important (digest injection, silent session death, symlink lexicality, env gaps), 16 minors |
 | M2 hardening | ✅ merged (e2b4efa) | ab3a0bc + c526662. All Criticals+Importants except symlink-realpath (deferred, noted below). THREE live-run discoveries: relative targets must resolve against cwd; drive-relative \\x paths bounce to the model with a correction (deny, not ask); no-surface approvals fail closed. Live smoke green: zero approval cards, "Smoke done", apiKeySource none |
-| M3/M4 milestone review | 🔄 in flight | opus, read-only, scope chat + mindmap + main.ts + styles |
-| 24 docs+finish | pending | After M3/M4 review |
+| M3/M4 milestone review | ✅ closed | Opus: 0 Critical, 4 Important (all lifecycle: model-ready cb outlives view, picker dead end while indexing, dead-session approval cards lie, badge broken on deferred leaves), rich minors, triage of 6 known items |
+| M3/M4 review fixes | ✅ ccb8e0e | All 4 Importants + fix-now triage (tool-input trim, layout-change badge, rebind guard) + minors (wrap-up out of render, onStatus indicator, promise handling, ghost graphDir, panel title, alt-click tooltip) |
+| 24 docs+finish | 🔄 | README + manual checklist written; final verification next |
 
 ## Protocol adaptations (recorded deviations)
 
