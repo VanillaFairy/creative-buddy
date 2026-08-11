@@ -22,9 +22,14 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 | 14 GraphModel | ✅ merged | rootName/hubPathOf accessors added for mindmap |
 | hardening | ✅ merged (f9fbecd) | pyStrip control chars, single boundary rule, markdownFiles Windows sort — batch-review findings |
 | 16 prompts | ✅ merged (d6cabc1) | system.md adapted; stitch note; accepted micro-deviation (duplicate-name paragraph) |
-| 17 AgentService | 🔄 in flight | task/t17-agentservice (opus) |
-| M1 milestone review | 🔄 in flight | opus, whole-milestone scope |
-| 16–19 (M2), 21–24 (M3–M5) | pending | Per plan wave schedule |
+| 17 AgentService | ✅ merged | Opus implementer; canUseTool fail-closed + abort listener, env sanitization, contract hooks, done()-is-teardown semantics |
+| 18 settings+wiring | ✅ merged | claude-locator, GraphBuddySettingTab health check, GraphBuddyPlugin model seeding + vault events |
+| M1 milestone review | ✅ closed | Opus review found 1 Important (comparePathSegments must casefold — verified vs live Python) + 8 minor; fixed in dfd66fd + 0bb9914, merged a8ce91f; oracle equality on all 5 fixtures, 161/161 |
+| 19 live smoke | 🔄 in flight | task/t19-smoke (opus); max 3 live runs; checks real Task-tool name from init message |
+| 21 ChatView | 🔄 in flight | task/t21-chatview (opus); 5 deltas over plan (transcript title TDD, stats null-guard, seeding race, done()=teardown, drop onWrapUp) |
+| 22 mindmap layout | ✅ merged (9d1e737) | All 3 deltas applied; implementer simplified further — public GraphModel accessors instead of hand-built VaultView; 169/169 |
+| 23 MindmapView | pending | Blocked on T21 (shares main.ts + styles.css) |
+| 24 docs+finish | pending | After M2–M4 reviews |
 
 ## Protocol adaptations (recorded deviations)
 
@@ -38,7 +43,7 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 
 ## Suite state at last merge
 
-137/137 tests green on feature/graph-buddy (f9fbecd); `tsc --noEmit` clean; build clean.
+169/169 tests green on feature/graph-buddy (9d1e737, after T22 merge); `tsc --noEmit` clean; build clean.
 
 ## Out-of-band
 
