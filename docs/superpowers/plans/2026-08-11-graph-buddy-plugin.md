@@ -845,7 +845,9 @@ describe("sort compat", () => {
     expect(paths).toEqual(["Act2/y.md", "Act/x.md"]); // "2" (50) < "\\" (92)
   });
   it("comparePathSegments matches Python Path ordering", () => {
-    expect(comparePathSegments("a b", "a/b")).toBeLessThan(0); // ("a b",) < ("a","b")
+    // ("a b",) > ("a","b"): tuple compare stops at "a b" vs "a", and the
+    // shorter prefix "a" sorts first — verified against live Python 3.14.
+    expect(comparePathSegments("a b", "a/b")).toBeGreaterThan(0);
     expect(comparePathSegments("a/b", "a")).toBeGreaterThan(0);
     expect(comparePathSegments("Alpha", "Beta")).toBeLessThan(0);
   });
