@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
-import { zoom, zoomIdentity } from "d3-zoom";
+import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
 import type GraphBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { CollapseStore } from "./collapse-store";
@@ -18,6 +18,7 @@ export class MindmapView extends ItemView {
   private collapse = new CollapseStore();
   private offChange: (() => void) | null = null;
   private redrawTimer: number | null = null;
+  private lastTransform: ZoomTransform | null = null;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: GraphBuddyPlugin) {
     super(leaf);
@@ -80,6 +81,7 @@ export class MindmapView extends ItemView {
     if (this.graphDir !== null) selector.value = this.graphDir;
     selector.onchange = () => {
       this.graphDir = selector.value;
+      this.lastTransform = null;
       this.app.workspace.requestSaveLayout();
       this.redraw();
     };
@@ -165,9 +167,13 @@ export class MindmapView extends ItemView {
     });
 
     const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 2.5]).on("zoom", (event) => {
+      this.lastTransform = event.transform as ZoomTransform;
       canvas.attr("transform", String(event.transform));
     });
-    svg.call(zoomBehavior).call(zoomBehavior.transform, zoomIdentity.translate(40, host.clientHeight / 2));
+    // Reuse the last pan/zoom so live-update redraws don't snap back to origin;
+    // on first draw the host may not be laid out yet, so guard clientHeight 0.
+    const centerY = host.clientHeight > 0 ? host.clientHeight / 2 : 240;
+    svg.call(zoomBehavior).call(zoomBehavior.transform, this.lastTransform ?? zoomIdentity.translate(40, centerY));
   }
 
   private drawTray(container: HTMLElement, data: MindmapData): void {
