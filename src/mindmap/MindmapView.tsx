@@ -41,7 +41,12 @@ export class MindmapView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    this.offChange = this.plugin.model?.onChange(() => this.scheduleRedraw()) ?? null;
+    // Via onModelReady so a view opened before indexing finishes still wakes
+    // up — subscribing directly to a null model would sleep forever.
+    this.plugin.onModelReady(() => {
+      this.offChange = this.plugin.model?.onChange(() => this.scheduleRedraw()) ?? null;
+      this.redraw();
+    });
     this.redraw();
   }
 

@@ -8,6 +8,7 @@ function splitFrontmatter(text: string): { meta: Record<string, unknown>; body: 
   const lines = normalized.split("\n");
   if (lines[0]?.trim() !== "---") return { meta, body: normalized };
   const close = lines.findIndex((l, i) => i > 0 && (l.trim() === "---" || l.trim() === "..."));
+  if (close === -1) return { meta, body: normalized }; // unterminated frontmatter: keep everything
   return { meta, body: lines.slice(close + 1).join("\n").trim() };
 }
 

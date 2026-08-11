@@ -119,7 +119,7 @@ export class ChatView extends ItemView {
         },
         onTextDelta: (text) => this.dispatch({ type: "text-delta", text }),
         onAssistantText: (text) => this.dispatch({ type: "assistant-final", text }),
-        onToolUse: (use) => this.dispatch({ type: "tool-use", id: use.id, name: use.name, input: use.input }),
+        onToolUse: (use) => this.dispatch({ type: "tool-use", id: use.id, name: use.name, input: use.input, subagent: use.subagent }),
         onToolResult: (r) => this.dispatch({ type: "tool-result", toolUseId: r.toolUseId }),
         onApproval: (request) => {
           const id = `a${++this.approvalSeq}`;
@@ -138,6 +138,16 @@ export class ChatView extends ItemView {
           this.dispatch({ type: "result", costUsd: result.totalCostUsd, isError: result.isError });
         },
         onError: (error) => this.dispatch({ type: "error", message: error.message }),
+        onEnd: () => {
+          // claude.exe exited. Dispose the dead handle (settles any approval
+          // card left pending by a mid-approval crash), then drop it so the
+          // next send starts a fresh process resuming the same conversation.
+          this.session?.dispose();
+          this.session = null;
+          this.busy = false;
+          this.dispatch({ type: "notice", text: "The session ended. Your next message reconnects to the same conversation." });
+        },
+        onStderr: (line) => console.debug("[graph-buddy] claude:", line),
       },
     );
     return this.session;
