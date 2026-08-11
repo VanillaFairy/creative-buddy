@@ -1,4 +1,4 @@
-import { parseFrontmatter, parentName, innermostScalar } from "./frontmatter";
+import { parseFrontmatter, parentName, innermostScalar, stripFrontmatterBlock } from "./frontmatter";
 import { normalizeContent, stripBom } from "./reader";
 import { casefold, pyStr } from "./py-compat";
 import { stemOf } from "./types";
@@ -41,22 +41,6 @@ function aliasesOf(raw: unknown): string[] {
     if (text !== "") out.push(text);
   }
   return out;
-}
-
-/**
- * The frontmatter delimiters bound a YAML block, not prose — a `parent:
- * "[[X]]"` value would otherwise masquerade as a wikilink. Excise that block
- * (same `---`/`...` boundary rule as parseFrontmatter) before scanning for
- * links, whether or not the YAML inside it actually parses.
- */
-function stripFrontmatterBlock(text: string): string {
-  const lines = text.split("\n");
-  if (lines.length === 0 || lines[0]!.trim() !== "---") return text;
-  for (let i = 1; i < lines.length; i++) {
-    const t = lines[i]!.trim();
-    if (t === "---" || t === "...") return lines.slice(i + 1).join("\n");
-  }
-  return text;
 }
 
 /**
