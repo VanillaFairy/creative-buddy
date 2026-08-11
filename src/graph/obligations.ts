@@ -1,6 +1,8 @@
 /** The graded-question register, ported line-for-line from oracle/obligations.py. */
-import { normalizeContent } from "./reader";
+import { normalizeContent, stripBom } from "./reader";
 import { DateOnly, epochDays, isoDate, parseIsoDate } from "./py-compat";
+import { VaultView } from "./types";
+import { findGraphs, markdownFiles } from "./discovery";
 
 const TASK = /^\s*[-*+]\s+\[(?<status>.)\]\s+(?<text>\S.*)$/;
 const FENCE = /^(?<mark>`{3,}|~{3,})(?<info>.*)$/;
@@ -94,3 +96,69 @@ export function grade(task: string, today: DateOnly): Graded | null {
   }
   return null;
 }
+
+export interface ObligationEntry {
+  date?: string;
+  note: string;
+  line: number;
+  text: string;
+}
+
+export type ObligationsReport = {
+  today: string;
+  counts: Record<Bucket, number>;
+} & Record<Bucket, ObligationEntry[]>;
+
+/** Every graded question under the root, filed by urgency. */
+export function collectObligations(view: VaultView, today: DateOnly): Record<Bucket, ObligationEntry[]> {
+  const graded = Object.fromEntries(
+    BUCKETS.map((b): [Bucket, ObligationEntry[]] => [b, []]),
+  ) as Record<Bucket, ObligationEntry[]>;
+  for (const graphDir of findGraphs(view)) {
+    for (const path of markdownFiles(view, graphDir)) {
+      const text = stripBom(normalizeContent(view.get(path)!));
+      for (const [line, task] of openTasks(text)) {
+        const verdict = grade(task, today);
+        if (verdict === null) continue;
+        const entry: ObligationEntry = { note: path, line, text: verdict.text };
+        if (verdict.due !== null) entry.date = verdict.due;
+        graded[verdict.bucket].push(entry);
+      }
+    }
+  }
+  return graded;
+}
+
+/** Most pressing first, then by where the line lives. */
+export function inReadingOrder(entries: ObligationEntry[]): ObligationEntry[] {
+  return [...entries].sort((a, b) => {
+    const da = a.date ?? "";
+    const db = b.date ?? "";
+    if (da !== db) return da < db ? -1 : 1;
+    if (a.note !== b.note) return a.note < b.note ? -1 : 1;
+    return a.line - b.line;
+  });
+}
+
+export function buildObligationsReport(view: VaultView, today: DateOnly): ObligationsReport {
+  const graded = collectObligations(view, today);
+  const report = { today: isoDate(today) } as ObligationsReport;
+  const counts = {} as Record<Bucket, number>;
+  for (const bucket of BUCKETS) {
+    report[bucket] = inReadingOrder(graded[bucket]);
+    counts[bucket] = report[bucket].length;
+  }
+  report.counts = counts;
+  return report;
+}
+
+/** The buckets the digest surfaces (later and parked are collected, never shown). */
+export const SURFACED: ReadonlyArray<[Bucket, string]> = [
+  ["overdue", "Overdue"],
+  ["due_today", "Due today"],
+  ["upcoming", `Within ${UPCOMING_DAYS} days`],
+  ["owed", "Owed, undated"],
+  ["gaps", "Gaps"],
+  ["lookups", "To look up"],
+  ["malformed", "Unreadable dates"],
+];
