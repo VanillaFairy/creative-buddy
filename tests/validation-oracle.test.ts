@@ -21,6 +21,7 @@ describe("graphStats", () => {
   it("flags the flat hub shape in problems/", () => {
     const view = new VaultView(loadFixtureVault("problems"));
     const stats = graphStats(view, "Tangle");
-    expect(stats.hubChildren).toBe(4); // Twin, Deep, Lost, Bad Date
+    expect(stats).not.toBeNull();
+    expect(stats!.hubChildren).toBe(4); // Twin, Deep, Lost, Bad Date
   });
 });

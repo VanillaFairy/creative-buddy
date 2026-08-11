@@ -40,6 +40,11 @@ describe("noteFromFile", () => {
     expect(note.aliases).toEqual(["solo"]);
   });
 
+  it("a nested-list alias item digs to its innermost scalar, like parent: does", () => {
+    const note = noteFromFile("G/A.md", "---\naliases:\n  - [[nested]]\n---\n");
+    expect(note.aliases).toEqual(["nested"]);
+  });
+
   it("BOM hides frontmatter from parent (validation semantics)", () => {
     const note = noteFromFile("G/B.md", '\uFEFF---\nparent: "[[G]]"\n---\n');
     expect(note.parent).toBeNull();

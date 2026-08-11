@@ -71,6 +71,10 @@ describe("path pieces", () => {
     expect(pyStr(new Date(Date.UTC(2024, 0, 1)))).toBe("2024-01-01");
     expect(pyStr(42)).toBe("42");
   });
+  it("pyStr renders booleans like Python str() (True/False, not JS true/false)", () => {
+    expect(pyStr(true)).toBe("True");
+    expect(pyStr(false)).toBe("False");
+  });
 });
 
 describe("VaultView", () => {

@@ -218,10 +218,11 @@ export interface GraphStats {
   hubChildren: number;
 }
 
-/** The --tree footer: node count (hub excluded) and direct hub children. */
-export function graphStats(view: VaultView, graphDir: string): GraphStats {
-  const notes = loadGraphNotes(view, graphDir);
+/** The --tree footer: node count (hub excluded) and direct hub children. Null when the graph dir has no hub file. */
+export function graphStats(view: VaultView, graphDir: string): GraphStats | null {
   const hub = hubPath(view, graphDir);
+  if (view.get(hub) === undefined) return null;
+  const notes = loadGraphNotes(view, graphDir);
   const { edges } = resolveParents(notes, hub);
   let hubChildren = 0;
   for (const parent of edges.values()) {

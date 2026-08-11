@@ -35,7 +35,8 @@ function aliasesOf(raw: unknown): string[] {
   if (raw === null || raw === undefined) return [];
   const list = Array.isArray(raw) ? raw : [raw];
   const out: string[] = [];
-  for (const item of list) {
+  for (const rawItem of list) {
+    const item = innermostScalar(rawItem);
     if (item === null || item === undefined) continue;
     const text = pyStr(item).trim();
     if (text !== "") out.push(text);

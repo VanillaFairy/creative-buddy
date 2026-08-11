@@ -64,8 +64,11 @@ export function findGraphs(view: VaultView): string[] {
   return found.sort(comparePathSegments);
 }
 
+/** Python Path(".md").suffix is "" — a leading-dot name has no suffix, so it never counts as markdown. */
 function isMarkdown(path: string): boolean {
-  return casefold(path).endsWith(".md");
+  const b = baseName(path);
+  const i = b.lastIndexOf(".");
+  return i > 0 && casefold(b.slice(i)) === ".md";
 }
 
 /** graph_check.py collect_notes: everything under the graph, only Log/ excluded. */

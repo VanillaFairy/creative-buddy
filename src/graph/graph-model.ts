@@ -56,7 +56,10 @@ export class GraphModel {
     this.cachedValidation = null;
     this.cachedGraphs = null;
     this.cachedObligations.clear();
-    for (const listener of this.listeners) listener();
+    // Snapshot before notifying: a listener that subscribes another mid-notification
+    // (JS Set iteration would otherwise visit it live) must not see it fire for this
+    // same mutation — only for the next one.
+    for (const listener of [...this.listeners]) listener();
   }
 
   private view(): VaultView {
@@ -90,7 +93,7 @@ export class GraphModel {
     return report;
   }
 
-  stats(graphDir: string): GraphStats {
+  stats(graphDir: string): GraphStats | null {
     return graphStats(this.view(), graphDir);
   }
 

@@ -116,7 +116,9 @@ export function collectObligations(view: VaultView, today: DateOnly): Record<Buc
   ) as Record<Bucket, ObligationEntry[]>;
   for (const graphDir of findGraphs(view)) {
     for (const path of markdownFiles(view, graphDir)) {
-      const text = stripBom(normalizeContent(view.get(path)!));
+      // openTasks owns line-ending normalization (it self-normalizes internally),
+      // so only the BOM strip belongs here.
+      const text = stripBom(view.get(path)!);
       for (const [line, task] of openTasks(text)) {
         const verdict = grade(task, today);
         if (verdict === null) continue;

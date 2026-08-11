@@ -17,6 +17,7 @@ export function pyRepr(s: string): string {
 /** Python str() for YAML scalars (dates render as YYYY-MM-DD like PyYAML's date). */
 export function pyStr(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "boolean") return value ? "True" : "False";
   return String(value);
 }
 

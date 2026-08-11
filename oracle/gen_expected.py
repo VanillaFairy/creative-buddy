@@ -39,9 +39,9 @@ def main() -> int:
         gc = relativize(graph_check.build_report(root), root)
         ob = obligations.build_report(root, TODAY)
         (EXPECTED / f"{fixture.name}.graph-check.json").write_text(
-            json.dumps(gc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            json.dumps(gc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         (EXPECTED / f"{fixture.name}.obligations.json").write_text(
-            json.dumps(ob, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            json.dumps(ob, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(f"{fixture.name}: {gc['graphs'] and len(gc['graphs'])} graph(s)")
     return 0
 
