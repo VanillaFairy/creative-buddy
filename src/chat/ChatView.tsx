@@ -6,8 +6,7 @@ import { AgentService, SessionHandle } from "../agent/agent-service";
 import { renderDigestForGraph } from "../agent/digest";
 import { reduceTranscript, TranscriptItem, TranscriptEvent } from "./transcript";
 import { ChatSurface } from "./components";
-import { baseName, VaultView } from "../graph/types";
-import { hubPath as graphHubPath } from "../graph/discovery";
+import { baseName } from "../graph/types";
 
 export const CHAT_VIEW_TYPE = "graph-buddy-chat";
 
@@ -81,7 +80,11 @@ export class ChatView extends ItemView {
     if (this.session !== null) return this.session;
     const model = this.plugin.model;
     const claudePath = this.plugin.resolveClaudePath();
-    if (this.state.graphDir === null || model === null) return null;
+    if (this.state.graphDir === null) return null;
+    if (model === null) {
+      new Notice("Graph Buddy is still indexing the vault — try again in a moment.");
+      return null;
+    }
     if (claudePath === null) {
       new Notice("Claude Code executable not found — set it in Graph Buddy settings.");
       return null;
@@ -92,7 +95,6 @@ export class ChatView extends ItemView {
       new Notice("This graph's hub note is gone — rebind the tab.");
       return null;
     }
-    const view = new VaultView({ rootName: this.app.vault.getName(), files: model.snapshotFiles() });
     const today = new Date();
     const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const report = model.obligations({ y: today.getFullYear(), m: today.getMonth() + 1, d: today.getDate() });
@@ -101,7 +103,7 @@ export class ChatView extends ItemView {
       {
         vaultRoot: this.plugin.vaultRootPath().replace(/\\/g, "/"),
         graphDir,
-        hubPath: graphHubPath(view, graphDir),
+        hubPath: model.hubPathOf(graphDir),
         model: this.state.model,
         claudePath,
         todayIso,
@@ -174,7 +176,11 @@ export class ChatView extends ItemView {
       this.render();
     },
     renderMarkdown: (el: HTMLElement, markdown: string): void => {
-      void MarkdownRenderer.render(this.app, markdown, el, this.state.graphDir ?? "/", this);
+      // Relative links resolve against a NOTE path, so hand the renderer the
+      // hub note rather than the graph folder.
+      const dir = this.state.graphDir;
+      const source = dir !== null ? this.plugin.model?.hubPathOf(dir) ?? dir : "/";
+      void MarkdownRenderer.render(this.app, markdown, el, source, this);
     },
   };
 
