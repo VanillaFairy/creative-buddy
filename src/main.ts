@@ -3,6 +3,7 @@ import { GraphModel } from "./graph/graph-model";
 import { GraphBuddySettings, DEFAULT_SETTINGS, GraphBuddySettingTab } from "./settings";
 import { findClaudeExecutable } from "./claude-locator";
 import { ChatView, CHAT_VIEW_TYPE } from "./chat/ChatView";
+import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
 import { existsSync } from "node:fs";
 
 export default class GraphBuddyPlugin extends Plugin {
@@ -19,6 +20,12 @@ export default class GraphBuddyPlugin extends Plugin {
     });
     this.addCommand({ id: "new-chat-tab", name: "New graph chat tab", callback: () => void this.openChatTab() });
 
+    this.registerView(MINDMAP_VIEW_TYPE, (leaf) => new MindmapView(leaf, this));
+    this.addRibbonIcon("git-fork", "Graph Buddy: open graph mindmap", () => {
+      void this.openMindmap();
+    });
+    this.addCommand({ id: "open-mindmap", name: "Open graph mindmap", callback: () => void this.openMindmap() });
+
     this.app.workspace.onLayoutReady(() => {
       void this.buildModel();
     });
@@ -31,6 +38,14 @@ export default class GraphBuddyPlugin extends Plugin {
   /** A chat tab always opens as a new tab — one tab, one session. */
   private async openChatTab(): Promise<void> {
     await this.app.workspace.getLeaf(true).setViewState({ type: CHAT_VIEW_TYPE, active: true });
+  }
+
+  /** The mindmap is one shared surface — reveal the open one, or make the first. */
+  private async openMindmap(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(MINDMAP_VIEW_TYPE)[0];
+    const leaf = existing ?? this.app.workspace.getLeaf(true);
+    if (existing === undefined) await leaf.setViewState({ type: MINDMAP_VIEW_TYPE, active: true });
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   private async buildModel(): Promise<void> {
