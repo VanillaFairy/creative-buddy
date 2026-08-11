@@ -45,9 +45,14 @@ describe("AgentService options assembly", () => {
     const { queryFn, captured } = fakeQuery([INIT, RESULT]);
     const service = new AgentService({ queryFn });
     const events = { onInit: vi.fn(), onResult: vi.fn() };
+    process.env["CLAUDE_CODE_USE_BEDROCK"] = "1";
+    process.env["ANTHROPIC_BASE_URL"] = "http://x";
     const session = service.start(CONFIG, events);
     session.sendUserMessage("hello");
     await session.done();
+    // The env snapshot is taken inside start(), so this cannot leak into other tests.
+    delete process.env["CLAUDE_CODE_USE_BEDROCK"];
+    delete process.env["ANTHROPIC_BASE_URL"];
 
     const opts = captured.options!;
     expect(opts["cwd"]).toBe("C:/vaults/General");
@@ -60,6 +65,8 @@ describe("AgentService options assembly", () => {
     const env = opts["env"] as Record<string, string | undefined>;
     expect(env["ANTHROPIC_API_KEY"]).toBeUndefined();
     expect(env["ANTHROPIC_AUTH_TOKEN"]).toBeUndefined();
+    expect(env["CLAUDE_CODE_USE_BEDROCK"]).toBeUndefined(); // no ambient re-routing
+    expect(env["ANTHROPIC_BASE_URL"]).toBeUndefined();
     expect(env["PATH"] ?? env["Path"]).toBeDefined(); // process.env survived
     const sys = opts["systemPrompt"] as string;
     expect(sys).toContain("Never invent a fact");
@@ -73,11 +80,14 @@ describe("AgentService options assembly", () => {
   it("keeps an explicit api key override when the user set one", async () => {
     const { queryFn, captured } = fakeQuery([INIT, RESULT]);
     const service = new AgentService({ queryFn });
+    process.env["ANTHROPIC_BASE_URL"] = "http://x";
     const session = service.start({ ...CONFIG, apiKeyOverride: "sk-test" }, {});
     session.sendUserMessage("hello");
     await session.done();
+    delete process.env["ANTHROPIC_BASE_URL"];
     const env = captured.options!["env"] as Record<string, string | undefined>;
     expect(env["ANTHROPIC_API_KEY"]).toBe("sk-test");
+    expect(env["ANTHROPIC_BASE_URL"]).toBe("http://x"); // an own key may pair with an own endpoint
   });
 
   it("passes resume when reopening a session", async () => {
@@ -120,7 +130,7 @@ describe("AgentService permission wiring", () => {
   it("allows in-graph writes, denies bad titles, pauses for out-of-graph writes", async () => {
     const { queryFn, captured } = fakeQuery([INIT, RESULT]);
     const service = new AgentService({ queryFn });
-    const approvals: Array<{ respond: (allow: boolean, msg?: string) => void }> = [];
+    const approvals: Array<{ title: string | null; respond: (allow: boolean, msg?: string) => void }> = [];
     const session = service.start(CONFIG, { onApproval: (a) => approvals.push(a) });
     session.sendUserMessage("go");
     await session.done();
@@ -140,9 +150,60 @@ describe("AgentService permission wiring", () => {
     const pending = canUseTool("Write", { file_path: "C:/vaults/General/Здоровье/note.md" }, opts);
     await Promise.resolve();
     expect(approvals).toHaveLength(1);
+    expect(approvals[0]!.title).toBeNull(); // the SDK sent no rendered prompt line
     approvals[0]!.respond(false, "not this graph");
     const out = await pending;
     expect(out).toEqual({ behavior: "deny", message: "not this graph" });
+  });
+
+  it("forwards the SDK's rendered prompt line to the approval card", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const service = new AgentService({ queryFn });
+    const approvals: Array<{ title: string | null; respond: (allow: boolean, msg?: string) => void }> = [];
+    const session = service.start(CONFIG, { onApproval: (a) => approvals.push(a) });
+    session.sendUserMessage("go");
+    await session.done();
+    const canUseTool = captured.options!["canUseTool"] as (
+      t: string,
+      i: Record<string, unknown>,
+      o: { signal: AbortSignal; toolUseID: string; title?: string },
+    ) => Promise<{ behavior: string }>;
+
+    const pending = canUseTool(
+      "Write",
+      { file_path: "C:/vaults/General/elsewhere/x.md" },
+      { signal: new AbortController().signal, toolUseID: "t", title: "Claude wants to write x.md" },
+    );
+    await Promise.resolve();
+    expect(approvals[0]!.title).toBe("Claude wants to write x.md");
+    approvals[0]!.respond(true);
+    await expect(pending).resolves.toEqual({ behavior: "allow" });
+  });
+
+  it("an aborted request denies itself, and the stale card can no longer change it", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const service = new AgentService({ queryFn });
+    const approvals: Array<{ title: string | null; respond: (allow: boolean, msg?: string) => void }> = [];
+    const session = service.start(CONFIG, { onApproval: (a) => approvals.push(a) });
+    session.sendUserMessage("go");
+    await session.done();
+    const canUseTool = captured.options!["canUseTool"] as (
+      t: string,
+      i: Record<string, unknown>,
+      o: { signal: AbortSignal; toolUseID: string },
+    ) => Promise<{ behavior: string; message?: string }>;
+
+    const controller = new AbortController();
+    const pending = canUseTool("Write", { file_path: "C:/vaults/General/elsewhere/x.md" }, { signal: controller.signal, toolUseID: "t" });
+    await Promise.resolve();
+    expect(approvals).toHaveLength(1);
+
+    controller.abort();
+    const settled = { behavior: "deny", message: expect.stringContaining("cancelled") };
+    await expect(pending).resolves.toEqual(settled);
+
+    approvals[0]!.respond(true); // the card is still on screen; clicking it must change nothing
+    await expect(pending).resolves.toEqual(settled);
   });
 
   it("dispose() resolves dangling approvals as deny (never hang the session)", async () => {
