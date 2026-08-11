@@ -25,11 +25,14 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 | 17 AgentService | ✅ merged | Opus implementer; canUseTool fail-closed + abort listener, env sanitization, contract hooks, done()-is-teardown semantics |
 | 18 settings+wiring | ✅ merged | claude-locator, GraphBuddySettingTab health check, GraphBuddyPlugin model seeding + vault events |
 | M1 milestone review | ✅ closed | Opus review found 1 Important (comparePathSegments must casefold — verified vs live Python) + 8 minor; fixed in dfd66fd + 0bb9914, merged a8ce91f; oracle equality on all 5 fixtures, 161/161 |
-| 19 live smoke | 🔄 in flight | task/t19-smoke (opus); max 3 live runs; checks real Task-tool name from init message |
-| 21 ChatView | 🔄 in flight | task/t21-chatview (opus); 5 deltas over plan (transcript title TDD, stats null-guard, seeding race, done()=teardown, drop onWrapUp) |
+| 19 live smoke | ✅ merged (be3c7e2) | Live green on subscription auth (apiKeySource: none, $0.03/run); Task tool name confirmed "Task"; found the connector-leak issue below |
+| connector-leak fix | ✅ ffd1f71 | T19 saw ~75 mcp__claude_ai_* connector tools in the session despite settingSources: []; strictMcpConfig: true closes it — live-verified tool surface is exactly the 6 contract tools |
+| 21 ChatView | ✅ merged (e8e699e) | All 5 deltas applied; +1 transcript TDD test; 9 self-review findings logged (fed into polish + M3 review) |
+| chat quick fixes | ✅ 9bb99cb | NODE_ENV define (React prod build, main.js 3.4MB→2.3MB); approvalSeq seeded from restored items |
 | 22 mindmap layout | ✅ merged (9d1e737) | All 3 deltas applied; implementer simplified further — public GraphModel accessors instead of hand-built VaultView; 169/169 |
-| 23 MindmapView | pending | Blocked on T21 (shares main.ts + styles.css) |
-| 24 docs+finish | pending | After M2–M4 reviews |
+| M2 milestone review | 🔄 in flight | opus, read-only, scope src/agent + locator + settings + wiring + live smoke |
+| 23 MindmapView | 🔄 in flight | task/t23-mindmapview (opus); deltas: stats nullable, apply onto post-T21 main.ts/styles.css |
+| 24 docs+finish | pending | After M2–M4 reviews + polish |
 
 ## Protocol adaptations (recorded deviations)
 
@@ -43,7 +46,19 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 
 ## Suite state at last merge
 
-169/169 tests green on feature/graph-buddy (9d1e737, after T22 merge); `tsc --noEmit` clean; build clean.
+170/170 tests green on feature/graph-buddy (9bb99cb); `tsc --noEmit` clean; build clean at 2.3MB.
+
+## Polish backlog (from T21 self-review, pending M2/M3 review triage)
+
+1. Streaming markdown interleave: MarkdownBlock re-renders per delta; async render N can append after render N+1's empty(). Fix shape: plain text while streaming, MarkdownRenderer only on finalized text.
+2. `busy` never clears on fatal error (onResult only); composer dead-locks. Needs fatal-vs-stderr-noise distinction in AgentService before it's fixable.
+3. stderr lines render as red error bubbles in the transcript.
+4. getState() persists full tool inputs (whole note bodies) into workspace.json on every delta.
+5. Silent no-op send while model is still indexing (no Notice on the plugin.model===null path).
+6. duplicateTab badge only recomputes on the tab's own render.
+7. setState with different graphDir doesn't dispose the live session (unreachable today; trap).
+8. Cosmetic: MarkdownBlock double-clear; ensureSession builds VaultView where hubPathOf() exists; renderMarkdown sourcePath should be the hub path, not the folder.
+9. main.ts buildModel(): one cachedRead rejection aborts seeding, model stays null forever, no Notice.
 
 ## Out-of-band
 
