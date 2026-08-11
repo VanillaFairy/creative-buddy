@@ -1,6 +1,7 @@
-import { Note } from "./notes";
-import { Problem, baseName, dirName } from "./types";
+import { Note, noteFromFile } from "./notes";
+import { Problem, VaultView, baseName, dirName } from "./types";
 import { casefold, pyRepr } from "./py-compat";
+import { collectNoteFiles, findGraphs, hubPath } from "./discovery";
 
 /** Path equality with the filesystem's own case rules (the oracle runs on NTFS). */
 export function samePath(a: string, b: string): boolean {
@@ -169,4 +170,62 @@ export function misfiled(notes: Note[], graphDir: string, hub: string, rootName:
   }
 
   return problems;
+}
+
+export interface GraphReport {
+  graph: string;
+  path: string;
+  counts: { notes: number; problems: number };
+  problems: Problem[];
+}
+
+export interface ValidationReport {
+  ok: boolean;
+  root: string;
+  graphs: GraphReport[];
+}
+
+export function loadGraphNotes(view: VaultView, graphDir: string): Note[] {
+  return collectNoteFiles(view, graphDir).map((p) => noteFromFile(p, view.get(p)!));
+}
+
+export function checkGraph(view: VaultView, graphDir: string): GraphReport {
+  const notes = loadGraphNotes(view, graphDir);
+  const hub = hubPath(view, graphDir);
+  const { edges, problems } = resolveParents(notes, hub);
+  for (const ring of findCycles(notes, edges)) problems.push(cycleProblem(ring));
+  problems.push(...duplicateNames(notes, view.rootName));
+  problems.push(...misfiled(notes, graphDir, hub, view.rootName));
+  return {
+    graph: graphDir === "" ? view.rootName : baseName(graphDir),
+    path: graphDir === "" ? "." : graphDir,
+    counts: { notes: notes.length, problems: problems.length },
+    problems,
+  };
+}
+
+export function buildValidationReport(view: VaultView): ValidationReport {
+  const graphs = findGraphs(view).map((dir) => checkGraph(view, dir));
+  return {
+    ok: graphs.every((g) => g.problems.length === 0),
+    root: ".",
+    graphs,
+  };
+}
+
+export interface GraphStats {
+  nodes: number;
+  hubChildren: number;
+}
+
+/** The --tree footer: node count (hub excluded) and direct hub children. */
+export function graphStats(view: VaultView, graphDir: string): GraphStats {
+  const notes = loadGraphNotes(view, graphDir);
+  const hub = hubPath(view, graphDir);
+  const { edges } = resolveParents(notes, hub);
+  let hubChildren = 0;
+  for (const parent of edges.values()) {
+    if (samePath(parent.path, hub)) hubChildren++;
+  }
+  return { nodes: notes.length - 1, hubChildren };
 }
