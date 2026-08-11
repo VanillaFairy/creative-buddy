@@ -1287,15 +1287,27 @@ function aliasesOf(raw: unknown): string[] {
   return out;
 }
 
+/** The frontmatter block is not prose: wikilinks inside it (parent, aliases)
+ *  must not surface as cross-links. Same boundary rule parseFrontmatter uses. */
+function stripFrontmatterBlock(text: string): string {
+  const lines = text.split("\n");
+  if (lines[0]?.trim() !== "---") return text;
+  for (let i = 1; i < lines.length; i++) {
+    const t = lines[i]!.trim();
+    if (t === "---" || t === "...") return lines.slice(i + 1).join("\n");
+  }
+  return text;
+}
+
 /**
  * One index row. `parent` follows graph_check.py semantics (no BOM strip, so a
  * BOM'd note reads as parentless); the body-level fields use the forgiving
- * BOM-stripped text.
+ * BOM-stripped, frontmatter-excised text.
  */
 export function noteFromFile(path: string, rawContent: string): Note {
   const text = normalizeContent(rawContent);
   const fm = parseFrontmatter(text);
-  const body = stripBom(text);
+  const body = stripFrontmatterBlock(stripBom(text));
   return {
     path,
     stem: stemOf(path),
