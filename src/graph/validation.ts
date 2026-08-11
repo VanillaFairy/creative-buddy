@@ -96,3 +96,77 @@ export function cycleProblem(ring: Note[]): Problem {
     detail: `parent chain forms a cycle: ${chain}`,
   };
 }
+
+function parentDirDisplay(path: string, rootName: string): string {
+  const dir = dirName(path);
+  return dir === "" ? rootName : baseName(dir);
+}
+
+/** Notes sharing a stem — one address with two answers. */
+export function duplicateNames(notes: Note[], rootName: string): Problem[] {
+  const seen = new Map<string, Note[]>();
+  for (const note of notes) {
+    const key = casefold(note.stem);
+    const group = seen.get(key);
+    if (group !== undefined) group.push(note);
+    else seen.set(key, [note]);
+  }
+  const problems: Problem[] = [];
+  for (const group of seen.values()) {
+    if (group.length < 2) continue;
+    const rest = group
+      .slice(1)
+      .map((other) => `${parentDirDisplay(other.path, rootName)}/${baseName(other.path)}`)
+      .join(", ");
+    problems.push({
+      kind: "duplicate-name",
+      note: baseName(group[0]!.path),
+      detail: `name is shared by ${rest}`,
+    });
+  }
+  return problems;
+}
+
+/**
+ * Notes sitting in a folder that is not one of their ancestors. Mirrors the
+ * PATCHED oracle: the ancestor walk tracks visited notes so parent rings
+ * terminate (see locked decision 0 in the plan).
+ */
+export function misfiled(notes: Note[], graphDir: string, hub: string, rootName: string): Problem[] {
+  const byName = byNameMap(notes);
+  const problems: Problem[] = [];
+
+  for (const note of notes) {
+    if (samePath(note.path, hub)) continue;
+
+    const ancestors = new Set<string>();
+    const walked = new Set<string>();
+    let current: Note = note;
+    while (current.parent !== null && ancestors.size < notes.length) {
+      const key = casefold(current.path);
+      if (walked.has(key)) break;
+      walked.add(key);
+      const parent = byName.get(casefold(current.parent));
+      if (parent === undefined) break;
+      ancestors.add(casefold(parent.stem));
+      if (samePath(parent.path, hub)) break;
+      current = parent;
+    }
+
+    let folder = dirName(note.path);
+    const folderNameOf = (dir: string): string => (dir === "" ? rootName : baseName(dir));
+    if (casefold(folderNameOf(folder)) === casefold(note.stem)) folder = dirName(folder);
+    if (samePath(folder, graphDir)) continue;
+
+    const folderName = folderNameOf(folder);
+    if (!ancestors.has(casefold(folderName))) {
+      problems.push({
+        kind: "misfiled",
+        note: baseName(note.path),
+        detail: `sits in ${pyRepr(folderName)}, which is not one of its ancestors`,
+      });
+    }
+  }
+
+  return problems;
+}
