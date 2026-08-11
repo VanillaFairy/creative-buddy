@@ -15,6 +15,10 @@ const ctx = await esbuild.context({
   treeShaking: true,
   outfile: "main.js",
   loader: { ".md": "text" },
+  // The bundled Agent SDK reads `import.meta.url` to locate its own runtime; in a
+  // CJS bundle that expression is invalid and require() throws ERR_INVALID_ARG_VALUE.
+  define: { "import.meta.url": "__IMPORT_META_URL__" },
+  banner: { js: "const __IMPORT_META_URL__ = require('url').pathToFileURL(__filename).href;" },
 });
 
 if (prod) {
