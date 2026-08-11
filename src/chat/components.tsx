@@ -15,6 +15,7 @@ export function ChatSurface(props: {
   graphLabel: string;
   model: string;
   busy: boolean;
+  status: string | null;
   duplicateTab: boolean;
   items: TranscriptItem[];
   callbacks: ChatCallbacks;
@@ -46,6 +47,7 @@ export function ChatSurface(props: {
           ))}
         </select>
         <button onClick={() => callbacks.onWrapUp()} disabled={props.busy}>Wrap up</button>
+        {props.busy ? <span className="gb-chat-status">{props.status ?? "thinking…"}</span> : null}
         {props.busy ? <button onClick={() => callbacks.onInterrupt()}>Stop</button> : null}
       </header>
       <div className="gb-chat-list" ref={listRef}>
@@ -113,7 +115,7 @@ function ToolRow({ item }: { item: Extract<TranscriptItem, { kind: "tool" }> }):
       <button className="gb-tool-line" onClick={() => setOpen(!open)}>
         {item.done ? "✓" : "…"} {item.line}
       </button>
-      {open ? <pre className="gb-tool-raw">{JSON.stringify(item.input, null, 2)}</pre> : null}
+      {open && Object.keys(item.input).length > 0 ? <pre className="gb-tool-raw">{JSON.stringify(item.input, null, 2)}</pre> : null}
     </div>
   );
 }

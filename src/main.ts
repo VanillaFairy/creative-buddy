@@ -13,14 +13,19 @@ export default class GraphBuddyPlugin extends Plugin {
 
   /**
    * Runs cb once the vault index exists — immediately if it already does.
-   * Views opened before seeding finishes use this to wake up.
+   * Views opened before seeding finishes use this to wake up. Returns a
+   * disposer; route it through Component.register so a closed view cannot
+   * be resurrected by a late-arriving model.
    */
-  onModelReady(cb: () => void): void {
+  onModelReady(cb: () => void): () => void {
     if (this.model !== null) {
       cb();
-      return;
+      return () => undefined;
     }
     this.modelReadyCallbacks.push(cb);
+    return () => {
+      this.modelReadyCallbacks = this.modelReadyCallbacks.filter((c) => c !== cb);
+    };
   }
 
   async onload(): Promise<void> {

@@ -283,3 +283,10 @@
   background: none;
   padding: 0;
 }
+
+.gb-chat-status {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-style: italic;
+  margin-left: auto;
+}

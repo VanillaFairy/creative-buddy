@@ -42,11 +42,14 @@ export class MindmapView extends ItemView {
 
   async onOpen(): Promise<void> {
     // Via onModelReady so a view opened before indexing finishes still wakes
-    // up — subscribing directly to a null model would sleep forever.
-    this.plugin.onModelReady(() => {
-      this.offChange = this.plugin.model?.onChange(() => this.scheduleRedraw()) ?? null;
-      this.redraw();
-    });
+    // up — subscribing directly to a null model would sleep forever. The
+    // disposer is registered so closing the tab mid-indexing cancels it.
+    this.register(
+      this.plugin.onModelReady(() => {
+        this.offChange = this.plugin.model?.onChange(() => this.scheduleRedraw()) ?? null;
+        this.redraw();
+      }),
+    );
     this.redraw();
   }
 
@@ -83,6 +86,9 @@ export class MindmapView extends ItemView {
       option.value = dir;
     }
     if (this.graphDir === null && graphs.length > 0) this.graphDir = graphs[0]!;
+    // A persisted graphDir can outlive its folder (rename); fall back rather
+    // than render a blank selector over an empty map.
+    if (this.graphDir !== null && !graphs.includes(this.graphDir)) this.graphDir = graphs[0] ?? null;
     if (this.graphDir !== null) selector.value = this.graphDir;
     selector.onchange = () => {
       this.graphDir = selector.value;
@@ -129,7 +135,7 @@ export class MindmapView extends ItemView {
         .attr("d", `M${link.source.y},${link.source.x} C${(link.source.y + link.target.y) / 2},${link.source.x} ${(link.source.y + link.target.y) / 2},${link.target.x} ${link.target.y},${link.target.x}`);
     });
 
-    // cross-links (faint, toggleable via CSS class on the host)
+    // cross-links (faint)
     for (const cross of data.crossLinks) {
       const from = byPath.get(cross.from);
       const to = byPath.get(cross.to);
@@ -155,7 +161,14 @@ export class MindmapView extends ItemView {
       g.append("text").attr("x", 12).attr("y", 5).text(n.data.stem + (n.data.collapsedChildren > 0 ? ` (+${n.data.collapsedChildren})` : ""));
       if (n.data.obligationCount > 0) g.append("circle").attr("class", "gb-mm-dot").attr("cx", width - 6).attr("cy", -NODE_HEIGHT / 2 + 6).attr("r", 4);
       g.append("title").text(
-        [n.data.stem, n.data.kind !== null ? `kind: ${n.data.kind}` : null, n.data.status !== null ? `status: ${n.data.status}` : null, n.data.obligationCount > 0 ? `${n.data.obligationCount} open` : null, ...n.data.problemKinds.map((k) => `⚠ ${k}`)]
+        [
+          n.data.stem,
+          n.data.kind !== null ? `kind: ${n.data.kind}` : null,
+          n.data.status !== null ? `status: ${n.data.status}` : null,
+          n.data.obligationCount > 0 ? `${n.data.obligationCount} open` : null,
+          ...n.data.problemKinds.map((k) => `⚠ ${k}`),
+          n.data.children.length > 0 || n.data.collapsedChildren > 0 ? "alt-click to open" : null,
+        ]
           .filter((line) => line !== null)
           .join("\n"),
       );
@@ -198,7 +211,7 @@ export class MindmapView extends ItemView {
     if (model === null) return;
     const lines = renderDigestForGraph(model.obligations(this.today()), ""); // "" = every graph
     const panel = container.createDiv({ cls: "gb-mm-obligations" });
-    panel.createEl("h4", { text: "Obligations" });
+    panel.createEl("h4", { text: "Obligations (all graphs)" });
     panel.createEl("pre", { text: lines.length > 0 ? lines.join("\n") : "Nothing is due or owed today." });
   }
 
