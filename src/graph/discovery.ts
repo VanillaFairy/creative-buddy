@@ -1,6 +1,6 @@
 import { VaultView, baseName } from "./types";
 import { normalizeContent, stripBom } from "./reader";
-import { casefold, comparePathSegments, sortKeyWindows } from "./py-compat";
+import { casefold, comparePathSegments, comparePyStrings, sortKeyWindows } from "./py-compat";
 
 export const SKIP_DIRS: ReadonlySet<string> = new Set([".obsidian", ".claude", ".git", ".trash", "node_modules"]);
 const LOG_DIR = "log";
@@ -81,7 +81,7 @@ export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
       if (isMarkdown(file)) out.push(file);
     }
   }
-  return out.sort((a, b) => (sortKeyWindows(a) < sortKeyWindows(b) ? -1 : sortKeyWindows(a) > sortKeyWindows(b) ? 1 : 0));
+  return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
 }
 
 /** obligations.py markdown_files: SKIP_DIRS and log/ both excluded. */
@@ -98,5 +98,5 @@ export function markdownFiles(view: VaultView, graphDir: string): string[] {
       if (isMarkdown(file)) out.push(file);
     }
   }
-  return out.sort((a, b) => (sortKeyWindows(a) < sortKeyWindows(b) ? -1 : sortKeyWindows(a) > sortKeyWindows(b) ? 1 : 0));
+  return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
 }

@@ -1,6 +1,6 @@
 import { Note, noteFromFile } from "./notes";
 import { Problem, VaultView, baseName, dirName } from "./types";
-import { casefold, pyRepr } from "./py-compat";
+import { casefold, comparePyStrings, pyRepr } from "./py-compat";
 import { collectNoteFiles, findGraphs, hubPath } from "./discovery";
 
 /** Path equality with the filesystem's own case rules (the oracle runs on NTFS). */
@@ -86,7 +86,7 @@ export function findCycles(notes: Note[], edges: Map<Note, Note>): Note[][] {
 export function cycleProblem(ring: Note[]): Problem {
   let head = ring[0]!;
   for (const note of ring) {
-    if (casefold(baseName(note.path)) < casefold(baseName(head.path))) head = note;
+    if (comparePyStrings(casefold(baseName(note.path)), casefold(baseName(head.path))) < 0) head = note;
   }
   const start = ring.indexOf(head);
   const ordered = [...ring.slice(start), ...ring.slice(0, start)];

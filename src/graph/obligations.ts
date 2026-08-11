@@ -1,6 +1,6 @@
 /** The graded-question register, ported line-for-line from oracle/obligations.py. */
 import { normalizeContent, stripBom } from "./reader";
-import { DateOnly, epochDays, isoDate, parseIsoDate } from "./py-compat";
+import { DateOnly, comparePyStrings, epochDays, isoDate, parseIsoDate } from "./py-compat";
 import { VaultView } from "./types";
 import { findGraphs, markdownFiles } from "./discovery";
 
@@ -134,8 +134,8 @@ export function inReadingOrder(entries: ObligationEntry[]): ObligationEntry[] {
   return [...entries].sort((a, b) => {
     const da = a.date ?? "";
     const db = b.date ?? "";
-    if (da !== db) return da < db ? -1 : 1;
-    if (a.note !== b.note) return a.note < b.note ? -1 : 1;
+    if (da !== db) return comparePyStrings(da, db);
+    if (a.note !== b.note) return comparePyStrings(a.note, b.note);
     return a.line - b.line;
   });
 }
