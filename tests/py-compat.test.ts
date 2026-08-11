@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { casefold, pyRepr, pyStr, sortKeyWindows, comparePathSegments, parseIsoDate, epochDays, isoDate } from "../src/graph/py-compat";
 import { normalizeContent, stripBom } from "../src/graph/reader";
-import { baseName, dirName, stemOf } from "../src/graph/types";
+import { baseName, dirName, stemOf, VaultView } from "../src/graph/types";
 
 describe("pyRepr", () => {
   it("prefers single quotes", () => expect(pyRepr("Nobody")).toBe("'Nobody'"));
@@ -37,6 +37,11 @@ describe("dates", () => {
   it("epochDays orders correctly across months", () => {
     expect(epochDays({ y: 2026, m: 9, d: 1 }) - epochDays({ y: 2026, m: 8, d: 31 })).toBe(1);
   });
+  it("handles low years without the JS 1900-folding quirk", () => {
+    expect(parseIsoDate("0099-01-01")).toEqual({ y: 99, m: 1, d: 1 });
+    expect(isoDate({ y: 99, m: 1, d: 1 })).toBe("0099-01-01");
+    expect(parseIsoDate("0000-01-01")).toBeNull(); // Python datetime min year is 1
+  });
 });
 
 describe("reader", () => {
@@ -58,5 +63,16 @@ describe("path pieces", () => {
   it("pyStr renders yaml dates like Python str()", () => {
     expect(pyStr(new Date(Date.UTC(2024, 0, 1)))).toBe("2024-01-01");
     expect(pyStr(42)).toBe("42");
+  });
+});
+
+describe("VaultView", () => {
+  it("case-insensitive get returns the exact-cased entry's content", () => {
+    const view = new VaultView({ rootName: "V", files: new Map([["Noir game/Мысли.md", "body"]]) });
+    expect(view.get("noir game/мысли.md")).toBe("body");
+    expect(view.get("Noir game/Мысли.md")).toBe("body");
+    expect(view.get("missing.md")).toBeUndefined();
+    expect(view.rootName).toBe("V");
+    expect([...view.paths()]).toEqual(["Noir game/Мысли.md"]);
   });
 });
