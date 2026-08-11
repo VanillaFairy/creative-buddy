@@ -103,3 +103,68 @@ describe("decideToolUse", () => {
     expect(decideToolUse("Glob", { pattern: "**/*.md" }, CTX).behavior).toBe("allow");
   });
 });
+
+describe("M2 hardening: hidden directories and Windows filename edge cases", () => {
+  const ROOT_CTX = { vaultRoot: "C:/vaults/General", graphDir: "" }; // whole vault is the graph
+
+  it("never auto-allows writes into .obsidian, even when the graph is the vault root", () => {
+    const d = decideToolUse("Write", { file_path: "C:/vaults/General/.obsidian/app.json", content: "{}" }, ROOT_CTX);
+    expect(d.behavior).toBe("ask");
+  });
+
+  it("never auto-allows writes into any dot-directory inside the graph", () => {
+    const d = decideToolUse("Write", { file_path: "C:/vaults/General/Noir game/.trash/x.md", content: "x" }, CTX);
+    expect(d.behavior).toBe("ask");
+  });
+
+  it("asks before reading hidden directories (plugin data lives there)", () => {
+    const d = decideToolUse("Read", { file_path: "C:/vaults/General/.obsidian/plugins/graph-buddy/data.json" }, CTX);
+    expect(d.behavior).toBe("ask");
+  });
+
+  it("asks when a write targets the graph directory itself", () => {
+    const d = decideToolUse("Write", { file_path: "C:/vaults/General/Noir game", content: "x" }, CTX);
+    expect(d.behavior).toBe("ask");
+  });
+
+  it("denies reserved device names as titles", () => {
+    for (const name of ["CON.md", "prn.md", "COM1.md", "lpt9.md", "NUL.md"]) {
+      const d = decideToolUse("Write", { file_path: `C:/vaults/General/Noir game/${name}`, content: "x" }, CTX);
+      expect(d.behavior, name).toBe("deny");
+    }
+  });
+
+  it("denies control characters and trailing dot/space in titles", () => {
+    for (const name of ["x\u0000.md", "x.md.", "x .md", "Notes./y.md"]) {
+      const d = decideToolUse("Write", { file_path: `C:/vaults/General/Noir game/${name}`, content: "x" }, CTX);
+      expect(d.behavior, JSON.stringify(name)).toBe("deny");
+    }
+  });
+});
+
+describe("relative tool targets (cwd is the vault root)", () => {
+  it("resolves relative read/write targets against the vault before judging", () => {
+    expect(decideToolUse("Read", { file_path: "Noir game/x.md" }, CTX).behavior).toBe("allow");
+    expect(decideToolUse("Write", { file_path: "Noir game/x.md", content: "x" }, CTX).behavior).toBe("allow");
+    expect(decideToolUse("Write", { file_path: "Elsewhere/x.md", content: "x" }, CTX).behavior).toBe("ask");
+  });
+  it("still treats absolute paths outside the vault as outside", () => {
+    expect(decideToolUse("Read", { file_path: "C:/elsewhere/x.md" }, CTX).behavior).toBe("ask");
+    expect(decideToolUse("Read", { file_path: "\\\\nas\\share\\x.md" }, CTX).behavior).toBe("ask");
+  });
+});
+
+describe("drive-relative paths bounce back to the model, not to the user", () => {
+  it("denies with a corrective message naming the vault root", () => {
+    for (const p of ["/Probe/Probe.md", "\\Probe\\Probe.md"]) {
+      const d = decideToolUse("Read", { file_path: p }, CTX);
+      expect(d.behavior, p).toBe("deny");
+      expect((d as { message: string }).message).toContain("C:/vaults/General");
+    }
+    const w = decideToolUse("Write", { file_path: "/Noir game/x.md", content: "x" }, CTX);
+    expect(w.behavior).toBe("deny");
+  });
+  it("UNC paths are not drive-relative — they still ask", () => {
+    expect(decideToolUse("Read", { file_path: "\\\\\\\\nas\\\\share\\\\x.md" }, CTX).behavior).toBe("ask");
+  });
+});

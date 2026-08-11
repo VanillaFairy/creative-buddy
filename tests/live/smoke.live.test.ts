@@ -33,6 +33,7 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
     let resultText = "";
     let costUsd = 0;
     const toolUses: string[] = [];
+    const approvalsAsked: string[] = [];
     const startedAt = Date.now();
     const session = service.start(
       {
@@ -53,6 +54,12 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
           costUsd = r.totalCostUsd;
         },
         onError: () => undefined, // stderr noise is fine in smoke
+        // In-vault activity must never need approval; log-and-deny anything that asks
+        // so a misjudged path shows its reason in the diagnostics instead of hanging.
+        onApproval: (request) => {
+          approvalsAsked.push(`${request.toolName} ${request.targetPath ?? "(no path)"} — ${request.reason}`);
+          request.respond(false, "Denied by the smoke test: in-vault activity must not need approval.");
+        },
       },
     );
     session.sendUserMessage("Read the hub of this graph and answer with the exact word that appears before '-test' in its charter section, then the word 'done'. Nothing else.");
@@ -67,13 +74,17 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
     console.log("[smoke] tool uses:", toolUses.join(", ") || "(none)");
     console.log("[smoke] duration:", `${seconds}s`, "cost:", `$${costUsd}`);
     console.log("[smoke] result:", resultText.slice(0, 200));
+    console.log("[smoke] approvals asked:", approvalsAsked.length === 0 ? "(none)" : approvalsAsked.join(" | "));
 
     expect(inits, "no system:init message arrived").toHaveLength(1);
     expect(init?.sessionId.length ?? 0).toBeGreaterThan(0);
     // The subscription path: "none" (or an oauth source) — never an API key.
     expect(init?.apiKeySource).not.toMatch(/api.?key/i);
     expect(toolUses).toContain("Read");
-    expect(resultText.toLowerCase()).toContain("smoke");
+    // "smoke done" exactly: a looser match once passed on the model echoing a
+    // permission-error message that happened to contain the word "smoke".
+    expect(resultText.toLowerCase()).toContain("smoke done");
+    expect(approvalsAsked, "in-vault activity must never need approval").toEqual([]);
     // strictMcpConfig must keep the user's personal connectors (claude.ai MCP
     // servers, .mcp.json, plugins) out of the session's tool surface entirely.
     expect(init?.tools.filter((t) => t.startsWith("mcp__"))).toEqual([]);
