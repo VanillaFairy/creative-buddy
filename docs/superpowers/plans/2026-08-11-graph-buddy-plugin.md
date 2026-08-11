@@ -3300,6 +3300,8 @@ export interface ApprovalRequest {
   toolName: string;
   targetPath: string | null;
   reason: string;
+  /** The SDK's pre-rendered prompt line ("Claude wants to edit …"), when available. */
+  title: string | null;
   respond: (allow: boolean, denyMessage?: string) => void;
 }
 
@@ -3349,17 +3351,23 @@ export class AgentService {
 
     const permissionCtx: PermissionContext = { vaultRoot: config.vaultRoot, graphDir: config.graphDir };
 
-    const canUseTool = async (toolName: string, input: Record<string, unknown>): Promise<Record<string, unknown>> => {
+    const canUseTool = async (
+      toolName: string,
+      input: Record<string, unknown>,
+      options?: { signal?: AbortSignal; title?: string; description?: string },
+    ): Promise<Record<string, unknown>> => {
       const decision = decideToolUse(toolName, input, permissionCtx);
       if (decision.behavior === "allow") return { behavior: "allow" };
       if (decision.behavior === "deny") return { behavior: "deny", message: decision.message };
-      // ask → surface to the UI; resolve deny on dispose so the session can never hang.
+      // ask → surface to the UI; resolve deny on dispose OR SDK abort so the session can never hang.
       return await new Promise<Record<string, unknown>>((resolve) => {
         const respond = (allow: boolean, denyMessage?: string): void => {
+          if (!pendingApprovals.has(respond)) return;
           pendingApprovals.delete(respond);
           resolve(allow ? { behavior: "allow" } : { behavior: "deny", message: denyMessage ?? "The user declined this action." });
         };
         pendingApprovals.add(respond);
+        options?.signal?.addEventListener("abort", () => respond(false, "The request was cancelled before the user decided."), { once: true });
         if (disposed) {
           respond(false, "The session was closed before this request was decided.");
           return;
@@ -3368,6 +3376,7 @@ export class AgentService {
           toolName,
           targetPath: typeof input["file_path"] === "string" ? (input["file_path"] as string) : null,
           reason: decision.reason,
+          title: options?.title ?? null,
           respond,
         });
       });
@@ -3403,10 +3412,18 @@ export class AgentService {
       return {};
     };
 
+    // The subscription path must not be silently re-routed by ambient config;
+    // an explicit API-key override may legitimately pair with a custom base URL.
     const env: Record<string, string | undefined> = { ...process.env };
     delete env["ANTHROPIC_API_KEY"];
     delete env["ANTHROPIC_AUTH_TOKEN"];
-    if (config.apiKeyOverride !== undefined && config.apiKeyOverride !== "") env["ANTHROPIC_API_KEY"] = config.apiKeyOverride;
+    delete env["CLAUDE_CODE_USE_BEDROCK"];
+    delete env["CLAUDE_CODE_USE_VERTEX"];
+    if (config.apiKeyOverride !== undefined && config.apiKeyOverride !== "") {
+      env["ANTHROPIC_API_KEY"] = config.apiKeyOverride;
+    } else {
+      delete env["ANTHROPIC_BASE_URL"];
+    }
 
     const systemPrompt =
       buildSystemPrompt() +
