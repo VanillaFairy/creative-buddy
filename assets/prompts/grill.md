@@ -57,12 +57,11 @@ guessing:
   open;
 - the newest one or two files in `Log/`, for where the thread actually stopped
   and any door the user closed;
-- `python scripts/obligations.py <graph>` — the graded questions are the
-  graph's own honest account of what is unfinished: what is overdue or due,
-  what is owed, where the gaps are, what wants looking up;
-- `python scripts/graph_check.py <graph> --tree` — the shape. A crowd of
-  siblings at the top with nothing gathering them is itself a door: offer to
-  work out what the missing middle nodes are;
+- the **session preamble** — the plugin injects the graph's obligations digest
+  (what is overdue or due, what is owed, where the gaps are, what wants
+  looking up) and the graph's shape summary at the start of every session;
+  a crowd of siblings at the top with nothing gathering them is itself a
+  door: offer to work out what the missing middle nodes are;
 - what is thin — a limb of the Shape carrying one node and no recent
   statements is usually where the graph is weakest, and the user often knows it.
 
