@@ -1,0 +1,150 @@
+/* Graph Buddy — chat surface. Obsidian theme variables only, no hard-coded colours. */
+
+.gb-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+}
+
+.gb-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.gb-chat-graph {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.gb-chat-dup {
+  color: var(--color-orange);
+  cursor: help;
+}
+
+.gb-chat-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.gb-msg {
+  max-width: 90%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gb-msg-user {
+  align-self: flex-end;
+  background-color: var(--background-secondary);
+}
+
+.gb-msg-assistant {
+  align-self: flex-start;
+  white-space: normal;
+}
+
+.gb-streaming {
+  opacity: 0.85;
+}
+
+.gb-tool {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.gb-tool-line {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gb-tool-raw {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  max-height: 240px;
+  overflow: auto;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.gb-approval {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background-color: var(--background-secondary);
+}
+
+.gb-approval-title {
+  font-weight: 600;
+}
+
+.gb-approval-reason {
+  color: var(--text-muted);
+  margin: 4px 0 8px;
+}
+
+.gb-approval-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gb-approval-actions input {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.gb-approval-settled {
+  color: var(--text-muted);
+}
+
+.gb-notice-error {
+  color: var(--color-red);
+}
+
+.gb-cost {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  align-self: center;
+}
+
+.gb-chat-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 8px;
+}
+
+.gb-chat-composer textarea {
+  flex: 1 1 auto;
+  min-height: 3lh;
+  max-height: 12lh;
+  resize: vertical;
+}
+
+.gb-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.gb-picker-hint {
+  color: var(--text-muted);
+}

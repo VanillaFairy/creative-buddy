@@ -4,7 +4,16 @@ export type TranscriptItem =
   | { kind: "user"; text: string }
   | { kind: "assistant"; markdown: string; streaming: boolean }
   | { kind: "tool"; id: string; name: string; line: string; input: Record<string, unknown>; done: boolean }
-  | { kind: "approval"; id: string; toolName: string; targetPath: string | null; reason: string; resolution: "pending" | "allowed" | "denied" }
+  | {
+      kind: "approval";
+      id: string;
+      toolName: string;
+      targetPath: string | null;
+      reason: string;
+      /** The SDK's own prompt line, when it sent one; null means we render our own. */
+      title: string | null;
+      resolution: "pending" | "allowed" | "denied";
+    }
   | { kind: "notice"; tone: "info" | "error"; text: string }
   | { kind: "result"; costUsd: number; isError: boolean };
 
@@ -14,7 +23,7 @@ export type TranscriptEvent =
   | { type: "assistant-final"; text: string }
   | { type: "tool-use"; id: string; name: string; input: Record<string, unknown> }
   | { type: "tool-result"; toolUseId: string }
-  | { type: "approval"; id: string; toolName: string; targetPath: string | null; reason: string }
+  | { type: "approval"; id: string; toolName: string; targetPath: string | null; reason: string; title: string | null }
   | { type: "approval-resolved"; id: string; allowed: boolean }
   | { type: "notice"; text: string }
   | { type: "result"; costUsd: number; isError: boolean }
@@ -71,7 +80,15 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
       return next.map((item) => (item.kind === "tool" && item.id === event.toolUseId ? { ...item, done: true } : item));
 
     case "approval":
-      next.push({ kind: "approval", id: event.id, toolName: event.toolName, targetPath: event.targetPath, reason: event.reason, resolution: "pending" });
+      next.push({
+        kind: "approval",
+        id: event.id,
+        toolName: event.toolName,
+        targetPath: event.targetPath,
+        reason: event.reason,
+        title: event.title,
+        resolution: "pending",
+      });
       return next;
 
     case "approval-resolved":
