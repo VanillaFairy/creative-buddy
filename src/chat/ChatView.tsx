@@ -50,6 +50,13 @@ export class ChatView extends ItemView {
       sessionId: s.sessionId ?? null,
       items: s.items ?? [],
     };
+    // Restored approval items keep their old "a<N>" ids; a fresh counter would
+    // reuse them and approval-resolved would flip the restored item too.
+    for (const item of this.state.items) {
+      if (item.kind !== "approval") continue;
+      const n = Number(/^a(\d+)$/.exec(item.id)?.[1] ?? 0);
+      if (n > this.approvalSeq) this.approvalSeq = n;
+    }
     this.render();
     await super.setState(state as never, result as never);
   }

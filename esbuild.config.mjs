@@ -17,7 +17,12 @@ const ctx = await esbuild.context({
   loader: { ".md": "text" },
   // The bundled Agent SDK reads `import.meta.url` to locate its own runtime; in a
   // CJS bundle that expression is invalid and require() throws ERR_INVALID_ARG_VALUE.
-  define: { "import.meta.url": "__IMPORT_META_URL__" },
+  define: {
+    "import.meta.url": "__IMPORT_META_URL__",
+    // Obsidian leaves NODE_ENV unset, which makes React pick its development
+    // build at runtime; pin it so production bundles get production React.
+    "process.env.NODE_ENV": prod ? '"production"' : '"development"',
+  },
   banner: { js: "const __IMPORT_META_URL__ = require('url').pathToFileURL(__filename).href;" },
 });
 
