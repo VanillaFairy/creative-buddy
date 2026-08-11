@@ -11,14 +11,19 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 | 2 fixtures+oracle | ✅ merged (7422971) | All bucket counts/problem lists matched intent on first generation; reproducibility verified twice; spec review ✅ |
 | 3 py-compat | ✅ merged (e0ace00) | Spec review found 2 real bugs (JS Date 0–99 year fold in parseIsoDate; unpadded year in isoDate) + VaultView coverage gap — all fixed, re-verified. Implementer also caught an inverted assertion in the PLAN itself (verified vs live Python) |
 | 4 frontmatter | ✅ merged (8ad9436) | Byte-identical parity probes vs Python on 8 edge cases incl. the BOM/pyStrip subtlety; js-yaml 5 bundled types work |
-| 5 notes | 🔄 in flight | task/t5-notes |
+| 5 notes | ✅ merged | Accepted deviation: links from frontmatter-excised body |
 | 6 discovery | ✅ merged | 78/78 after merge; implementer verified walk asymmetry vs both oracle scripts |
 | 11 openTasks | ✅ merged (e27053b) | Spec review caught the CRLF divergence (split("\n") vs splitlines) — empirically shown to drop ALL tasks in CRLF files; fixed to self-normalize |
 | 12 grading | ✅ merged | 84/84 after merge; line-for-line Python parity confirmed by implementer |
 | 15 permissions | ✅ merged (32afaec) | Spec review ✅ incl. adversarial probes: traversal, prefix-confusion, UNC all fail closed |
 | 20 transcript | ✅ merged | Pure reducer, exhaustive-switch clean |
-| 7–10 validation chain | next | Sequential (all append to validation.ts); starts when 5 merges |
-| 13 register, 14 GraphModel | pending | 13 needs 6+12 (ready when dispatched); 14 needs 10+13 |
+| 7–10 validation chain | ✅ merged (f3b85d0) | Oracle equality first-run on all five fixtures; graphStats probed vs --tree |
+| 13 register | ✅ merged | Oracle-equal all fixtures; tuple-type annotation fix |
+| 14 GraphModel | ✅ merged | rootName/hubPathOf accessors added for mindmap |
+| hardening | ✅ merged (f9fbecd) | pyStrip control chars, single boundary rule, markdownFiles Windows sort — batch-review findings |
+| 16 prompts | ✅ merged (d6cabc1) | system.md adapted; stitch note; accepted micro-deviation (duplicate-name paragraph) |
+| 17 AgentService | 🔄 in flight | task/t17-agentservice (opus) |
+| M1 milestone review | 🔄 in flight | opus, whole-milestone scope |
 | 16–19 (M2), 21–24 (M3–M5) | pending | Per plan wave schedule |
 
 ## Protocol adaptations (recorded deviations)
@@ -33,7 +38,7 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 
 ## Suite state at last merge
 
-26/26 tests green on feature/graph-buddy (a1bda1f); `tsc --noEmit` clean; build clean.
+137/137 tests green on feature/graph-buddy (f9fbecd); `tsc --noEmit` clean; build clean.
 
 ## Out-of-band
 
