@@ -1,0 +1,30 @@
+{
+  "today": "2026-08-11",
+  "overdue": [],
+  "due_today": [],
+  "upcoming": [
+    {
+      "date": "2026-08-12",
+      "note": "Solo.md",
+      "line": 5,
+      "text": "one dated task at the root"
+    }
+  ],
+  "later": [],
+  "owed": [],
+  "gaps": [],
+  "lookups": [],
+  "parked": [],
+  "malformed": [],
+  "counts": {
+    "overdue": 0,
+    "due_today": 0,
+    "upcoming": 1,
+    "later": 0,
+    "owed": 0,
+    "gaps": 0,
+    "lookups": 0,
+    "parked": 0,
+    "malformed": 0
+  }
+}

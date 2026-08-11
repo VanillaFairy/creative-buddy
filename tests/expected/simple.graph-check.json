@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "root": ".",
+  "graphs": [
+    {
+      "graph": "Noir game",
+      "path": "Noir game",
+      "counts": {
+        "notes": 5,
+        "problems": 0
+      },
+      "problems": []
+    }
+  ]
+}

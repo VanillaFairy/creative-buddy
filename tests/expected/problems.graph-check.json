@@ -1,0 +1,41 @@
+{
+  "ok": false,
+  "root": ".",
+  "graphs": [
+    {
+      "graph": "Tangle",
+      "path": "Tangle",
+      "counts": {
+        "notes": 11,
+        "problems": 5
+      },
+      "problems": [
+        {
+          "kind": "unresolved-parent",
+          "note": "Ghost.md",
+          "detail": "parent 'Nobody' names no note in this graph"
+        },
+        {
+          "kind": "orphan-root",
+          "note": "Orphan.md",
+          "detail": "no parent: value, and this note is not the hub"
+        },
+        {
+          "kind": "cycle",
+          "note": "Loop A.md",
+          "detail": "parent chain forms a cycle: Loop A -> Loop B -> Loop C -> Loop A"
+        },
+        {
+          "kind": "duplicate-name",
+          "note": "Twin.md",
+          "detail": "name is shared by Tangle/Twin.md"
+        },
+        {
+          "kind": "misfiled",
+          "note": "Lost.md",
+          "detail": "sits in 'Misplaced', which is not one of its ancestors"
+        }
+      ]
+    }
+  ]
+}
