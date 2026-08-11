@@ -1,0 +1,31 @@
+{
+  "ok": false,
+  "root": ".",
+  "graphs": [
+    {
+      "graph": "Edge",
+      "path": "Edge",
+      "counts": {
+        "notes": 10,
+        "problems": 3
+      },
+      "problems": [
+        {
+          "kind": "orphan-root",
+          "note": "Bom.md",
+          "detail": "no parent: value, and this note is not the hub"
+        },
+        {
+          "kind": "orphan-root",
+          "note": "Broken.md",
+          "detail": "no parent: value, and this note is not the hub"
+        },
+        {
+          "kind": "orphan-root",
+          "note": "Empty.md",
+          "detail": "no parent: value, and this note is not the hub"
+        }
+      ]
+    }
+  ]
+}

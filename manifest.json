@@ -1,0 +1,9 @@
+{
+  "id": "graph-buddy",
+  "name": "Graph Buddy",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.0",
+  "description": "Conversational knowledge-graph interviewer with a live mindmap, running on your Claude Code subscription.",
+  "author": "Victor Suponev",
+  "isDesktopOnly": true
+}

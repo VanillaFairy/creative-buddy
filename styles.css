@@ -1,0 +1,292 @@
+/* Graph Buddy — chat surface. Obsidian theme variables only, no hard-coded colours. */
+
+.gb-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+}
+
+.gb-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.gb-chat-graph {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.gb-chat-dup {
+  color: var(--color-orange);
+  cursor: help;
+}
+
+.gb-chat-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.gb-msg {
+  max-width: 90%;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gb-msg-user {
+  align-self: flex-end;
+  background-color: var(--background-secondary);
+}
+
+.gb-msg-assistant {
+  align-self: flex-start;
+  white-space: normal;
+}
+
+.gb-streaming {
+  opacity: 0.85;
+}
+
+.gb-tool {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.gb-tool-line {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gb-tool-raw {
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  max-height: 240px;
+  overflow: auto;
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.gb-approval {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background-color: var(--background-secondary);
+}
+
+.gb-approval-title {
+  font-weight: 600;
+}
+
+.gb-approval-reason {
+  color: var(--text-muted);
+  margin: 4px 0 8px;
+}
+
+.gb-approval-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gb-approval-actions input {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.gb-approval-settled {
+  color: var(--text-muted);
+}
+
+.gb-notice-error {
+  color: var(--color-red);
+}
+
+.gb-cost {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  align-self: center;
+}
+
+.gb-chat-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 8px;
+}
+
+.gb-chat-composer textarea {
+  flex: 1 1 auto;
+  min-height: 3lh;
+  max-height: 12lh;
+  resize: vertical;
+}
+
+.gb-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.gb-picker-hint {
+  color: var(--text-muted);
+}
+
+/* Graph Buddy — mindmap surface. */
+
+.gb-mindmap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+}
+
+.gb-mm-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.gb-mm-stats {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+/* A hub with ten-plus direct children has gone flat — worth noticing. */
+.gb-mm-flat {
+  color: var(--color-orange);
+}
+
+.gb-mm-svg-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gb-mm-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.gb-mm-svg:active {
+  cursor: grabbing;
+}
+
+.gb-mm-edge {
+  fill: none;
+  stroke: var(--background-modifier-border);
+  stroke-width: 1.5px;
+}
+
+.gb-mm-crosslink {
+  fill: none;
+  stroke: var(--text-accent);
+  stroke-width: 1px;
+  stroke-dasharray: 3 4;
+  opacity: 0.3;
+}
+
+.gb-mm-node {
+  cursor: pointer;
+}
+
+.gb-mm-box {
+  fill: var(--background-secondary);
+  stroke: var(--background-modifier-border);
+  stroke-width: 1px;
+}
+
+.gb-mm-node:hover .gb-mm-box {
+  stroke: var(--text-accent);
+}
+
+.gb-mm-problem {
+  stroke: var(--color-red);
+  stroke-width: 2px;
+}
+
+.gb-mm-dot {
+  fill: var(--color-orange);
+}
+
+.gb-mm-node text {
+  fill: var(--text-normal);
+  font-size: var(--font-ui-small);
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.gb-mm-tray,
+.gb-mm-obligations {
+  position: absolute;
+  max-width: 40%;
+  max-height: 40%;
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  font-size: var(--font-ui-smaller);
+}
+
+.gb-mm-tray {
+  right: 12px;
+  top: 48px;
+}
+
+.gb-mm-obligations {
+  right: 12px;
+  bottom: 12px;
+}
+
+.gb-mm-tray h4,
+.gb-mm-obligations h4 {
+  margin: 0 0 6px;
+}
+
+.gb-mm-tray-row {
+  color: var(--text-muted);
+}
+
+.gb-mm-tray-row a {
+  cursor: pointer;
+}
+
+.gb-mm-obligations pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: none;
+  padding: 0;
+}
+
+.gb-chat-status {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-style: italic;
+  margin-left: auto;
+}

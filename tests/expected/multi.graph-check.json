@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "root": ".",
+  "graphs": [
+    {
+      "graph": "Alpha",
+      "path": "Alpha",
+      "counts": {
+        "notes": 2,
+        "problems": 0
+      },
+      "problems": []
+    },
+    {
+      "graph": "Beta",
+      "path": "Beta",
+      "counts": {
+        "notes": 2,
+        "problems": 0
+      },
+      "problems": []
+    }
+  ]
+}
