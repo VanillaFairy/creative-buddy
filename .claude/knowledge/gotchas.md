@@ -28,8 +28,66 @@ relatively). The harness must declare Obsidian's variables *and* re-state its
 aggressive bare-element rules (`button:not(.clickable-icon)`, `select`,
 `textarea`) or specificity bugs stay invisible until the plugin is installed.
 `c:/tmp/cb-design-harness.html` covers the chat and map surfaces;
-`cb-states-harness.html` covers the empty, picker and no-hub states. Screenshot
-at ~330px pane width too — sidebar docking is where the layouts break first.
+`cb-states-harness.html` covers the empty, picker and no-hub states;
+`cb-composer-harness.html` covers the composer, the send/stop swap and the
+queued-message rail in both themes. Screenshot at ~330px pane width too —
+sidebar docking is where the layouts break first.
+
+## `--text-faint` is not one step quieter than a border colour
+In a dark theme `--text-faint` (~#6e6e6e) is **lighter** than
+`--background-modifier-border` (~#3f3f3f) — they are tints for different jobs,
+not two stops on one scale. So fading an element by painting its border with
+the text token makes the dead thing louder than the live one next to it, which
+is exactly backwards and easy to miss when reading the CSS. Fade text with the
+text tokens (`--text-muted` → `--text-faint`) and borders with the border
+tokens, and look at both themes: their relative order flips in light.
+
+`--text-faint` on a light background is about 2.9:1, under the WCAG AA floor.
+That is fine for incidental metadata (a turn's cost, a caption) and wrong for
+anything the user is meant to read or copy.
+
+## Isolating a React view without launching Obsidian
+`src/chat/components.tsx` imports nothing from `obsidian`, so `ChatSurface` can
+be bundled standalone and driven by Playwright — which is the only way to tell a
+CSS problem from a React one:
+```bash
+npx esbuild probe.tsx --bundle --outfile=c:/tmp/cb-probe.js \
+  --alias:obsidian=./stub.js --alias:node:child_process=./cp-stub.js \
+  --define:process.env.NODE_ENV='"development"' --format=iife --platform=browser
+```
+Both stubs are needed because `components.tsx` reaches `settings.ts` for
+`MODEL_CHOICES`, and that file imports `obsidian` and `node:child_process`.
+`--external:` is the wrong tool — it leaves a runtime `require` that throws in
+the browser; alias to a stub instead. Have the probe's wrapper re-render with
+fresh props on a timer, the way `ChatView.render()` does, or the test proves
+nothing about the case that actually matters. Obsidian's own bare-element rules
+have to be copied into the probe page (see the harness note above).
+
+## Mixing border-box measurements with content-box limits
+`getBoundingClientRect().height` is *always* the border box, while
+`getComputedStyle(el).minHeight` / `maxHeight` / `height` are whichever box
+`box-sizing` names. Measure with one and clamp against the other and every step
+of a repeated resize drifts by the padding — a keyboard resize with a 24px step
+moved the box by 21px, then 20px, then 19px. Read the current size with
+`getComputedStyle(el).height` so all three values are in one coordinate system.
+It only shows up under `box-sizing: content-box`, so a probe page that omits
+Obsidian's `border-box` reset is the harsher and more useful test.
+
+## A shrinkable flex row silently undoes `resize`
+`resize: vertical` sets an inline `height` when the user drags. If that
+element's row is a flex item at the default `flex: 0 1 auto`, the parent's next
+layout pass is free to shrink it again — so the handle moves and the box springs
+straight back, but only once the column is tight enough to need the space. It
+reads as "resize is broken" while the CSS looks correct, and it works fine in a
+roomy pane. The row that should hold its size needs `flex: none`, and some
+sibling has to be able to yield instead (a scroll container can: `overflow-y:
+auto` makes its `min-height: auto` resolve to 0).
+
+The trade is that a `flex: none` row cannot be squeezed, so its own cap has to
+stay under the pane height or its contents get pushed out of view. Percentages
+will not do it — a `max-height: %` resolves against the parent's height, and the
+parent here is auto-height, so it computes to `none`. `vh` is the practical
+answer and is what Obsidian uses in its own textareas.
 
 ## Flexbox eats two layout rules that look like CSS bugs
 `text-overflow: ellipsis` does nothing on a bare text node inside a
