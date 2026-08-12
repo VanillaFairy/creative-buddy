@@ -56,44 +56,108 @@
   opacity: 0.85;
 }
 
+/* Activity panels — a turn's machinery, set as marginalia rather than as a
+   card. The bordered box in this list means "this needs a click" (approval
+   cards); machinery must never carry that weight. Left padding matches the
+   message bubbles' so the column keeps one left edge. */
 .cb-activity {
-  color: var(--text-muted);
   font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+  padding-left: 10px;
 }
 
-.cb-activity-head {
+/* Obsidian styles bare `button:not(.clickable-icon)` at (0,1,1), which outranks
+   a lone class — so these resets are scoped to win the cascade. Without the
+   descendant selector the header renders with full button chrome. */
+.cb-activity > .cb-activity-head {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 2px 0;
   background: none;
   border: none;
+  border-radius: 0;
   box-shadow: none;
-  padding: 0;
-  color: inherit;
+  color: var(--text-muted);
+  font-family: inherit;
   font-size: inherit;
-  cursor: pointer;
+  font-weight: 500;
+  line-height: inherit;
   text-align: left;
+  cursor: pointer;
+}
+
+.cb-activity > .cb-activity-head:hover,
+.cb-activity > .cb-activity-head:active {
+  background: none;
+  box-shadow: none;
+  color: var(--text-normal);
+}
+
+.cb-activity > .cb-activity-head:focus-visible {
+  outline: 1px solid var(--background-modifier-border-focus);
+  outline-offset: 2px;
 }
 
 .cb-activity-chevron {
-  width: 0.8em;
   flex: none;
+  display: inline-block;
+  width: 0.8em;
+  font-size: 0.9em;
+  opacity: 0.75;
+  transition: transform 120ms ease;
 }
 
-.cb-activity-running .cb-activity-head {
-  opacity: 0.85;
+.cb-activity-open .cb-activity-chevron {
+  transform: rotate(90deg);
 }
 
+/* While the run is live the label breathes. Carries "still going" without a
+   per-second re-render, and stops dead when the turn settles. */
+.cb-activity-running .cb-activity-label {
+  animation: cb-activity-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes cb-activity-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* The rail ties the lines to their header without enclosing them. The lines
+   are set in the editor's monospace face on purpose: the header speaks in the
+   buddy's voice, the rail is the machinery quoting itself, and a raw glob or
+   regex reads as code rather than as a typo. */
 .cb-activity-body {
-  margin: 2px 0 0;
-  padding: 0 0 0 calc(0.8em + 4px);
+  margin: 2px 0 2px 0.4em;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--background-modifier-border);
   list-style: none;
-  max-height: 240px;
-  overflow: auto;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 0.95em;
+  transition: border-color 120ms ease;
+}
+
+.cb-activity:hover .cb-activity-body {
+  border-left-color: var(--text-faint);
 }
 
 .cb-activity-body li {
   padding: 1px 0;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-activity-chevron {
+    transition: none;
+  }
+
+  .cb-activity-running .cb-activity-label {
+    animation: none;
+  }
 }
 
 .cb-approval {

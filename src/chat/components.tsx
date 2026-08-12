@@ -111,11 +111,14 @@ function MarkdownBlock({ markdown, streaming, render }: { markdown: string; stre
 
 function ActivityPanel({ row }: { row: ActivityGroup }): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
+  // The chevron is one glyph rotated by CSS, so opening animates rather than
+  // swapping characters — and reduced-motion can switch that off in styles.
+  const classes = ["cb-activity", open ? "cb-activity-open" : "", row.running ? "cb-activity-running" : ""];
   return (
-    <div className={`cb-activity${row.running ? " cb-activity-running" : ""}`}>
+    <div className={classes.filter((c) => c !== "").join(" ")}>
       <button className="cb-activity-head" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="cb-activity-chevron">{open ? "▾" : "▸"}</span>
-        {groupTitle(row)}
+        <span className="cb-activity-chevron" aria-hidden="true">▸</span>
+        <span className="cb-activity-label">{groupTitle(row)}</span>
       </button>
       {open ? (
         <ul className="cb-activity-body">
