@@ -5,7 +5,7 @@ import { select } from "d3-selection";
 import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
 import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
-import { Box, Measure, edgeWeight, fitTransform, inspectorLine, nodeBox } from "./geometry";
+import { Box, Measure, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import type { GraphModel } from "../graph/graph-model";
@@ -213,14 +213,12 @@ export class MindmapView extends ItemView {
     // so the curve spans the gap it is meant to span instead of starting under
     // the parent's own box and being drawn over.
     root.links().forEach((link) => {
-      const weight = edgeWeight(link.source.depth);
       const startX = link.source.y + boxOf(link.source.data).width;
       const midX = (startX + link.target.y) / 2;
       canvas
         .append("path")
         .attr("class", "cb-mm-edge")
-        .attr("stroke-width", weight.width)
-        .attr("opacity", weight.opacity)
+        .attr("opacity", edgeOpacity(link.source.depth))
         .attr("d", `M${startX},${link.source.x} C${midX},${link.source.x} ${midX},${link.target.x} ${link.target.y},${link.target.x}`);
     });
 

@@ -971,6 +971,7 @@
 .cb-mm-edge {
   fill: none;
   stroke: var(--cb-faint);
+  stroke-width: 1px;
   stroke-linecap: round;
 }
 

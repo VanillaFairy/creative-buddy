@@ -100,13 +100,15 @@ function ellipsise(label: string, budget: number, measure: Measure): string {
 }
 
 /**
- * Edges thin and fade as they get further from the hub, so the trunk reads
- * before the twigs at a glance. Flat past the fourth level — below that the
- * difference stops being visible and the line just gets hard to see.
+ * Edges fade as they get further from the hub, so the trunk reads before the
+ * twigs at a glance. Flat past the fourth level — below that the difference
+ * stops being visible and the line just gets hard to see. Depth shows in the
+ * ink alone; the stroke is one width for every edge, set in the stylesheet
+ * beside the cross-link weight it has to match.
  */
-export function edgeWeight(depth: number): { width: number; opacity: number } {
+export function edgeOpacity(depth: number): number {
   const step = Math.min(Math.max(depth, 0), 4);
-  return { width: 2.2 - step * 0.35, opacity: 1 - step * 0.13 };
+  return 1 - step * 0.13;
 }
 
 /**

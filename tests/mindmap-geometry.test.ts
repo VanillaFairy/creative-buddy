@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nodeBox, edgeWeight, fitTransform, inspectorLine, NODE_HEIGHT, HUB_HEIGHT } from "../src/mindmap/geometry";
+import { nodeBox, edgeOpacity, fitTransform, inspectorLine, NODE_HEIGHT, HUB_HEIGHT } from "../src/mindmap/geometry";
 
 /** A fixed-advance stand-in for the real face — 7px a character. */
 const measure = (text: string): number => [...text].length * 7;
@@ -70,16 +70,14 @@ describe("nodeBox", () => {
   });
 });
 
-describe("edgeWeight", () => {
-  it("draws the trunk heavier than the twigs", () => {
-    expect(edgeWeight(0).width).toBeGreaterThan(edgeWeight(2).width);
-    expect(edgeWeight(0).opacity).toBeGreaterThan(edgeWeight(2).opacity);
+describe("edgeOpacity", () => {
+  it("draws the trunk stronger than the twigs", () => {
+    expect(edgeOpacity(0)).toBeGreaterThan(edgeOpacity(2));
   });
 
   it("stops attenuating past the fourth level so deep edges stay visible", () => {
-    expect(edgeWeight(4)).toEqual(edgeWeight(9));
-    expect(edgeWeight(9).width).toBeGreaterThan(0.5);
-    expect(edgeWeight(9).opacity).toBeGreaterThan(0.4);
+    expect(edgeOpacity(4)).toBe(edgeOpacity(9));
+    expect(edgeOpacity(9)).toBeGreaterThan(0.4);
   });
 });
 
