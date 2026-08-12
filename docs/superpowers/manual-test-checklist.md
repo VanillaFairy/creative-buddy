@@ -13,8 +13,17 @@ Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
 
 - [ ] Open a chat tab from the ribbon; bind to a test graph; send a message on
       Haiku. Streaming text appears as plain text, then renders as markdown
-      when the turn finishes; tool one-liners show beneath it.
-- [ ] Scout dispatches (if any) show their tool lines prefixed `scout ·`.
+      when the turn finishes; the tool machinery shows beneath it as activity
+      panels, not one row per call.
+- [ ] Ask for something that both looks around and files a note. Two panels
+      appear: "Thinking…" then "Updating knowledge base…". Expand both while
+      the turn is still running → lines appear live as calls land. When the
+      turn settles the titles become "Thought for &lt;duration&gt;" and
+      "Updated knowledge base", and a panel you left open stays open.
+- [ ] A note the graph did not have before reads `X.md : added`; asking for a
+      change to an existing note reads `X.md : updated`.
+- [ ] Scout dispatches (if any) show their lines prefixed `scout ·` inside the
+      exploring panel.
 - [ ] Trigger an out-of-graph write ("add a note about this to
       &lt;other folder&gt;/X.md") → an approval card appears; deny with a reason →
       the model acknowledges the reason in its reply.
@@ -28,8 +37,8 @@ Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
 - [ ] Restart Obsidian → the transcript is restored; a new message resumes the
       same session (the reply remembers the conversation). If the restart
       caught a reply mid-stream, the cut-off bubble renders as normal
-      markdown, not a dimmed streaming one. Restored tool rows no longer
-      expand to raw inputs (they are trimmed on save; live rows still expand).
+      markdown, not a dimmed streaming one. Restored activity panels are
+      settled — none is stuck on "Thinking…" — and still expand to their lines.
 - [ ] Restart with two tabs on the same graph, leaving one in the background →
       the badge still shows on the foreground tab (background tabs restore
       lazily; the badge must not need them loaded).
@@ -93,7 +102,7 @@ session with the original knowledge-graph skill on the same graph.
 
 - [ ] Console shows no errors beyond the expected `[creative-buddy] claude:`
       debug lines.
-- [ ] `workspace.json` has not grown absurdly — transcripts persist, but tool
-      inputs (note bodies) are trimmed out on save.
+- [ ] `workspace.json` has not grown absurdly — transcripts persist, but a tool
+      item is one line plus two timestamps; no note bodies are stored.
 - [ ] The vault copy diff (any diff tool) shows only notes you expected the
       sessions to touch.

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { TranscriptItem } from "./transcript";
+import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
 import { MODEL_CHOICES } from "../settings";
 
 export interface ChatCallbacks {
@@ -51,9 +52,11 @@ export function ChatSurface(props: {
         {props.busy ? <button onClick={() => callbacks.onInterrupt()}>Stop</button> : null}
       </header>
       <div className="cb-chat-list" ref={listRef}>
-        {props.items.map((item, i) => (
-          <TranscriptRow key={i} item={item} callbacks={callbacks} />
-        ))}
+        {groupActivity(props.items, props.busy).map((row) =>
+          row.kind === "group"
+            ? <ActivityPanel key={row.key} row={row} />
+            : <TranscriptRow key={row.key} item={row.item} callbacks={callbacks} />,
+        )}
       </div>
       <div className="cb-chat-composer">
         <textarea
@@ -73,14 +76,12 @@ export function ChatSurface(props: {
   );
 }
 
-function TranscriptRow({ item, callbacks }: { item: TranscriptItem; callbacks: ChatCallbacks }): React.JSX.Element {
+function TranscriptRow({ item, callbacks }: { item: ActivityItem; callbacks: ChatCallbacks }): React.JSX.Element {
   switch (item.kind) {
     case "user":
       return <div className="cb-msg cb-msg-user">{item.text}</div>;
     case "assistant":
       return <MarkdownBlock markdown={item.markdown} streaming={item.streaming} render={callbacks.renderMarkdown} />;
-    case "tool":
-      return <ToolRow item={item} />;
     case "approval":
       return <ApprovalCard item={item} callbacks={callbacks} />;
     case "notice":
@@ -108,14 +109,21 @@ function MarkdownBlock({ markdown, streaming, render }: { markdown: string; stre
   );
 }
 
-function ToolRow({ item }: { item: Extract<TranscriptItem, { kind: "tool" }> }): React.JSX.Element {
+function ActivityPanel({ row }: { row: ActivityGroup }): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   return (
-    <div className={`cb-tool${item.done ? " cb-tool-done" : ""}`}>
-      <button className="cb-tool-line" onClick={() => setOpen(!open)}>
-        {item.done ? "✓" : "…"} {item.line}
+    <div className={`cb-activity${row.running ? " cb-activity-running" : ""}`}>
+      <button className="cb-activity-head" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="cb-activity-chevron">{open ? "▾" : "▸"}</span>
+        {groupTitle(row)}
       </button>
-      {open && Object.keys(item.input).length > 0 ? <pre className="cb-tool-raw">{JSON.stringify(item.input, null, 2)}</pre> : null}
+      {open ? (
+        <ul className="cb-activity-body">
+          {row.lines.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

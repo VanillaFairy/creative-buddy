@@ -95,7 +95,7 @@ function driveRelativeMessage(target: string, vaultRoot: string): string {
 }
 
 /** The session's cwd is the vault root, so relative tool targets live there. */
-function resolveTarget(vaultRoot: string, target: string): string {
+export function resolveTarget(vaultRoot: string, target: string): string {
   return isAbsoluteFsPath(target) ? target : `${vaultRoot.replace(/[\\/]+$/, "")}/${target}`;
 }
 

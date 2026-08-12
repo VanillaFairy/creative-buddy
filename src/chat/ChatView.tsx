@@ -7,6 +7,7 @@ import { renderDigestForGraph } from "../agent/digest";
 import { reduceTranscript, TranscriptItem, TranscriptEvent } from "./transcript";
 import { ChatSurface } from "./components";
 import { projectName, tabTitle } from "../view-title";
+import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
 
 export const CHAT_VIEW_TYPE = "creative-buddy-chat";
 
@@ -42,9 +43,7 @@ export class ChatView extends ItemView {
       graphDir: this.state.graphDir,
       model: this.state.model,
       sessionId: this.state.sessionId,
-      // Tool inputs carry whole note bodies; persisting them would grow
-      // workspace.json without bound. The live session keeps them in memory.
-      items: this.state.items.map((i) => (i.kind === "tool" ? { ...i, input: {} } : i)),
+      items: this.state.items,
     };
   }
 
@@ -61,9 +60,7 @@ export class ChatView extends ItemView {
       graphDir: s.graphDir ?? null,
       model: s.model ?? this.plugin.settings.defaultModel,
       sessionId: s.sessionId ?? null,
-      // A bubble caught mid-stream by a restart would stay "streaming" (plain
-      // text, dimmed) forever — the stream it belonged to is gone.
-      items: (s.items ?? []).map((i) => (i.kind === "assistant" && i.streaming ? { ...i, streaming: false } : i)),
+      items: (s.items ?? []).map(restoreItem),
     };
     // Restored approval items keep their old "a<N>" ids; a fresh counter would
     // reuse them and approval-resolved would flip the restored item too.
@@ -91,9 +88,22 @@ export class ChatView extends ItemView {
   }
 
   private dispatch(event: TranscriptEvent): void {
-    this.state.items = reduceTranscript(this.state.items, event);
+    this.state.items = reduceTranscript(this.state.items, event, Date.now());
     this.app.workspace.requestSaveLayout();
     this.render();
+  }
+
+  /**
+   * Whether the tool's target is already a note, asked at dispatch time —
+   * before the write lands. The agent re-writes whole existing notes, so the
+   * tool name says nothing about whether this is an addition or an update.
+   */
+  private targetExists(name: string, input: Record<string, unknown>): boolean {
+    const target = targetPathOf(name, input);
+    if (target === null) return false;
+    const vaultRoot = this.plugin.vaultRootPath().replace(/\\/g, "/");
+    const rel = vaultRelative(vaultRoot, resolveTarget(vaultRoot, target));
+    return rel !== null && this.app.vault.getAbstractFileByPath(rel) !== null;
   }
 
   private ensureSession(): SessionHandle | null {
@@ -140,7 +150,15 @@ export class ChatView extends ItemView {
         },
         onTextDelta: (text) => this.dispatch({ type: "text-delta", text }),
         onAssistantText: (text) => this.dispatch({ type: "assistant-final", text }),
-        onToolUse: (use) => this.dispatch({ type: "tool-use", id: use.id, name: use.name, input: use.input, subagent: use.subagent }),
+        onToolUse: (use) =>
+          this.dispatch({
+            type: "tool-use",
+            id: use.id,
+            name: use.name,
+            input: use.input,
+            subagent: use.subagent,
+            existed: this.targetExists(use.name, use.input),
+          }),
         onToolResult: (r) => this.dispatch({ type: "tool-result", toolUseId: r.toolUseId }),
         onApproval: (request) => {
           const id = `a${++this.approvalSeq}`;
@@ -177,7 +195,7 @@ export class ChatView extends ItemView {
           // The SDK side was told "deny" for anything still pending; the cards
           // must agree, or a click on a stale Allow would record a lie.
           for (const id of this.pendingResponders.keys()) {
-            this.state.items = reduceTranscript(this.state.items, { type: "approval-resolved", id, allowed: false });
+            this.state.items = reduceTranscript(this.state.items, { type: "approval-resolved", id, allowed: false }, Date.now());
           }
           this.pendingResponders.clear();
           this.dispatch({ type: "notice", text: "The session ended. Your next message reconnects to the same conversation." });
@@ -270,6 +288,24 @@ export class ChatView extends ItemView {
       />,
     );
   }
+}
+
+/**
+ * Repairs an item coming back from workspace.json.
+ *
+ * A bubble caught mid-stream by a restart would stay "streaming" (plain text,
+ * dimmed) forever — the stream it belonged to is gone. A tool item written
+ * before the activity panels carries an `input` blob and no timestamps; the
+ * destructuring drops the blob and the nulls make its panel report an unknown
+ * duration rather than a nonsense one.
+ */
+function restoreItem(item: TranscriptItem): TranscriptItem {
+  if (item.kind === "assistant" && item.streaming) return { ...item, streaming: false };
+  if (item.kind === "tool") {
+    const { id, name, line, done } = item;
+    return { kind: "tool", id, name, line, done, at: item.at ?? null, doneAt: item.doneAt ?? null };
+  }
+  return item;
 }
 
 export const WRAP_UP_MESSAGE = [

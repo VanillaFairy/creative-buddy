@@ -3,7 +3,17 @@ import { baseName } from "../graph/types";
 export type TranscriptItem =
   | { kind: "user"; text: string }
   | { kind: "assistant"; markdown: string; streaming: boolean }
-  | { kind: "tool"; id: string; name: string; line: string; input: Record<string, unknown>; done: boolean }
+  | {
+      kind: "tool";
+      id: string;
+      name: string;
+      line: string;
+      done: boolean;
+      /** Epoch ms the call started. Null only on items restored from a pre-panels workspace.json. */
+      at: number | null;
+      /** Epoch ms the result landed; null while the call is still in flight. */
+      doneAt: number | null;
+    }
   | {
       kind: "approval";
       id: string;
@@ -21,7 +31,15 @@ export type TranscriptEvent =
   | { type: "user-sent"; text: string }
   | { type: "text-delta"; text: string }
   | { type: "assistant-final"; text: string }
-  | { type: "tool-use"; id: string; name: string; input: Record<string, unknown>; subagent?: boolean }
+  | {
+      type: "tool-use";
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+      subagent?: boolean;
+      /** Whether the write target was already a note in the vault. Only meaningful for Write/Edit. */
+      existed?: boolean;
+    }
   | { type: "tool-result"; toolUseId: string }
   | { type: "approval"; id: string; toolName: string; targetPath: string | null; reason: string; title: string | null }
   | { type: "approval-resolved"; id: string; allowed: boolean }
@@ -29,13 +47,33 @@ export type TranscriptEvent =
   | { type: "result"; costUsd: number; isError: boolean }
   | { type: "error"; message: string };
 
-export function formatToolLine(name: string, input: Record<string, unknown>): string {
+export interface ToolLineContext {
+  /** The call came from the kg-scout subagent rather than the interviewer itself. */
+  subagent: boolean;
+  /** The write target was already a note in the vault, so this is an update rather than an addition. */
+  existed: boolean;
+}
+
+/**
+ * The one line a tool call contributes to its activity panel. Read-only calls
+ * name the tool; writes name the note and what happened to it, because that is
+ * what the "Updating knowledge base" panel is a list of.
+ */
+export function formatToolLine(name: string, input: Record<string, unknown>, ctx: ToolLineContext): string {
   const path = typeof input["file_path"] === "string" ? baseName((input["file_path"] as string).replace(/\\/g, "/")) : null;
+  return (ctx.subagent ? "scout · " : "") + toolBody(name, input, path, ctx.existed);
+}
+
+function toolBody(name: string, input: Record<string, unknown>, path: string | null, existed: boolean): string {
   switch (name) {
     case "Read":
+      return path !== null ? `Read ${path}` : name;
+    // A Write onto a note that is already there is an update — the model
+    // rewrites whole notes, and the zero-byte recovery path asks it to.
     case "Write":
+      return path !== null ? `${path} : ${existed ? "updated" : "added"}` : name;
     case "Edit":
-      return path !== null ? `${name} ${path}` : name;
+      return path !== null ? `${path} : updated` : name;
     case "Grep":
     case "Glob":
       return typeof input["pattern"] === "string" ? `${name} "${input["pattern"]}"` : name;
@@ -46,8 +84,11 @@ export function formatToolLine(name: string, input: Record<string, unknown>): st
   }
 }
 
-/** Pure fold of session events into renderable items. Always returns a new array. */
-export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent): TranscriptItem[] {
+/**
+ * Pure fold of session events into renderable items. Always returns a new array.
+ * The caller owns the clock — `now` is epoch ms, so tests can pin it.
+ */
+export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent, now: number): TranscriptItem[] {
   const next = [...items];
   const last = next[next.length - 1];
 
@@ -73,13 +114,15 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
       return next;
 
     case "tool-use": {
-      const line = (event.subagent === true ? "scout · " : "") + formatToolLine(event.name, event.input);
-      next.push({ kind: "tool", id: event.id, name: event.name, line, input: event.input, done: false });
+      const line = formatToolLine(event.name, event.input, { subagent: event.subagent === true, existed: event.existed === true });
+      // The input is deliberately not kept: it carries whole note bodies, and
+      // items are persisted into workspace.json.
+      next.push({ kind: "tool", id: event.id, name: event.name, line, done: false, at: now, doneAt: null });
       return next;
     }
 
     case "tool-result":
-      return next.map((item) => (item.kind === "tool" && item.id === event.toolUseId ? { ...item, done: true } : item));
+      return next.map((item) => (item.kind === "tool" && item.id === event.toolUseId ? { ...item, done: true, doneAt: now } : item));
 
     case "approval":
       next.push({
