@@ -47,6 +47,21 @@ Since Obsidian 1.7.2 a leaf sitting in the background — another sidebar tab in
 
 `await workspace.revealLeaf(leaf)` is not enough on its own. Await `leaf.loadIfDeferred()` before touching `leaf.view` — it is a no-op on an already-loaded leaf, so one call at the end of a reveal-or-create helper covers every path. Related: `sharedGraphs` reads other panels' *serialized* state rather than their views for the same reason.
 
+## MarkdownRenderer.render leaves its links dead
+Obsidian wires link clicks **per container**, not globally: `MarkdownPreviewRenderer.registerDomEvents(el, handler)` is called in exactly three places in `app.js` — the reading view's preview sizer, a markdown embed, and the CodeMirror `contentDOM`. The static `MarkdownRenderer.render(...)` parses, appends, post-processes and loads embeds, and registers nothing. So `a.internal-link` in a plugin's own view is an anchor with no `target` and no handler: clicking it does nothing at all, with no console error to explain it. (`belongsToMe` also stops the walk at any `.markdown-preview-view`, so nesting under one would not help.) A view rendering markdown has to delegate its own clicks — `ChatView.openLink` + `src/chat/links.ts`. External links are fine unhandled: the renderer gives those `target="_blank"`, so Electron opens them in the browser.
+
+Note that `WorkspaceLeaf.openLinkText` **creates the file** when the linktext resolves to nothing. In a transcript that means a click on a name the interviewer got wrong would add a note to the vault, so resolve with `metadataCache.getFirstLinkpathDest` first and refuse.
+
+## Reading what Obsidian actually does
+```bash
+node -e 'const f=require("fs"),
+  a=f.readFileSync(process.env.LOCALAPPDATA+"/Programs/Obsidian/resources/obsidian.asar"),
+  e=JSON.parse(a.subarray(16,16+a.readUInt32LE(12)).toString()).files["app.js"],
+  s=8+a.readUInt32LE(4)+Number(e.offset);
+  f.writeFileSync("c:/tmp/obsidian-app.js",a.subarray(s,s+e.size))'
+```
+`obsidian.d.ts` is types only — it cannot answer "does Obsidian handle this for me?". The asar is a plain header-plus-blobs format, so app.js falls out in a few lines and settles those questions in minutes. It is minified onto a handful of enormous lines, so `grep` is useless: search it with `indexOf` in a loop and print a character window around each hit. Faster and far more reliable than reasoning from memory about core behaviour.
+
 ## Green vitest does not mean it compiles
 Vitest transpiles TS with esbuild, which strips types without checking them, so a strict-mode violation runs green in the suite and only fails at `tsc --noEmit`. `tsconfig` has `noUncheckedIndexedAccess` on, so `arr[0]` is `T | undefined` — the usual source of a green-tests/red-build split. Run `npm run build` before calling any change done, not just `npx vitest run`.
 
