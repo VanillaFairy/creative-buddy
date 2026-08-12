@@ -49,6 +49,7 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 ## Deeper context
 
 - `.claude/knowledge/` — project KB (commands, conventions, gotchas).
+- `docs/TODO.md` — feature backlog: wanted but not yet planned.
 - `docs/superpowers/plans/2026-08-11-graph-buddy-plugin.md` + `plans/progress/…checkpoint.md`
   — full build history, locked porting decisions, open items.
 - `docs/superpowers/manual-test-checklist.md` — the user's manual verification pass.
