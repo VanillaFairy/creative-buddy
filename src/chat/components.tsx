@@ -12,12 +12,68 @@ export interface ChatCallbacks {
   renderMarkdown(el: HTMLElement, markdown: string): void;
 }
 
+export interface ChatTab {
+  key: string;
+  label: string;
+  /** Another conversation is bound to the same graph — last write wins. */
+  shared: boolean;
+  busy: boolean;
+}
+
+/**
+ * The panel: one tab strip over one conversation. A tab is a Claude session,
+ * so the strip is the only place sessions are made or ended.
+ */
+export function ChatPanel(props: {
+  tabs: ChatTab[];
+  active: number;
+  onSelectTab(index: number): void;
+  onCloseTab(index: number): void;
+  onNewTab(): void;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div className="cb-panel">
+      <div className="cb-tabs">
+        {/* The tabs scroll, the "+" does not — an action that leaves the panel
+            when you open enough conversations is not an action. */}
+        <div className="cb-tabs-scroll" role="tablist">
+        {props.tabs.map((tab, i) => (
+          <div key={tab.key} className={`cb-tab${i === props.active ? " cb-tab-active" : ""}`}>
+            <button
+              className="cb-tab-pick"
+              role="tab"
+              aria-selected={i === props.active}
+              onClick={() => props.onSelectTab(i)}
+            >
+              {tab.busy ? <span className="cb-tab-busy" aria-label="working" /> : null}
+              <span className="cb-tab-label">{tab.label}</span>
+              {tab.shared ? (
+                <span className="cb-tab-shared" title="Another conversation is bound to this graph — last write wins.">⚠</span>
+              ) : null}
+            </button>
+            {/* No close on the last tab: a panel always holds one conversation. */}
+            {props.tabs.length > 1 ? (
+              <button className="cb-tab-close" aria-label={`Close ${tab.label}`} onClick={() => props.onCloseTab(i)}>
+                ×
+              </button>
+            ) : null}
+          </div>
+        ))}
+        </div>
+        <button className="cb-tab-new" aria-label="New conversation" title="New conversation" onClick={props.onNewTab}>
+          +
+        </button>
+      </div>
+      {props.children}
+    </div>
+  );
+}
+
 export function ChatSurface(props: {
-  graphLabel: string;
   model: string;
   busy: boolean;
   status: string | null;
-  duplicateTab: boolean;
   items: TranscriptItem[];
   callbacks: ChatCallbacks;
 }): React.JSX.Element {
@@ -40,8 +96,6 @@ export function ChatSurface(props: {
   return (
     <div className="cb-chat">
       <header className="cb-chat-header">
-        <span className="cb-chat-graph">{props.graphLabel}</span>
-        {props.duplicateTab ? <span className="cb-chat-dup" title="Another tab is bound to this graph — last write wins.">⚠ shared</span> : null}
         <div className="cb-chat-controls">
           {props.busy ? <span className="cb-chat-status">{props.status ?? "thinking…"}</span> : null}
           <select className="cb-quiet-control" value={props.model} onChange={(e) => callbacks.onModelChange(e.target.value)}>
@@ -83,6 +137,34 @@ export function ChatSurface(props: {
         />
         <button onClick={send} disabled={props.busy || draft.trim() === ""}>Send</button>
       </div>
+    </div>
+  );
+}
+
+export function GraphPicker(props: {
+  indexing: boolean;
+  graphs: string[];
+  onPick(dir: string): void;
+}): React.JSX.Element {
+  return (
+    <div className="cb-picker">
+      <h3>Bind this conversation to a graph</h3>
+      {props.indexing ? (
+        <p>Creative Buddy is still indexing the vault — the graphs will appear here in a moment.</p>
+      ) : props.graphs.length === 0 ? (
+        <p>No graphs found — a graph is a folder whose hub note carries a ## Charter heading.</p>
+      ) : null}
+      <div className="cb-picker-graphs">
+        {props.graphs.map((dir) => (
+          <button className="cb-picker-graph" key={dir} onClick={() => props.onPick(dir)}>
+            {dir === "" ? "(vault root)" : dir}
+          </button>
+        ))}
+      </div>
+      <p className="cb-picker-hint">
+        To start a brand-new graph, bind to the vault root and ask for a bootstrap — the interviewer
+        asks the folder name first.
+      </p>
     </div>
   );
 }

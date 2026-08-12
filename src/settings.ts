@@ -6,12 +6,14 @@ export interface CreativeBuddySettings {
   claudePath: string;        // "" = auto-detect
   defaultModel: string;      // claude-opus-5 | claude-sonnet-5 | claude-haiku-4-5
   apiKeyOverride: string;    // "" = subscription (the path)
+  openInMainTab: boolean;    // false = the right sidebar
 }
 
 export const DEFAULT_SETTINGS: CreativeBuddySettings = {
   claudePath: "",
   defaultModel: "claude-sonnet-5",
   apiKeyOverride: "",
+  openInMainTab: false,
 };
 
 export const MODEL_CHOICES: Record<string, string> = {
@@ -43,8 +45,18 @@ export class CreativeBuddySettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Open in the main editor area")
+      .setDesc("Open Creative Buddy panels as tabs in the centre instead of the right sidebar. Panels already open stay where they are.")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.openInMainTab).onChange(async (value) => {
+          this.plugin.settings.openInMainTab = value;
+          await this.plugin.saveSettings();
+        }),
+      );
+
+    new Setting(containerEl)
       .setName("Default model")
-      .setDesc("Each chat tab has its own picker; this seeds new tabs.")
+      .setDesc("Each conversation has its own picker; this seeds new ones.")
       .addDropdown((dd) => {
         for (const [id, label] of Object.entries(MODEL_CHOICES)) dd.addOption(id, label);
         dd.setValue(this.plugin.settings.defaultModel).onChange(async (value) => {

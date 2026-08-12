@@ -17,9 +17,24 @@ older than the code.
       sidebar; clicking it again reveals that same panel rather than stacking
       another. Collapse the sidebar first, then click it → the sidebar reopens
       onto the panel rather than creating it out of sight.
-- [ ] "New graph chat panel" in the command palette is what makes a *second*
-      chat — a second panel is a second Claude session, so the ribbon must not
-      do it by accident. "Open graph mindmap" reveals the one map.
+- [ ] The "+" on the tab strip makes a second conversation **inside the same
+      panel**. Bind it to another graph and talk in both: each tab keeps its
+      own transcript, model, cost and session. A turn running in a background
+      tab shows a pulsing dot on that tab.
+- [ ] Close a middle tab → you land on the one that slid into its place;
+      close the last tab in the strip → you land on the new last one. With one
+      conversation left there is no close button at all.
+- [ ] Closing a tab mid-turn does not throw, and its reply does not land in
+      whichever conversation took its place.
+- [ ] "New conversation" in the palette reveals the panel and adds a tab —
+      except when the tab you are on is still blank and unused, which already
+      is a new conversation. "Open graph mindmap" reveals the one map.
+- [ ] Settings → "Open in the main editor area" → the next panel you open
+      lands as a centre tab instead of in the sidebar. Panels already open
+      stay where they are.
+- [ ] **Upgrade path:** a vault whose `workspace.json` predates the tab strip
+      opens its old conversation as tab one, transcript and session id intact
+      — not a blank panel over the top of it.
 - [ ] Open a chat panel, then run "Open graph mindmap" → the chat panel is
       **still there**. Opening the map must never take over the sidebar leaf a
       chat is sitting in; that silently ends the session.
@@ -44,13 +59,15 @@ older than the code.
       keeping the exact wording as an alias.
 - [ ] Wrap up → a `Log/` file appears, the hub's Shape section refreshes, and
       the structure-check notice lands in the transcript.
-- [ ] Open a second tab on the same graph → the ⚠ shared badge appears on
-      **both** tabs without clicking around.
-- [ ] Restart Obsidian → the transcript is restored; a new message resumes the
-      same session (the reply remembers the conversation). If the restart
-      caught a reply mid-stream, the cut-off bubble renders as normal
-      markdown, not a dimmed streaming one. Restored activity panels are
-      settled — none is stuck on "Thinking…" — and still expand to their lines.
+- [ ] Bind two tabs to the same graph → the ⚠ badge appears on **both**
+      without clicking around. Same across two panels, if you drag one out.
+- [ ] Restart Obsidian → every tab comes back, with the one you were on still
+      selected; each transcript is restored and a new message resumes that
+      tab's own session (the reply remembers that conversation, not another
+      tab's). If the restart caught a reply mid-stream, the cut-off bubble
+      renders as normal markdown, not a dimmed streaming one. Restored
+      activity panels are settled — none stuck on "Thinking…" — and still
+      expand to their lines.
 - [ ] Restart with two tabs on the same graph, leaving one in the background →
       the badge still shows on the foreground tab (background tabs restore
       lazily; the badge must not need them loaded).

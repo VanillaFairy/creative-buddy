@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile } from "obsidian";
+import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { GraphModel } from "./graph/graph-model";
 import { CreativeBuddySettings, DEFAULT_SETTINGS, CreativeBuddySettingTab } from "./settings";
 import { findClaudeExecutable } from "./claude-locator";
@@ -45,7 +45,7 @@ export default class CreativeBuddyPlugin extends Plugin {
     // Command ids are what keybindings hang on, so `new-chat-tab` keeps its id
     // even though it now says panel.
     this.addCommand({ id: "open-chat", name: "Open chat panel", callback: () => void this.openChat() });
-    this.addCommand({ id: "new-chat-tab", name: "New graph chat panel", callback: () => void this.newChatPanel() });
+    this.addCommand({ id: "new-chat-tab", name: "New conversation", callback: () => void this.newConversation() });
     this.addCommand({ id: "open-mindmap", name: "Open graph mindmap", callback: () => void this.openMindmap() });
 
     this.app.workspace.onLayoutReady(() => {
@@ -70,15 +70,10 @@ export default class CreativeBuddyPlugin extends Plugin {
     await this.revealOrCreate(CHAT_VIEW_TYPE);
   }
 
-  /**
-   * A second chat panel is a second Claude session, so it is deliberate rather
-   * than what the ribbon does. split:true splits off the sidebar's current
-   * leaf instead of taking it over, so this never costs you a docked panel.
-   */
-  private async newChatPanel(): Promise<void> {
-    const leaf = this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf(true);
-    await leaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
-    await this.app.workspace.revealLeaf(leaf);
+  /** Conversations live inside the panel, so this reveals it and adds a tab. */
+  private async newConversation(): Promise<void> {
+    const leaf = await this.revealOrCreate(CHAT_VIEW_TYPE);
+    if (leaf.view instanceof ChatView) leaf.view.newConversation();
   }
 
   private async openMindmap(): Promise<void> {
@@ -95,13 +90,20 @@ export default class CreativeBuddyPlugin extends Plugin {
    * sidebar's most recent leaf *whatever it is showing*, and setViewState then
    * overwrites it — that is how opening the map used to destroy a chat session.
    */
-  private async revealOrCreate(viewType: string): Promise<void> {
-    const existing = this.app.workspace.getLeavesOfType(viewType)[0];
+  private async revealOrCreate(viewType: string): Promise<WorkspaceLeaf> {
+    const workspace = this.app.workspace;
+    const existing = workspace.getLeavesOfType(viewType)[0];
     if (existing !== undefined) {
-      await this.app.workspace.revealLeaf(existing);
-      return;
+      await workspace.revealLeaf(existing);
+      return existing;
     }
-    await this.app.workspace.ensureSideLeaf(viewType, "right", { active: true, reveal: true });
+    if (this.settings.openInMainTab) {
+      const leaf = workspace.getLeaf("tab");
+      await leaf.setViewState({ type: viewType, active: true });
+      await workspace.revealLeaf(leaf);
+      return leaf;
+    }
+    return await workspace.ensureSideLeaf(viewType, "right", { active: true, reveal: true });
   }
 
   private async buildModel(): Promise<void> {

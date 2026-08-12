@@ -4,70 +4,86 @@ import { createRoot, Root } from "react-dom/client";
 import type CreativeBuddyPlugin from "../main";
 import { AgentService, SessionHandle } from "../agent/agent-service";
 import { renderDigestForGraph } from "../agent/digest";
-import { reduceTranscript, TranscriptItem, TranscriptEvent } from "./transcript";
-import { ChatSurface } from "./components";
+import { reduceTranscript, TranscriptEvent } from "./transcript";
+import { ChatCallbacks, ChatPanel, ChatSurface, ChatTab, GraphPicker } from "./components";
+import {
+  ChatSession,
+  SessionList,
+  activate,
+  activeSession,
+  addSession,
+  closeSession,
+  highestApprovalSeq,
+  isPristine,
+  replaceSession,
+  restoreSessions,
+  sharedGraphs,
+} from "./sessions";
 import { projectName, tabTitle } from "../view-title";
 import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
 
 export const CHAT_VIEW_TYPE = "creative-buddy-chat";
 
-interface ChatState {
-  graphDir: string | null;
-  model: string;
-  sessionId: string | null;
-  items: TranscriptItem[];
+/** Live state for one conversation. Never persisted — none of it survives a restart. */
+interface Runtime {
+  handle: SessionHandle | null;
+  busy: boolean;
+  status: string | null;
+  wrapUpPending: boolean;
+  approvalSeq: number;
+  responders: Map<string, (allow: boolean, msg?: string) => void>;
 }
 
+/**
+ * One panel, several conversations behind a tab strip. A tab is a Claude
+ * session, so everything live is per-tab and keyed on the session's key —
+ * indices shift when a tab closes, and an in-flight turn must not land in
+ * whichever conversation happens to sit at its old index.
+ */
 export class ChatView extends ItemView {
   private root: Root | null = null;
-  private state: ChatState;
-  private session: SessionHandle | null = null;
+  private list: SessionList;
   private service = new AgentService();
-  private busy = false;
-  private approvalSeq = 0;
-  private pendingResponders = new Map<string, (allow: boolean, msg?: string) => void>();
+  private runtimes = new Map<string, Runtime>();
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
-    this.state = { graphDir: null, model: plugin.settings.defaultModel, sessionId: null, items: [] };
+    this.list = restoreSessions(undefined, plugin.settings.defaultModel);
   }
 
   getViewType(): string { return CHAT_VIEW_TYPE; }
   getDisplayText(): string {
-    return tabTitle("Creative buddy chat", this.state.graphDir, this.app.vault.getName());
+    return tabTitle("Creative buddy chat", activeSession(this.list).graphDir, this.app.vault.getName());
   }
   getIcon(): string { return "messages-square"; }
 
   getState(): Record<string, unknown> {
     return {
-      graphDir: this.state.graphDir,
-      model: this.state.model,
-      sessionId: this.state.sessionId,
-      items: this.state.items,
+      sessions: this.list.sessions.map((s) => ({
+        key: s.key,
+        graphDir: s.graphDir,
+        model: s.model,
+        sessionId: s.sessionId,
+        items: s.items,
+      })),
+      active: this.list.active,
     };
   }
 
   async setState(state: unknown, result: unknown): Promise<void> {
-    const s = (state ?? {}) as Partial<ChatState>;
-    // A rebind to a different graph must not leak the old graph's session.
-    if (this.session !== null && (s.graphDir ?? null) !== this.state.graphDir) {
-      this.session.dispose();
-      this.session = null;
-      this.busy = false;
-      this.pendingResponders.clear();
+    const restored = restoreSessions(state, this.plugin.settings.defaultModel);
+    // Drop anything live whose conversation this state does not contain, or
+    // which was rebound to another graph — a handle outliving its graph would
+    // go on writing into the old one.
+    const byKey = new Map(restored.sessions.map((s) => [s.key, s]));
+    for (const key of [...this.runtimes.keys()]) {
+      const before = this.list.sessions.find((s) => s.key === key);
+      const after = byKey.get(key);
+      if (after === undefined || after.graphDir !== (before?.graphDir ?? null)) this.disposeRuntime(key);
     }
-    this.state = {
-      graphDir: s.graphDir ?? null,
-      model: s.model ?? this.plugin.settings.defaultModel,
-      sessionId: s.sessionId ?? null,
-      items: (s.items ?? []).map(restoreItem),
-    };
-    // Restored approval items keep their old "a<N>" ids; a fresh counter would
-    // reuse them and approval-resolved would flip the restored item too.
-    for (const item of this.state.items) {
-      if (item.kind !== "approval") continue;
-      const n = Number(/^a(\d+)$/.exec(item.id)?.[1] ?? 0);
-      if (n > this.approvalSeq) this.approvalSeq = n;
+    this.list = restored;
+    for (const session of this.list.sessions) {
+      this.runtime(session.key).approvalSeq = highestApprovalSeq(session.items);
     }
     this.render();
     await super.setState(state as never, result as never);
@@ -75,23 +91,114 @@ export class ChatView extends ItemView {
 
   async onOpen(): Promise<void> {
     this.root = createRoot(this.contentEl);
-    // Wake the graph picker when indexing finishes, and recompute the
-    // duplicate-tab badge whenever the workspace layout shifts.
+    // Wake the graph picker when indexing finishes, and recompute the shared
+    // badges whenever the workspace layout shifts.
     this.register(this.plugin.onModelReady(() => this.render()));
     this.registerEvent(this.app.workspace.on("layout-change", () => this.render()));
     this.render();
   }
 
   async onClose(): Promise<void> {
-    this.session?.dispose();
+    for (const key of [...this.runtimes.keys()]) this.disposeRuntime(key);
     this.root?.unmount();
   }
 
-  private dispatch(event: TranscriptEvent): void {
-    this.state.items = reduceTranscript(this.state.items, event, Date.now());
+  // ── per-conversation state ────────────────────────────────────────────────
+
+  private runtime(key: string): Runtime {
+    const existing = this.runtimes.get(key);
+    if (existing !== undefined) return existing;
+    const fresh: Runtime = {
+      handle: null,
+      busy: false,
+      status: null,
+      wrapUpPending: false,
+      approvalSeq: 0,
+      responders: new Map(),
+    };
+    this.runtimes.set(key, fresh);
+    return fresh;
+  }
+
+  private disposeRuntime(key: string): void {
+    this.runtimes.get(key)?.handle?.dispose();
+    this.runtimes.delete(key);
+  }
+
+  /** Silently drops events for a conversation whose tab closed mid-turn. */
+  private dispatch(key: string, event: TranscriptEvent): void {
+    const session = this.list.sessions.find((s) => s.key === key);
+    if (session === undefined) return;
+    this.patch(key, { items: reduceTranscript(session.items, event, Date.now()) });
+  }
+
+  private patch(key: string, changes: Partial<ChatSession>): void {
+    const session = this.list.sessions.find((s) => s.key === key);
+    if (session === undefined) return;
+    this.list = replaceSession(this.list, key, { ...session, ...changes });
     this.app.workspace.requestSaveLayout();
     this.render();
   }
+
+  // ── the tab strip ─────────────────────────────────────────────────────────
+
+  private selectTab(index: number): void {
+    this.list = activate(this.list, index);
+    this.app.workspace.requestSaveLayout();
+    this.render();
+  }
+
+  private newTab(): void {
+    this.list = addSession(this.list, this.plugin.settings.defaultModel);
+    this.app.workspace.requestSaveLayout();
+    this.render();
+  }
+
+  /**
+   * The command's entry point. Unlike the strip's "+", which is an explicit
+   * click and always adds, this is reached by asking for a fresh conversation
+   * — and if the panel it just revealed is already sitting on an unused one,
+   * that is the fresh conversation.
+   */
+  newConversation(): void {
+    if (isPristine(activeSession(this.list))) {
+      this.render();
+      return;
+    }
+    this.newTab();
+  }
+
+  private closeTab(index: number): void {
+    const doomed = this.list.sessions[index];
+    const next = closeSession(this.list, index);
+    if (next === this.list) return; // the last conversation stays
+    if (doomed !== undefined) this.disposeRuntime(doomed.key);
+    this.list = next;
+    this.app.workspace.requestSaveLayout();
+    this.render();
+  }
+
+  /**
+   * Graphs bound by more than one conversation anywhere. Reads other panels'
+   * serialized state rather than leaf.view: a restored background tab may
+   * still hold a DeferredView with no ChatView behind it.
+   */
+  private sharedSet(): Set<string> {
+    const panels: Array<Array<string | null>> = [this.list.sessions.map((s) => s.graphDir)];
+    for (const leaf of this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE)) {
+      if (leaf === this.leaf) continue;
+      const state = leaf.getViewState().state as
+        | { sessions?: Array<{ graphDir?: string | null } | null>; graphDir?: string | null }
+        | undefined;
+      const sessions = state?.sessions;
+      // A panel saved before the tab strip existed kept its one graph at the top.
+      if (Array.isArray(sessions)) panels.push(sessions.map((s) => s?.graphDir ?? null));
+      else panels.push([state?.graphDir ?? null]);
+    }
+    return sharedGraphs(panels);
+  }
+
+  // ── the agent ─────────────────────────────────────────────────────────────
 
   /**
    * Whether the tool's target is already a note, asked at dispatch time —
@@ -106,11 +213,12 @@ export class ChatView extends ItemView {
     return rel !== null && this.app.vault.getAbstractFileByPath(rel) !== null;
   }
 
-  private ensureSession(): SessionHandle | null {
-    if (this.session !== null) return this.session;
+  private ensureSession(session: ChatSession): SessionHandle | null {
+    const runtime = this.runtime(session.key);
+    if (runtime.handle !== null) return runtime.handle;
     const model = this.plugin.model;
     const claudePath = this.plugin.resolveClaudePath();
-    if (this.state.graphDir === null) return null;
+    if (session.graphDir === null) return null;
     if (model === null) {
       new Notice("Creative Buddy is still indexing the vault — try again in a moment.");
       return null;
@@ -119,7 +227,7 @@ export class ChatView extends ItemView {
       new Notice("Claude Code executable not found — set it in Creative Buddy settings.");
       return null;
     }
-    const graphDir = this.state.graphDir;
+    const graphDir = session.graphDir;
     const stats = model.stats(graphDir);
     if (stats === null) {
       new Notice("This graph's hub note is gone — rebind the tab.");
@@ -128,136 +236,143 @@ export class ChatView extends ItemView {
     const today = new Date();
     const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     const report = model.obligations({ y: today.getFullYear(), m: today.getMonth() + 1, d: today.getDate() });
+    const key = session.key;
 
     try {
-      this.session = this.service.start(
+      runtime.handle = this.service.start(
         {
-        vaultRoot: this.plugin.vaultRootPath().replace(/\\/g, "/"),
-        graphDir,
-        hubPath: model.hubPathOf(graphDir),
-        model: this.state.model,
-        claudePath,
-        todayIso,
-        stats,
-        digestLines: renderDigestForGraph(report, graphDir),
-        apiKeyOverride: this.plugin.settings.apiKeyOverride === "" ? undefined : this.plugin.settings.apiKeyOverride,
-        resumeSessionId: this.state.sessionId ?? undefined,
-      },
-      {
-        onInit: (info) => {
-          this.state.sessionId = info.sessionId;
-          this.app.workspace.requestSaveLayout();
+          vaultRoot: this.plugin.vaultRootPath().replace(/\\/g, "/"),
+          graphDir,
+          hubPath: model.hubPathOf(graphDir),
+          model: session.model,
+          claudePath,
+          todayIso,
+          stats,
+          digestLines: renderDigestForGraph(report, graphDir),
+          apiKeyOverride: this.plugin.settings.apiKeyOverride === "" ? undefined : this.plugin.settings.apiKeyOverride,
+          resumeSessionId: session.sessionId ?? undefined,
         },
-        onTextDelta: (text) => this.dispatch({ type: "text-delta", text }),
-        onAssistantText: (text) => this.dispatch({ type: "assistant-final", text }),
-        onToolUse: (use) =>
-          this.dispatch({
-            type: "tool-use",
-            id: use.id,
-            name: use.name,
-            input: use.input,
-            subagent: use.subagent,
-            existed: this.targetExists(use.name, use.input),
-          }),
-        onToolResult: (r) => this.dispatch({ type: "tool-result", toolUseId: r.toolUseId }),
-        onApproval: (request) => {
-          const id = `a${++this.approvalSeq}`;
-          this.pendingResponders.set(id, request.respond);
-          this.dispatch({
-            type: "approval",
-            id,
-            toolName: request.toolName,
-            targetPath: request.targetPath,
-            reason: request.reason,
-            title: request.title,
-          });
-        },
-        onResult: (result) => {
-          this.busy = false;
-          this.dispatch({ type: "result", costUsd: result.totalCostUsd, isError: result.isError });
-          if (this.wrapUpPending) {
-            this.wrapUpPending = false;
-            this.dispatch({ type: "notice", text: this.structureCheckText() });
-          }
-        },
-        onStatus: (status) => {
-          this.statusText = status;
-          this.render();
-        },
-        onError: (error) => this.dispatch({ type: "error", message: error.message }),
-        onEnd: () => {
-          // claude.exe exited. Dispose the dead handle (settles any approval
-          // card left pending by a mid-approval crash), then drop it so the
-          // next send starts a fresh process resuming the same conversation.
-          this.session?.dispose();
-          this.session = null;
-          this.busy = false;
-          // The SDK side was told "deny" for anything still pending; the cards
-          // must agree, or a click on a stale Allow would record a lie.
-          for (const id of this.pendingResponders.keys()) {
-            this.state.items = reduceTranscript(this.state.items, { type: "approval-resolved", id, allowed: false }, Date.now());
-          }
-          this.pendingResponders.clear();
-          this.dispatch({ type: "notice", text: "The session ended. Your next message reconnects to the same conversation." });
-        },
+        {
+          onInit: (info) => this.patch(key, { sessionId: info.sessionId }),
+          onTextDelta: (text) => this.dispatch(key, { type: "text-delta", text }),
+          onAssistantText: (text) => this.dispatch(key, { type: "assistant-final", text }),
+          onToolUse: (use) =>
+            this.dispatch(key, {
+              type: "tool-use",
+              id: use.id,
+              name: use.name,
+              input: use.input,
+              subagent: use.subagent,
+              existed: this.targetExists(use.name, use.input),
+            }),
+          onToolResult: (r) => this.dispatch(key, { type: "tool-result", toolUseId: r.toolUseId }),
+          onApproval: (request) => {
+            const id = `a${++runtime.approvalSeq}`;
+            runtime.responders.set(id, request.respond);
+            this.dispatch(key, {
+              type: "approval",
+              id,
+              toolName: request.toolName,
+              targetPath: request.targetPath,
+              reason: request.reason,
+              title: request.title,
+            });
+          },
+          onResult: (result) => {
+            runtime.busy = false;
+            this.dispatch(key, { type: "result", costUsd: result.totalCostUsd, isError: result.isError });
+            if (runtime.wrapUpPending) {
+              runtime.wrapUpPending = false;
+              this.dispatch(key, { type: "notice", text: this.structureCheckText(graphDir) });
+            }
+          },
+          onStatus: (status) => {
+            runtime.status = status;
+            this.render();
+          },
+          onError: (error) => this.dispatch(key, { type: "error", message: error.message }),
+          onEnd: () => {
+            // claude.exe exited. Dispose the dead handle (settles any approval
+            // card left pending by a mid-approval crash), then drop it so the
+            // next send starts a fresh process resuming the same conversation.
+            runtime.handle?.dispose();
+            runtime.handle = null;
+            runtime.busy = false;
+            // The SDK side was told "deny" for anything still pending; the cards
+            // must agree, or a click on a stale Allow would record a lie.
+            const current = this.list.sessions.find((s) => s.key === key);
+            if (current !== undefined) {
+              let items = current.items;
+              for (const id of runtime.responders.keys()) {
+                items = reduceTranscript(items, { type: "approval-resolved", id, allowed: false }, Date.now());
+              }
+              this.list = replaceSession(this.list, key, { ...current, items });
+            }
+            runtime.responders.clear();
+            this.dispatch(key, { type: "notice", text: "The session ended. Your next message reconnects to the same conversation." });
+          },
           onStderr: (line) => console.debug("[creative-buddy] claude:", line),
         },
       );
     } catch {
-      this.session = null; // onError already put the failure in the transcript
+      runtime.handle = null; // onError already put the failure in the transcript
     }
-    return this.session;
+    return runtime.handle;
   }
 
-  private readonly callbacks = {
+  /** Every control belongs to the conversation on screen. */
+  private readonly callbacks: ChatCallbacks = {
     onSend: (text: string): void => {
-      const session = this.ensureSession();
-      if (session === null) return;
-      this.busy = true;
-      this.dispatch({ type: "user-sent", text });
-      session.sendUserMessage(text);
+      const session = activeSession(this.list);
+      const handle = this.ensureSession(session);
+      if (handle === null) return;
+      this.runtime(session.key).busy = true;
+      this.dispatch(session.key, { type: "user-sent", text });
+      handle.sendUserMessage(text);
     },
     onModelChange: (model: string): void => {
-      this.state.model = model;
-      this.session?.setModel(model).catch(() => new Notice("Model switch failed — the session keeps its current model."));
-      this.render();
+      const session = activeSession(this.list);
+      this.patch(session.key, { model });
+      this.runtime(session.key)
+        .handle?.setModel(model)
+        .catch(() => new Notice("Model switch failed — the session keeps its current model."));
     },
     onApprove: (id: string, allow: boolean, message?: string): void => {
-      this.pendingResponders.get(id)?.(allow, message);
-      this.pendingResponders.delete(id);
-      this.dispatch({ type: "approval-resolved", id, allowed: allow });
+      const session = activeSession(this.list);
+      const runtime = this.runtime(session.key);
+      runtime.responders.get(id)?.(allow, message);
+      runtime.responders.delete(id);
+      this.dispatch(session.key, { type: "approval-resolved", id, allowed: allow });
     },
     onWrapUp: (): void => {
-      const session = this.ensureSession();
-      if (session === null || this.state.graphDir === null) return;
-      this.busy = true;
-      this.dispatch({ type: "user-sent", text: "(wrap up)" });
-      session.sendUserMessage(WRAP_UP_MESSAGE);
+      const session = activeSession(this.list);
+      const handle = this.ensureSession(session);
+      if (handle === null) return;
+      const runtime = this.runtime(session.key);
+      runtime.busy = true;
       // The structure-check summary is appended once the turn's result lands.
-      this.showWrapUpSummaryAfterResult();
+      runtime.wrapUpPending = true;
+      this.dispatch(session.key, { type: "user-sent", text: "(wrap up)" });
+      handle.sendUserMessage(WRAP_UP_MESSAGE);
     },
     onInterrupt: (): void => {
-      this.session?.interrupt().catch(() => undefined);
-      this.busy = false;
+      const session = activeSession(this.list);
+      const runtime = this.runtime(session.key);
+      runtime.handle?.interrupt().catch(() => undefined);
+      runtime.busy = false;
       this.render();
     },
     renderMarkdown: (el: HTMLElement, markdown: string): void => {
       // Relative links resolve against a NOTE path, so hand the renderer the
       // hub note rather than the graph folder.
-      const dir = this.state.graphDir;
+      const dir = activeSession(this.list).graphDir;
       const source = dir !== null ? this.plugin.model?.hubPathOf(dir) ?? dir : "/";
       void MarkdownRenderer.render(this.app, markdown, el, source, this);
     },
   };
 
-  private wrapUpPending = false;
-  private statusText: string | null = null;
-  private showWrapUpSummaryAfterResult(): void {
-    this.wrapUpPending = true;
-  }
-
-  private structureCheckText(): string {
-    const graphReport = this.plugin.model?.validation().graphs.find((g) => g.path === (this.state.graphDir === "" ? "." : this.state.graphDir));
+  private structureCheckText(graphDir: string): string {
+    const graphReport = this.plugin.model?.validation().graphs.find((g) => g.path === (graphDir === "" ? "." : graphDir));
     return graphReport === undefined || graphReport.problems.length === 0
       ? "Structure check: clean."
       : "Structure check:\n" + graphReport.problems.map((p) => `[${p.kind}] ${p.note} — ${p.detail}`).join("\n");
@@ -265,47 +380,43 @@ export class ChatView extends ItemView {
 
   private render(): void {
     if (this.root === null) return;
-    if (this.state.graphDir === null) {
-      this.root.render(<GraphPicker plugin={this.plugin} onPick={(dir) => { this.state.graphDir = dir; this.app.workspace.requestSaveLayout(); this.render(); }} />);
-      return;
-    }
-    // Read the serialized leaf state, not leaf.view: a restored background tab
-    // may still hold a DeferredView with no ChatView behind it.
-    const duplicateTab = this.app.workspace.getLeavesOfType(CHAT_VIEW_TYPE).filter((leaf) => {
-      if (leaf === this.leaf) return false;
-      const s = leaf.getViewState().state as { graphDir?: string | null } | undefined;
-      return (s?.graphDir ?? null) === this.state.graphDir;
-    }).length > 0;
+    const shared = this.sharedSet();
+    const vaultName = this.app.vault.getName();
+    const tabs: ChatTab[] = this.list.sessions.map((session) => ({
+      key: session.key,
+      label: projectName(session.graphDir, vaultName) ?? "New chat",
+      shared: session.graphDir !== null && shared.has(session.graphDir),
+      busy: this.runtimes.get(session.key)?.busy === true,
+    }));
+    const session = activeSession(this.list);
+    const runtime = this.runtime(session.key);
+
     this.root.render(
-      <ChatSurface
-        graphLabel={projectName(this.state.graphDir, this.app.vault.getName()) ?? ""}
-        model={this.state.model}
-        busy={this.busy}
-        status={this.statusText}
-        duplicateTab={duplicateTab}
-        items={this.state.items}
-        callbacks={this.callbacks}
-      />,
+      <ChatPanel
+        tabs={tabs}
+        active={this.list.active}
+        onSelectTab={(index) => this.selectTab(index)}
+        onCloseTab={(index) => this.closeTab(index)}
+        onNewTab={() => this.newTab()}
+      >
+        {session.graphDir === null ? (
+          <GraphPicker
+            indexing={this.plugin.model === null}
+            graphs={this.plugin.model?.graphs() ?? []}
+            onPick={(dir) => this.patch(session.key, { graphDir: dir })}
+          />
+        ) : (
+          <ChatSurface
+            model={session.model}
+            busy={runtime.busy}
+            status={runtime.status}
+            items={session.items}
+            callbacks={this.callbacks}
+          />
+        )}
+      </ChatPanel>,
     );
   }
-}
-
-/**
- * Repairs an item coming back from workspace.json.
- *
- * A bubble caught mid-stream by a restart would stay "streaming" (plain text,
- * dimmed) forever — the stream it belonged to is gone. A tool item written
- * before the activity panels carries an `input` blob and no timestamps; the
- * destructuring drops the blob and the nulls make its panel report an unknown
- * duration rather than a nonsense one.
- */
-function restoreItem(item: TranscriptItem): TranscriptItem {
-  if (item.kind === "assistant" && item.streaming) return { ...item, streaming: false };
-  if (item.kind === "tool") {
-    const { id, name, line, done } = item;
-    return { kind: "tool", id, name, line, done, at: item.at ?? null, doneAt: item.doneAt ?? null };
-  }
-  return item;
 }
 
 export const WRAP_UP_MESSAGE = [
@@ -314,26 +425,3 @@ export const WRAP_UP_MESSAGE = [
   "Two or three sentences: what was established, where the thread stopped, any door I closed, anything you took out as your own invention.",
   "Then refresh the hub's ## Shape in the same breath. Do not ask a new question after wrapping up.",
 ].join(" ");
-
-function GraphPicker({ plugin, onPick }: { plugin: CreativeBuddyPlugin; onPick: (dir: string) => void }): React.JSX.Element {
-  const indexing = plugin.model === null;
-  const graphs = plugin.model?.graphs() ?? [];
-  return (
-    <div className="cb-picker">
-      <h3>Bind this tab to a graph</h3>
-      {indexing ? (
-        <p>Creative Buddy is still indexing the vault — the graphs will appear here in a moment.</p>
-      ) : graphs.length === 0 ? (
-        <p>No graphs found — a graph is a folder whose hub note carries a ## Charter heading.</p>
-      ) : null}
-      <div className="cb-picker-graphs">
-        {graphs.map((dir) => (
-          <button className="cb-picker-graph" key={dir} onClick={() => onPick(dir)}>
-            {dir === "" ? "(vault root)" : dir}
-          </button>
-        ))}
-      </div>
-      <p className="cb-picker-hint">To start a brand-new graph, bind to the vault root and ask for a bootstrap — the interviewer asks the folder name first.</p>
-    </div>
-  );
-}
