@@ -5,7 +5,8 @@ import { select } from "d3-selection";
 import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
 import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
-import { Box, Measure, edgeWeight, fitTransform, inspectorLine, nodeBox } from "./geometry";
+import { Box, Measure, childRegionPath, edgeWeight, fitTransform, inspectorLine, nodeBox } from "./geometry";
+import { heatClass } from "./heat";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import type { GraphModel } from "../graph/graph-model";
@@ -18,6 +19,7 @@ const INSPECTOR_HINT = "Click a note to open it, a branch to fold it. Alt-click 
 
 export class MindmapView extends ItemView {
   private graphDir: string | null = null;
+  private heatmap = false;
   private collapse = new CollapseStore();
   private offChange: (() => void) | null = null;
   private redrawTimer: number | null = null;
@@ -32,12 +34,17 @@ export class MindmapView extends ItemView {
   getIcon(): string { return "git-fork"; }
 
   getState(): Record<string, unknown> {
-    return { graphDir: this.graphDir, collapse: this.collapse.toJSON() };
+    return { graphDir: this.graphDir, collapse: this.collapse.toJSON(), heatmap: this.heatmap };
   }
 
   async setState(state: unknown, result: unknown): Promise<void> {
-    const s = (state ?? {}) as { graphDir?: string | null; collapse?: Record<string, string[]> };
+    const s = (state ?? {}) as {
+      graphDir?: string | null;
+      collapse?: Record<string, string[]>;
+      heatmap?: boolean;
+    };
     this.graphDir = s.graphDir ?? null;
+    this.heatmap = s.heatmap === true;
     this.collapse = CollapseStore.fromJSON(s.collapse);
     this.redraw();
     await super.setState(state as never, result as never);
@@ -138,6 +145,19 @@ export class MindmapView extends ItemView {
     header.createSpan({
       cls: `cb-mm-stats${hubWarn}`,
       text: stats === null ? "no hub found" : `${stats.nodes} notes · ${stats.hubChildren} off the hub`,
+    });
+
+    // Heat is a way of reading the map, not a fact about the graph, so the
+    // switch rides in the header beside the project picker rather than in
+    // plugin settings.
+    const heatToggle = header.createEl("label", { cls: "cb-mm-heat-toggle" });
+    const heatInput = heatToggle.createEl("input", { type: "checkbox" });
+    heatInput.checked = this.heatmap;
+    heatToggle.createSpan({ text: "Heat" });
+    heatInput.addEventListener("change", () => {
+      this.heatmap = heatInput.checked;
+      this.app.workspace.requestSaveLayout();
+      this.redraw();
     });
 
     // Stage first, then the inspector below it, then the dock inside the stage:
@@ -269,24 +289,49 @@ export class MindmapView extends ItemView {
         .attr("role", "button")
         .attr("aria-label", facts ?? node.stem);
 
+      // A node's colour is its own questions; the child-ref area behind the
+      // divider carries what a collapse is hiding. Off, both classes are absent
+      // and every colour falls back to the flat palette.
+      const ownHeat = this.heatmap ? ` ${heatClass(node.openQuestions)}` : "";
+      const hiddenHeat = this.heatmap ? ` ${heatClass(node.hiddenOpenQuestions)}` : "";
+      const problem = node.problemKinds.length > 0;
+
       // The hub carries the charter and is what the rest hangs off, so it is a
       // title over a spine; every other note is a discrete claim in a box.
       if (isHub) {
+        const spine = problem ? "cb-mm-hub-spine cb-mm-hub-spine-problem" : "cb-mm-hub-spine";
+        // Folded, the spine splits where the box would: own heat, then hidden.
+        const ownEnd = box.dividerX ?? box.width;
         g.append("rect")
-          .attr("class", node.problemKinds.length > 0 ? "cb-mm-hub-spine cb-mm-hub-spine-problem" : "cb-mm-hub-spine")
+          .attr("class", `${spine}${ownHeat}`)
           .attr("x", 0)
           .attr("y", 8)
-          .attr("width", box.width)
+          .attr("width", ownEnd)
           .attr("height", 2.5)
           .attr("rx", 1.25);
+        if (box.dividerX !== null) {
+          g.append("rect")
+            .attr("class", `${spine}${hiddenHeat}`)
+            .attr("x", box.dividerX)
+            .attr("y", 8)
+            .attr("width", box.width - box.dividerX)
+            .attr("height", 2.5)
+            .attr("rx", 1.25);
+        }
       } else {
         g.append("rect")
-          .attr("class", node.problemKinds.length > 0 ? "cb-mm-box cb-mm-problem" : "cb-mm-box")
+          .attr("class", `${problem ? "cb-mm-box cb-mm-problem" : "cb-mm-box"}${ownHeat}`)
           .attr("x", 0)
           .attr("y", -box.height / 2)
           .attr("width", box.width)
           .attr("height", box.height)
           .attr("rx", 6);
+        // One path does three jobs: the child-ref fill, the shared right-hand
+        // outline, and — where it closes — the divider itself.
+        const region = childRegionPath(box);
+        if (region !== null) {
+          g.append("path").attr("class", `cb-mm-child-region${hiddenHeat}`).attr("d", region);
+        }
       }
 
       const textY = isHub ? -6 : 0;

@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { nodeBox, edgeWeight, fitTransform, inspectorLine, NODE_HEIGHT, HUB_HEIGHT } from "../src/mindmap/geometry";
+import {
+  nodeBox,
+  childRegionPath,
+  edgeWeight,
+  fitTransform,
+  inspectorLine,
+  NODE_HEIGHT,
+  HUB_HEIGHT,
+} from "../src/mindmap/geometry";
 
 /** A fixed-advance stand-in for the real face — 7px a character. */
 const measure = (text: string): number => [...text].length * 7;
@@ -49,12 +57,24 @@ describe("nodeBox", () => {
     expect([...box.label].every((ch) => ch === "🚢" || ch === "…")).toBe(true);
   });
 
-  it("lays the folded-child count out as its own run after the label", () => {
+  it("lays the folded-child count out in its own area, behind a divider", () => {
     const box = nodeBox("References", measure, { suffix: "+7" });
     expect(box.label).toBe("References");
     expect(box.suffix).toBe("+7");
-    expect(box.suffixX).toBe(13 + 10 * 7 + 6);
-    expect(box.width).toBe(13 * 2 + 10 * 7 + 6 + 2 * 7);
+    // label ends at 13 + 70; the rule sits one gap past it, the count one gap past the rule.
+    expect(box.dividerX).toBe(13 + 10 * 7 + 8);
+    expect(box.suffixX).toBe(13 + 10 * 7 + 8 + 8);
+    expect(box.width).toBe(13 * 2 + 10 * 7 + 8 * 2 + 2 * 7);
+  });
+
+  it("gives the count equal breathing room either side of the rule", () => {
+    const box = nodeBox("References", measure, { suffix: "+7" });
+    const labelEnd = box.labelX + 10 * 7;
+    expect(box.dividerX! - labelEnd).toBe(box.suffixX! - box.dividerX!);
+  });
+
+  it("has no divider when nothing is folded away", () => {
+    expect(nodeBox("Doors", measure).dividerX).toBeNull();
   });
 
   it("treats an empty suffix as none rather than reserving a gap for it", () => {
@@ -67,6 +87,27 @@ describe("nodeBox", () => {
     expect(withCount.suffix).toBe("+12");
     expect(withCount.width).toBeLessThanOrEqual(240);
     expect([...withCount.label].length).toBeLessThan([...nodeBox(long, measure).label].length);
+  });
+});
+
+describe("childRegionPath", () => {
+  it("is nothing when the node hides nothing", () => {
+    expect(childRegionPath(nodeBox("Doors", measure))).toBeNull();
+  });
+
+  it("starts at the divider and closes there, so it never covers the label", () => {
+    const box = nodeBox("References", measure, { suffix: "+7" });
+    const path = childRegionPath(box)!;
+    expect(path.startsWith(`M ${box.dividerX},${-box.height / 2}`)).toBe(true);
+    expect(path.trimEnd().endsWith("Z")).toBe(true);
+  });
+
+  it("rounds only the right corners, so it seats inside the box's own outline", () => {
+    const box = nodeBox("References", measure, { suffix: "+7" });
+    const path = childRegionPath(box)!;
+    // Two arcs (the right corners) and no more.
+    expect(path.match(/A /g)!.length).toBe(2);
+    expect(path).toContain(`${box.width}`);
   });
 });
 
