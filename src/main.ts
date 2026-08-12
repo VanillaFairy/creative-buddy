@@ -33,16 +33,19 @@ export default class CreativeBuddyPlugin extends Plugin {
     this.addSettingTab(new CreativeBuddySettingTab(this.app, this));
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
-    this.addRibbonIcon("messages-square", "Creative Buddy: new chat panel", () => {
-      void this.openChatTab();
-    });
-    // Command ids are keybinding keys — the wording moved to the sidebar, the id must not.
-    this.addCommand({ id: "new-chat-tab", name: "New graph chat panel", callback: () => void this.openChatTab() });
-
     this.registerView(MINDMAP_VIEW_TYPE, (leaf) => new MindmapView(leaf, this));
-    this.addRibbonIcon("git-fork", "Creative Buddy: open graph mindmap", () => {
-      void this.openMindmap();
+
+    // One ribbon icon for the whole plugin. A sidebar panel already shows its
+    // own icon in the sidebar's strip, so a second ribbon icon per view just
+    // puts the same glyph on screen twice.
+    this.addRibbonIcon("messages-square", "Open Creative Buddy", () => {
+      void this.openChat();
     });
+
+    // Command ids are what keybindings hang on, so `new-chat-tab` keeps its id
+    // even though it now says panel.
+    this.addCommand({ id: "open-chat", name: "Open chat panel", callback: () => void this.openChat() });
+    this.addCommand({ id: "new-chat-tab", name: "New graph chat panel", callback: () => void this.newChatPanel() });
     this.addCommand({ id: "open-mindmap", name: "Open graph mindmap", callback: () => void this.openMindmap() });
 
     this.app.workspace.onLayoutReady(() => {
@@ -63,32 +66,42 @@ export default class CreativeBuddyPlugin extends Plugin {
    * revealLeaf on every path, because a sidebar the user has collapsed would
    * otherwise swallow the panel they just asked for.
    */
-  private async openChatTab(): Promise<void> {
-    // A fresh leaf every time — one panel, one session. split:true splits off
-    // the sidebar's current leaf rather than taking it over, so opening a chat
-    // never costs you the panel already docked there.
+  private async openChat(): Promise<void> {
+    await this.revealOrCreate(CHAT_VIEW_TYPE);
+  }
+
+  /**
+   * A second chat panel is a second Claude session, so it is deliberate rather
+   * than what the ribbon does. split:true splits off the sidebar's current
+   * leaf instead of taking it over, so this never costs you a docked panel.
+   */
+  private async newChatPanel(): Promise<void> {
     const leaf = this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf(true);
     await leaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
     await this.app.workspace.revealLeaf(leaf);
   }
 
+  private async openMindmap(): Promise<void> {
+    await this.revealOrCreate(MINDMAP_VIEW_TYPE);
+  }
+
   /**
-   * The mindmap is one shared surface — reveal the open one, or make the first.
+   * Reveal the panel that is already open, and only make one when there is
+   * none — so clicking twice takes you back to your panel instead of growing
+   * another. A panel open anywhere counts, including one dragged into the main
+   * area, which is why the leaf lookup comes before the sidebar call.
    *
    * ensureSideLeaf rather than getRightLeaf(false): the latter hands back the
-   * sidebar's most recent leaf *whatever it is showing*, so setViewState then
-   * overwrites it — opening the map on top of a chat panel silently destroyed
-   * that session. ensureSideLeaf exists to avoid exactly that.
+   * sidebar's most recent leaf *whatever it is showing*, and setViewState then
+   * overwrites it — that is how opening the map used to destroy a chat session.
    */
-  private async openMindmap(): Promise<void> {
-    // A map open anywhere already is the map, including one dragged into the
-    // main area — reveal it rather than growing a second copy in the sidebar.
-    const existing = this.app.workspace.getLeavesOfType(MINDMAP_VIEW_TYPE)[0];
+  private async revealOrCreate(viewType: string): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(viewType)[0];
     if (existing !== undefined) {
       await this.app.workspace.revealLeaf(existing);
       return;
     }
-    await this.app.workspace.ensureSideLeaf(MINDMAP_VIEW_TYPE, "right", { active: true, reveal: true });
+    await this.app.workspace.ensureSideLeaf(viewType, "right", { active: true, reveal: true });
   }
 
   private async buildModel(): Promise<void> {

@@ -13,13 +13,16 @@ older than the code.
 
 ## 1 — Dev vault: chat
 
-- [ ] Both ribbon icons open their panel in the **right sidebar**. Collapse the
-      sidebar first, then click a ribbon icon → the sidebar reopens onto the
-      new panel rather than creating it out of sight. The chat icon makes a
-      fresh panel each time; the map icon reveals the one map.
-- [ ] Open a chat panel, then click the map icon → the chat panel is **still
-      there**. Opening the map must never take over the sidebar leaf a chat is
-      sitting in; that silently ends the session.
+- [ ] There is exactly **one** ribbon icon. It opens a chat panel in the right
+      sidebar; clicking it again reveals that same panel rather than stacking
+      another. Collapse the sidebar first, then click it → the sidebar reopens
+      onto the panel rather than creating it out of sight.
+- [ ] "New graph chat panel" in the command palette is what makes a *second*
+      chat — a second panel is a second Claude session, so the ribbon must not
+      do it by accident. "Open graph mindmap" reveals the one map.
+- [ ] Open a chat panel, then run "Open graph mindmap" → the chat panel is
+      **still there**. Opening the map must never take over the sidebar leaf a
+      chat is sitting in; that silently ends the session.
 - [ ] Open a chat panel from the ribbon; bind to a test graph; send a message on
       Haiku. Streaming text appears as plain text, then renders as markdown
       when the turn finishes; the tool machinery shows beneath it as activity
