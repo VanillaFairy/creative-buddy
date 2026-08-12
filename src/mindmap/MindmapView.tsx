@@ -8,6 +8,8 @@ import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { Box, Measure, edgeWeight, fitTransform, inspectorLine, nodeBox } from "./geometry";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
+import type { GraphModel } from "../graph/graph-model";
+import { PICKER_EMPTY, noteCount, projectRowLabel, projectRows } from "../project-list";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const H_GAP = 48;
@@ -71,6 +73,31 @@ export class MindmapView extends ItemView {
     this.redraw();
   }
 
+  /**
+   * The map's resting state when it does not know what to draw. A twin of the
+   * chat's React GraphPicker — same class names, same rows, same words — built
+   * in plain DOM because this view is d3 all the way down and its redraw empties
+   * the container out from under anything React would be holding.
+   */
+  private drawPicker(container: HTMLElement, model: GraphModel): void {
+    const picker = container.createDiv({ cls: "cb-picker" });
+    picker.createEl("h3", { cls: "cb-picker-question", text: "Which project should I draw?" });
+    const rows = projectRows(model);
+    if (rows.length === 0) {
+      picker.createEl("p", { text: PICKER_EMPTY });
+      return;
+    }
+    const list = picker.createDiv({ cls: "cb-picker-graphs" });
+    for (const row of rows) {
+      const button = list.createEl("button", { cls: "cb-picker-graph", attr: { "aria-label": projectRowLabel(row) } });
+      button.createSpan({ cls: "cb-picker-name", text: row.name });
+      if (row.location !== null) button.createSpan({ cls: "cb-picker-where", text: row.location });
+      const state = button.createSpan({ cls: "cb-picker-state", attr: { "aria-hidden": "true" } });
+      state.createSpan({ text: noteCount(row.notes) });
+      button.onclick = () => this.showGraph(row.dir);
+    }
+  }
+
   private scheduleRedraw(): void {
     if (this.redrawTimer !== null) window.clearTimeout(this.redrawTimer);
     this.redrawTimer = window.setTimeout(() => this.redraw(), 300);
@@ -87,23 +114,23 @@ export class MindmapView extends ItemView {
     }
 
     const graphs = model.graphs();
+    // A persisted graphDir can outlive its folder (rename). Drawing whichever
+    // graph happens to sort first would be a map of something nobody asked for,
+    // so an unresolvable one falls back to asking.
+    if (this.graphDir !== null && !graphs.includes(this.graphDir)) this.graphDir = null;
+    if (this.graphDir === null) {
+      this.drawPicker(container, model);
+      return;
+    }
+
     const header = container.createDiv({ cls: "cb-mm-header" });
     const selector = header.createEl("select", { cls: "cb-quiet-control" });
     for (const dir of graphs) {
       const option = selector.createEl("option", { text: dir === "" ? "(vault root)" : dir });
       option.value = dir;
     }
-    if (this.graphDir === null && graphs.length > 0) this.graphDir = graphs[0]!;
-    // A persisted graphDir can outlive its folder (rename); fall back rather
-    // than render a blank selector over an empty map.
-    if (this.graphDir !== null && !graphs.includes(this.graphDir)) this.graphDir = graphs[0] ?? null;
-    if (this.graphDir !== null) selector.value = this.graphDir;
+    selector.value = this.graphDir;
     selector.onchange = () => this.showGraph(selector.value);
-
-    if (this.graphDir === null) {
-      container.createEl("p", { cls: "cb-mm-empty", text: "No graphs found in this vault." });
-      return;
-    }
 
     const data = buildMindmapData(model, this.graphDir, this.collapse.collapsedSet(this.graphDir));
     const stats = data.stats;

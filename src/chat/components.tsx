@@ -2,6 +2,7 @@ import * as React from "react";
 import { TranscriptItem } from "./transcript";
 import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
 import { MODEL_CHOICES } from "../settings";
+import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
 
 export interface ChatCallbacks {
   onSend(text: string): void;
@@ -141,30 +142,48 @@ export function ChatSurface(props: {
   );
 }
 
+/**
+ * The resting state of a view that does not know which project it is for. Rows
+ * carry each project's size and where it sits, so choosing is a reading rather
+ * than a guess at a folder path.
+ *
+ * The map draws its own copy of this in plain DOM (see MindmapView.drawPicker)
+ * — the two share these class names and `projectRows`, which is where the
+ * decisions live. Keep the markup in step.
+ */
 export function GraphPicker(props: {
+  question: string;
   indexing: boolean;
-  graphs: string[];
+  projects: ProjectRow[];
+  hint?: string;
   onPick(dir: string): void;
 }): React.JSX.Element {
   return (
     <div className="cb-picker">
-      <h3>Bind this conversation to a graph</h3>
+      <h3 className="cb-picker-question">{props.question}</h3>
       {props.indexing ? (
-        <p>Creative Buddy is still indexing the vault — the graphs will appear here in a moment.</p>
-      ) : props.graphs.length === 0 ? (
-        <p>No graphs found — a graph is a folder whose hub note carries a ## Charter heading.</p>
-      ) : null}
-      <div className="cb-picker-graphs">
-        {props.graphs.map((dir) => (
-          <button className="cb-picker-graph" key={dir} onClick={() => props.onPick(dir)}>
-            {dir === "" ? "(vault root)" : dir}
-          </button>
-        ))}
-      </div>
-      <p className="cb-picker-hint">
-        To start a brand-new graph, bind to the vault root and ask for a bootstrap — the interviewer
-        asks the folder name first.
-      </p>
+        <p>{PICKER_INDEXING}</p>
+      ) : props.projects.length === 0 ? (
+        <p>{PICKER_EMPTY}</p>
+      ) : (
+        <div className="cb-picker-graphs">
+          {props.projects.map((row) => (
+            <button
+              className="cb-picker-graph"
+              key={row.dir}
+              aria-label={projectRowLabel(row)}
+              onClick={() => props.onPick(row.dir)}
+            >
+              <span className="cb-picker-name">{row.name}</span>
+              {row.location !== null ? <span className="cb-picker-where">{row.location}</span> : null}
+              <span className="cb-picker-state" aria-hidden="true">
+                <span>{noteCount(row.notes)}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {props.hint !== undefined ? <p className="cb-picker-hint">{props.hint}</p> : null}
     </div>
   );
 }

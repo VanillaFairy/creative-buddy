@@ -550,9 +550,16 @@
   max-width: 34em;
 }
 
-.cb-picker h3 {
+/* The one place the UI speaks in the interviewer's face rather than its own:
+   this is the buddy asking you something, and everything after it — the rows,
+   the counts, the hint — answers in the UI face. Two classes because app.css
+   styles bare headings, per the note at the top of this file. */
+.cb-picker .cb-picker-question {
   margin: 0;
-  font-family: var(--cb-hand);
+  font-family: var(--cb-voice);
+  font-size: var(--font-ui-medium);
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .cb-picker p {
@@ -570,8 +577,17 @@
   border-top: 1px solid var(--cb-rail);
 }
 
-/* Each graph is a row you pick, not a chiclet: the list is the object. */
+/* Each project is a row you pick, not a chiclet: the list is the object. The
+   name leads, its address sits under it, and its state is held out to the right
+   where the numbers line up with each other. */
 .cb-picker-graphs .cb-picker-graph {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "name  state"
+    "where state";
+  align-items: baseline;
+  column-gap: var(--size-4-3);
   width: 100%;
   height: auto;
   margin: 0;
@@ -589,6 +605,41 @@
   transition: background-color 100ms ease, padding-left 100ms ease;
 }
 
+.cb-picker-name {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+/* The address, not the identity — so it is quiet, and it is only rendered at
+   all when the name alone would leave two projects looking the same. */
+.cb-picker-where {
+  grid-area: where;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cb-faint);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
+/* Counts read as data: the utility register, and tabular figures so the column
+   lines up instead of wobbling with the digits. */
+.cb-picker-state {
+  grid-area: state;
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  color: var(--cb-quiet);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .cb-picker-graphs .cb-picker-graph:hover,
 .cb-picker-graphs .cb-picker-graph:focus-visible {
   background: var(--background-modifier-hover);
@@ -597,7 +648,10 @@
   color: var(--cb-ink);
 }
 
-.cb-picker-hint {
+/* The quietest thing in the panel: it is there for the one time you need it and
+   should not compete with the list you came to read. */
+.cb-picker .cb-picker-hint {
+  color: var(--cb-faint);
   font-size: var(--font-ui-smaller);
 }
 
@@ -881,16 +935,6 @@
 .cb-mm-tray-row a {
   color: var(--cb-ink);
   cursor: pointer;
-}
-
-.cb-mm-panel-body pre {
-  margin: 0;
-  padding: 0;
-  background: none;
-  color: var(--cb-quiet);
-  font-size: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }
 
 .cb-mm-empty {

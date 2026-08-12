@@ -20,6 +20,7 @@ import {
   sharedGraphs,
 } from "./sessions";
 import { projectName, tabTitle } from "../view-title";
+import { bootstrapHint, projectRows } from "../project-list";
 import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
 
 export const CHAT_VIEW_TYPE = "creative-buddy-chat";
@@ -422,6 +423,7 @@ export class ChatView extends ItemView {
     }));
     const session = activeSession(this.list);
     const runtime = this.runtime(session.key);
+    const projects = this.plugin.model === null ? [] : projectRows(this.plugin.model);
 
     this.root.render(
       <ChatPanel
@@ -433,8 +435,10 @@ export class ChatView extends ItemView {
       >
         {session.graphDir === null ? (
           <GraphPicker
+            question="Which project are we working on?"
+            hint={bootstrapHint(projects)}
             indexing={this.plugin.model === null}
-            graphs={this.plugin.model?.graphs() ?? []}
+            projects={projects}
             onPick={(dir) => this.patch(session.key, { graphDir: dir })}
           />
         ) : (
