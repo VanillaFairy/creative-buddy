@@ -191,9 +191,31 @@ Adaptation notes (what changes from SKILL.md):
 
 ## Open questions
 
-- Final plugin name (working name: graph-buddy).
-- Whether grill/consult references inline into the system prompt or load on demand (decide by prompt-size measurement in M2).
+Answering one moves it down to Closed questions rather than striking it through
+here. A decision reads better as a decision than as a crossed-out doubt, and
+the answer is the part worth keeping — the question on its own only records
+that we once did not know.
+
 - Community release later — architecture keeps it possible; no v1 work.
+
+## Closed questions
+
+**Q.** What is the plugin finally called?
+
+**A.** Creative Buddy (`creative-buddy` in `manifest.json`). The working name
+graph-buddy lasted until 2026-08-12, and `docs/superpowers/` deliberately keeps
+it in historical filenames and prose — including this file's own path — so the
+build history stays searchable under the name it was written with.
+
+**Q.** Do the grill and consult references inline into the system prompt, or
+load on demand?
+
+**A.** Inline, decided in M2 on the prompt-size measurement as planned.
+`buildSystemPrompt` in `src/agent/prompts.ts` joins `system.md`, `grill.md` and
+`consult.md` into one document, with a stitch note redirecting any `SKILL.md`
+or `references/…` mention back into it rather than out to a file the session
+cannot read. The prompt never grew enough for on-demand loading to earn its
+complexity.
 
 ## Appendix — parked: making it available to others
 
