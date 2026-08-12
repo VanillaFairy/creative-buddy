@@ -50,7 +50,23 @@ Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
       is still indexing, then shows the graphs by itself when done (no
       close/reopen needed).
 - [ ] While a reply streams, the header shows a thinking indicator next to
-      Stop.
+      Stop. The header's last slot holds exactly one button: Wrap up when
+      idle, Stop while a turn runs — never a greyed-out Wrap up.
+- [ ] Bind a fresh tab to a graph → the empty transcript explains what the
+      interviewer does, sitting where the first message will land.
+- [ ] The interviewer's replies are set full-width in the vault's reading
+      font; your messages sit behind a left rail in the UI font. In Appearance,
+      set the text font and the interface font to different families → the two
+      voices are visibly different. Set them the same → the rail still tells
+      them apart.
+- [ ] Notices ("The session ended…", the structure check) read as machinery —
+      monospace behind a rail — not as the interviewer talking. An error
+      notice's rail is red.
+- [ ] Each turn ends on a hairline rule carrying its cost, not a floating
+      grey pill.
+- [ ] Drag the chat tab into the narrow right sidebar → the graph name stays
+      readable, the model picker and Stop are never clipped, and the status
+      text shortens before anything else does.
 
 ## 2 — Dev vault: mindmap
 
@@ -60,12 +76,27 @@ Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
 - [ ] Alt-click any node opens the note in a split; plain click on a leaf opens
       it too; plain click on a parent toggles collapse.
 - [ ] Pan and zoom, then edit any note → the map updates after a beat without
-      losing your pan/zoom. Switching graphs re-centers.
-- [ ] Break a `parent:` field by hand → within a second the node moves to the
-      "not reachable" tray; fix it → the map heals. Hand edits are legal.
+      losing your pan/zoom. Switching graphs re-fits the whole new graph.
+- [ ] Open a map on a graph big enough to overrun the pane → it opens showing
+      the whole tree, not its top-left corner. Maximise the window on a small
+      graph → the tree grows to use the pane instead of sitting marooned in
+      the middle, and stops before the labels look like a mockup.
+- [ ] On a graph with many wikilinks, the dashed cross-links read as a faint
+      mesh rather than a scribble over the tree; hover or focus a node and its
+      own cross-links light up at both ends.
+- [ ] Long note titles are ellipsised inside their box rather than overrunning
+      it, and a collapsed node's `+N` sits after the name in a quieter face.
+- [ ] Tab into the map → node outlines pick up the accent as focus moves.
+      Enter opens the focused note; Space folds a branch. Hover or focus any
+      node → the strip under the map reads its kind, status, what is owed and
+      any problems; move away → it returns to the hint.
+- [ ] Break a `parent:` field by hand → within a second the note is counted in
+      the orange "Not reachable from the hub · N" bar top-right; open the bar
+      to see it listed; fix it → the map heals. Hand edits are legal.
 - [ ] Add `- [ ] owed: something` to a note → the orange dot appears on that
-      node and the "Obligations (all graphs)" panel lists it (every graph, by
-      design).
+      node, and opening the "Obligations · all graphs" bar lists it (every
+      graph, by design). Both bars start closed and must stay closed until
+      clicked — they cover the map when open.
 - [ ] Rename a graph's folder in the file explorer while the mindmap shows it
       → the selector falls back to another graph instead of a blank dropdown
       over an empty map.

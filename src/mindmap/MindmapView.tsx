@@ -5,14 +5,15 @@ import { select } from "d3-selection";
 import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
 import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
+import { Box, Measure, edgeWeight, fitTransform, inspectorLine, nodeBox } from "./geometry";
 import { CollapseStore } from "./collapse-store";
 import { renderDigestForGraph } from "../agent/digest";
 import { tabTitle } from "../view-title";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
-const NODE_HEIGHT = 28;
-const CHAR_WIDTH = 7.2;
 const H_GAP = 48;
+const ROW_GAP = 8;
+const INSPECTOR_HINT = "Click a note to open it, a branch to fold it. Alt-click always opens.";
 
 export class MindmapView extends ItemView {
   private graphDir: string | null = null;
@@ -75,13 +76,13 @@ export class MindmapView extends ItemView {
     container.addClass("cb-mindmap");
     const model = this.plugin.model;
     if (model === null) {
-      container.createEl("p", { text: "Creative Buddy is still indexing the vault…" });
+      container.createEl("p", { cls: "cb-mm-empty", text: "Creative Buddy is still indexing the vault…" });
       return;
     }
 
     const graphs = model.graphs();
     const header = container.createDiv({ cls: "cb-mm-header" });
-    const selector = header.createEl("select");
+    const selector = header.createEl("select", { cls: "cb-quiet-control" });
     for (const dir of graphs) {
       const option = selector.createEl("option", { text: dir === "" ? "(vault root)" : dir });
       option.value = dir;
@@ -99,7 +100,7 @@ export class MindmapView extends ItemView {
     };
 
     if (this.graphDir === null) {
-      container.createEl("p", { text: "No graphs found in this vault." });
+      container.createEl("p", { cls: "cb-mm-empty", text: "No graphs found in this vault." });
       return;
     }
 
@@ -108,112 +109,253 @@ export class MindmapView extends ItemView {
     const hubWarn = stats !== null && stats.hubChildren >= 10 ? " cb-mm-flat" : "";
     header.createSpan({
       cls: `cb-mm-stats${hubWarn}`,
-      text: stats === null ? "no hub found" : `${stats.nodes} nodes · ${stats.hubChildren} off the hub`,
+      text: stats === null ? "no hub found" : `${stats.nodes} notes · ${stats.hubChildren} off the hub`,
     });
 
-    this.drawTree(container, data);
-    this.drawTray(container, data);
-    this.drawObligationsPanel(container);
+    // Stage first, then the inspector below it, then the dock inside the stage:
+    // the readout has to exist before the tree can wire hover into it.
+    const stage = container.createDiv({ cls: "cb-mm-stage" });
+    const inspector = container.createDiv({ cls: "cb-mm-inspector cb-mm-inspector-idle", text: INSPECTOR_HINT });
+    const report = (node: MindmapNode | null): void => {
+      const line = node === null ? null : inspectorLine(node);
+      inspector.setText(line ?? INSPECTOR_HINT);
+      inspector.toggleClass("cb-mm-inspector-idle", line === null);
+    };
+
+    this.drawTree(stage, data, report);
+    const dock = stage.createDiv({ cls: "cb-mm-dock" });
+    this.drawTray(dock, data);
+    this.drawObligationsPanel(dock);
   }
 
-  private drawTree(container: HTMLElement, data: MindmapData): void {
-    if (data.root === null) return;
-    const host = container.createDiv({ cls: "cb-mm-svg-host" });
+  /**
+   * Measures labels in the faces they actually render in. The geometry module
+   * owns every rule about width; all it needs from the shell is a ruler.
+   */
+  private measurers(host: HTMLElement): { node: Measure; hub: Measure } {
+    const style = getComputedStyle(host);
+    const family = style.getPropertyValue("--font-interface").trim() || style.fontFamily;
+    const small = style.getPropertyValue("--font-ui-small").trim() || "13px";
+    const medium = style.getPropertyValue("--font-ui-medium").trim() || "15px";
+    const context = document.createElement("canvas").getContext("2d");
+    if (context === null) {
+      // No canvas in this environment — fall back to an average advance, which
+      // is what the map used to do for every label.
+      const rough = (size: number): Measure => (text) => [...text].length * size * 0.55;
+      return { node: rough(13), hub: rough(15) };
+    }
+    const at = (font: string): Measure => (text) => {
+      context.font = font;
+      return context.measureText(text).width;
+    };
+    return { node: at(`${small} ${family}`), hub: at(`600 ${medium} ${family}`) };
+  }
+
+  private drawTree(stage: HTMLElement, data: MindmapData, report: (node: MindmapNode | null) => void): void {
+    if (data.root === null) {
+      stage.createEl("p", { cls: "cb-mm-empty", text: "This graph has no hub note — a hub is the note whose body carries a ## Charter heading." });
+      return;
+    }
+    const host = stage.createDiv({ cls: "cb-mm-svg-host" });
     const svg = select(host).append("svg").attr("class", "cb-mm-svg");
     const canvas = svg.append("g");
 
-    const layout = flextree<MindmapNode>().nodeSize((n) => [NODE_HEIGHT + 8, n.data.stem.length * CHAR_WIDTH + 24 + H_GAP]).spacing(6);
+    const hubPath = data.root.path;
+    const measure = this.measurers(host);
+    const boxes = new Map<string, Box>();
+    const boxOf = (node: MindmapNode): Box => {
+      const cached = boxes.get(node.path);
+      if (cached !== undefined) return cached;
+      const isHub = node.path === hubPath;
+      const box = nodeBox(node.stem, isHub ? measure.hub : measure.node, {
+        isHub,
+        suffix: node.collapsedChildren > 0 ? `+${node.collapsedChildren}` : null,
+      });
+      boxes.set(node.path, box);
+      return box;
+    };
+
+    const layout = flextree<MindmapNode>()
+      .nodeSize((n) => [boxOf(n.data).height + ROW_GAP, boxOf(n.data).width + H_GAP])
+      .spacing(6);
     const root = layout(hierarchy(data.root, (d) => d.children));
 
     const byPath = new Map<string, { x: number; y: number; data: MindmapNode }>();
     root.each((n) => byPath.set(n.data.path, { x: n.x, y: n.y, data: n.data }));
 
-    // parent edges
+    // Parent edges leave from the parent's right edge rather than its anchor,
+    // so the curve spans the gap it is meant to span instead of starting under
+    // the parent's own box and being drawn over.
     root.links().forEach((link) => {
+      const weight = edgeWeight(link.source.depth);
+      const startX = link.source.y + boxOf(link.source.data).width;
+      const midX = (startX + link.target.y) / 2;
       canvas
         .append("path")
         .attr("class", "cb-mm-edge")
-        .attr("d", `M${link.source.y},${link.source.x} C${(link.source.y + link.target.y) / 2},${link.source.x} ${(link.source.y + link.target.y) / 2},${link.target.x} ${link.target.y},${link.target.x}`);
+        .attr("stroke-width", weight.width)
+        .attr("opacity", weight.opacity)
+        .attr("d", `M${startX},${link.source.x} C${midX},${link.source.x} ${midX},${link.target.x} ${link.target.y},${link.target.x}`);
     });
 
-    // cross-links (faint)
+    // Cross-links sit at a texture's weight and light up only for the node
+    // under the pointer or the keyboard. A real graph draws dozens of them,
+    // and at a readable weight they scribble over the tree they annotate;
+    // indexed by both ends, either end can call its own out of the mesh.
+    const crossByPath = new Map<string, SVGPathElement[]>();
     for (const cross of data.crossLinks) {
       const from = byPath.get(cross.from);
       const to = byPath.get(cross.to);
       if (from === undefined || to === undefined) continue;
-      canvas
+      const startX = from.y + boxOf(from.data).width;
+      const path = canvas
         .append("path")
         .attr("class", "cb-mm-crosslink")
-        .attr("d", `M${from.y},${from.x} Q${(from.y + to.y) / 2},${(from.x + to.x) / 2 - 40} ${to.y},${to.x}`);
+        .attr("d", `M${startX},${from.x} Q${(startX + to.y) / 2},${(from.x + to.x) / 2 - 40} ${to.y},${to.x}`)
+        .node();
+      if (path === null) continue;
+      for (const end of [cross.from, cross.to]) {
+        const list = crossByPath.get(end) ?? [];
+        list.push(path);
+        crossByPath.set(end, list);
+      }
     }
 
-    // nodes
+    let lit: SVGPathElement[] = [];
+    const setActive = (node: MindmapNode | null): void => {
+      for (const path of lit) path.classList.remove("cb-mm-crosslink-live");
+      lit = node === null ? [] : crossByPath.get(node.path) ?? [];
+      for (const path of lit) path.classList.add("cb-mm-crosslink-live");
+      report(node);
+    };
+
     root.each((n) => {
-      const g = canvas.append("g").attr("class", "cb-mm-node").attr("transform", `translate(${n.y},${n.x})`);
-      const width = n.data.stem.length * CHAR_WIDTH + 24;
-      const rect = g
-        .append("rect")
-        .attr("x", 0)
-        .attr("y", -NODE_HEIGHT / 2)
-        .attr("width", width)
-        .attr("height", NODE_HEIGHT)
-        .attr("rx", 6)
-        .attr("class", n.data.problemKinds.length > 0 ? "cb-mm-box cb-mm-problem" : "cb-mm-box");
-      g.append("text").attr("x", 12).attr("y", 5).text(n.data.stem + (n.data.collapsedChildren > 0 ? ` (+${n.data.collapsedChildren})` : ""));
-      if (n.data.obligationCount > 0) g.append("circle").attr("class", "cb-mm-dot").attr("cx", width - 6).attr("cy", -NODE_HEIGHT / 2 + 6).attr("r", 4);
-      g.append("title").text(
-        [
-          n.data.stem,
-          n.data.kind !== null ? `kind: ${n.data.kind}` : null,
-          n.data.status !== null ? `status: ${n.data.status}` : null,
-          n.data.obligationCount > 0 ? `${n.data.obligationCount} open` : null,
-          ...n.data.problemKinds.map((k) => `⚠ ${k}`),
-          n.data.children.length > 0 || n.data.collapsedChildren > 0 ? "alt-click to open" : null,
-        ]
-          .filter((line) => line !== null)
-          .join("\n"),
-      );
-      rect.on("click", (event: MouseEvent) => {
-        if (event.altKey || n.data.children.length > 0 || n.data.collapsedChildren > 0) {
-          if (event.altKey) return this.openNote(n.data.path);
-          this.collapse.toggle(this.graphDir!, n.data.path);
-          this.app.workspace.requestSaveLayout();
-          this.redraw();
-          return;
-        }
-        this.openNote(n.data.path);
+      const node = n.data;
+      const isHub = node.path === hubPath;
+      const box = boxOf(node);
+      const facts = inspectorLine(node);
+      const g = canvas
+        .append("g")
+        .attr("class", isHub ? "cb-mm-node cb-mm-hub" : "cb-mm-node")
+        .attr("transform", `translate(${n.y},${n.x})`)
+        .attr("tabindex", 0)
+        .attr("role", "button")
+        .attr("aria-label", facts ?? node.stem);
+
+      // The hub carries the charter and is what the rest hangs off, so it is a
+      // title over a spine; every other note is a discrete claim in a box.
+      if (isHub) {
+        g.append("rect")
+          .attr("class", node.problemKinds.length > 0 ? "cb-mm-hub-spine cb-mm-hub-spine-problem" : "cb-mm-hub-spine")
+          .attr("x", 0)
+          .attr("y", 8)
+          .attr("width", box.width)
+          .attr("height", 2.5)
+          .attr("rx", 1.25);
+      } else {
+        g.append("rect")
+          .attr("class", node.problemKinds.length > 0 ? "cb-mm-box cb-mm-problem" : "cb-mm-box")
+          .attr("x", 0)
+          .attr("y", -box.height / 2)
+          .attr("width", box.width)
+          .attr("height", box.height)
+          .attr("rx", 6);
+      }
+
+      const textY = isHub ? -6 : 0;
+      g.append("text").attr("x", box.labelX).attr("y", textY).text(box.label);
+      if (box.suffix !== null && box.suffixX !== null) {
+        g.append("text").attr("class", "cb-mm-fold").attr("x", box.suffixX).attr("y", textY).text(box.suffix);
+      }
+      if (node.obligationCount > 0) {
+        // On the hub the dot leads the title: every edge in the tree converges
+        // on the hub's right edge, and a dot there lands inside that knot.
+        g.append("circle")
+          .attr("class", "cb-mm-dot")
+          .attr("cx", isHub ? -12 : box.width - 8)
+          .attr("cy", isHub ? -6 : -box.height / 2 + 7)
+          .attr("r", 3.5);
+      }
+
+      const foldable = node.children.length > 0 || node.collapsedChildren > 0;
+      const fold = (): void => {
+        this.collapse.toggle(this.graphDir!, node.path);
+        this.app.workspace.requestSaveLayout();
+        this.redraw();
+      };
+      g.on("click", (event: MouseEvent) => {
+        if (event.altKey || !foldable) return this.openNote(node.path);
+        fold();
       });
+      // Enter opens and Space folds, mirroring what the two clicks do.
+      g.on("keydown", (event: KeyboardEvent) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this.openNote(node.path);
+        } else if (event.key === " " && foldable) {
+          event.preventDefault();
+          fold();
+        }
+      });
+      g.on("mouseenter", () => setActive(node));
+      g.on("focus", () => setActive(node));
+      g.on("mouseleave", () => setActive(null));
+      g.on("blur", () => setActive(null));
     });
 
     const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 2.5]).on("zoom", (event) => {
       this.lastTransform = event.transform as ZoomTransform;
       canvas.attr("transform", String(event.transform));
     });
-    // Reuse the last pan/zoom so live-update redraws don't snap back to origin;
-    // on first draw the host may not be laid out yet, so guard clientHeight 0.
-    const centerY = host.clientHeight > 0 ? host.clientHeight / 2 : 240;
-    svg.call(zoomBehavior).call(zoomBehavior.transform, this.lastTransform ?? zoomIdentity.translate(40, centerY));
+    svg.call(zoomBehavior);
+
+    // A live-update redraw keeps the pan/zoom you had; a first draw or a graph
+    // switch fits the whole graph instead of opening on its top-left corner.
+    // Deferred a frame because the host has no size until layout has run.
+    const applyFit = (): void => {
+      if (!host.isConnected) return;
+      const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+      root.each((n) => {
+        const box = boxOf(n.data);
+        bounds.minX = Math.min(bounds.minX, n.y);
+        bounds.maxX = Math.max(bounds.maxX, n.y + box.width);
+        bounds.minY = Math.min(bounds.minY, n.x - box.height / 2);
+        bounds.maxY = Math.max(bounds.maxY, n.x + box.height / 2);
+      });
+      const fit = fitTransform(bounds, { width: host.clientWidth, height: host.clientHeight });
+      svg.call(zoomBehavior.transform, zoomIdentity.translate(fit.x, fit.y).scale(fit.k));
+    };
+    if (this.lastTransform !== null) svg.call(zoomBehavior.transform, this.lastTransform);
+    else window.requestAnimationFrame(applyFit);
   }
 
-  private drawTray(container: HTMLElement, data: MindmapData): void {
+  private drawTray(dock: HTMLElement, data: MindmapData): void {
     if (data.unreachable.length === 0) return;
-    const tray = container.createDiv({ cls: "cb-mm-tray" });
-    tray.createEl("h4", { text: "Not reachable from the hub" });
+    // Closed, with the count in the bar: the number is the news, the list is
+    // the detail, and an opened list covers the map you came here to read.
+    const panel = dock.createEl("details", { cls: "cb-mm-panel cb-mm-panel-alert" });
+    panel.createEl("summary", { text: `Not reachable from the hub · ${data.unreachable.length}` });
+    const body = panel.createDiv({ cls: "cb-mm-panel-body" });
     for (const item of data.unreachable) {
-      const row = tray.createDiv({ cls: "cb-mm-tray-row" });
+      const row = body.createDiv({ cls: "cb-mm-tray-row" });
       const link = row.createEl("a", { text: item.stem });
       link.onclick = () => this.openNote(item.path);
       row.createSpan({ text: item.parent !== null ? ` — parent '${item.parent}'` : " — no parent" });
     }
   }
 
-  private drawObligationsPanel(container: HTMLElement): void {
+  private drawObligationsPanel(dock: HTMLElement): void {
     const model = this.plugin.model;
     if (model === null) return;
     const lines = renderDigestForGraph(model.obligations(this.today()), ""); // "" = every graph
-    const panel = container.createDiv({ cls: "cb-mm-obligations" });
-    panel.createEl("h4", { text: "Obligations (all graphs)" });
-    panel.createEl("pre", { text: lines.length > 0 ? lines.join("\n") : "Nothing is due or owed today." });
+    // Closed by default: the tray above it reports something wrong and has
+    // earned the space, while this is reference the user opens when they want
+    // it. Two open panels covered the corner of every map.
+    const panel = dock.createEl("details", { cls: "cb-mm-panel" });
+    panel.createEl("summary", { text: `Obligations · all graphs · ${lines.length}` });
+    panel
+      .createDiv({ cls: "cb-mm-panel-body" })
+      .createEl("pre", { text: lines.length > 0 ? lines.join("\n") : "Nothing is due or owed today." });
   }
 
   private openNote(path: string): void {

@@ -1,28 +1,138 @@
-/* Creative Buddy — chat surface. Obsidian theme variables only, no hard-coded colours. */
+/* Creative Buddy — chat and map surfaces.
+ *
+ * Obsidian theme variables only, no hard-coded colours: a plugin that picks its
+ * own palette is wrong in every theme but the one it was drawn against. What
+ * identity there is comes from structure and face instead of hue, under one
+ * rule that runs through both views:
+ *
+ *   a rail means "this hangs off the conversation"
+ *   a bordered box means "this needs you"
+ *   nothing else gets a container
+ *
+ * Spacing uses Obsidian's own --size-4-* scale rather than a private one, so
+ * there is a single source of truth for rhythm.
+ *
+ * Element resets are written as two-class descendant selectors on purpose.
+ * Obsidian's app.css styles bare elements with a qualifier — `button:not(
+ * .clickable-icon)` at (0,1,1) — which outranks a lone class. See
+ * .claude/knowledge/gotchas.md; the harness at c:/tmp/cb-panel-harness.html
+ * reproduces the rule outside Obsidian.
+ */
+
+.cb-chat,
+.cb-mindmap,
+.cb-picker {
+  --cb-ink: var(--text-normal);
+  --cb-quiet: var(--text-muted);
+  --cb-faint: var(--text-faint);
+  --cb-rail: var(--background-modifier-border);
+  --cb-live: var(--text-accent);
+  --cb-owed: var(--color-orange);
+  --cb-broken: var(--color-red);
+  /* The interviewer speaks in the face the vault's notes are set in; the UI
+     answers in the UI face. Themes that set both to one family lose the
+     distinction, which is why the rail carries it too. */
+  --cb-voice: var(--font-text, var(--font-interface));
+  --cb-hand: var(--font-interface);
+}
+
+/* ────────────────────────────────────────────────────────────── chat ──── */
 
 .cb-chat {
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 8px;
+  gap: var(--size-4-2);
 }
 
 .cb-chat-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  gap: var(--size-4-2);
+  padding-bottom: var(--size-4-2);
+  border-bottom: 1px solid var(--cb-rail);
 }
 
+/* The tab's identity keeps a floor; the live status yields first because it is
+   the one thing on the bar that will say itself again in a second. */
 .cb-chat-graph {
+  flex: 0 1 auto;
+  min-width: 5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-small);
   font-weight: 600;
-  margin-right: auto;
+  letter-spacing: -0.005em;
 }
 
 .cb-chat-dup {
-  color: var(--color-orange);
+  flex: none;
+  color: var(--cb-owed);
+  font-size: var(--font-ui-smaller);
   cursor: help;
+}
+
+/* min-width:0 because a flex item defaults to min-width:auto, which pins it to
+   its content width — without it the status text never yields and the button
+   next to it gets clipped off the end of a narrow pane. */
+.cb-chat-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  margin-left: auto;
+  min-width: 0;
+}
+
+/* A bar that is always on screen should not be always shouting. The controls
+   sit flat until pointed at, which is also when their affordance is needed. */
+.cb-chat-controls .cb-quiet-control {
+  flex: none;
+  height: auto;
+  margin: 0;
+  padding: var(--size-2-1) var(--size-4-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.cb-chat-controls .cb-quiet-control:hover,
+.cb-chat-controls .cb-quiet-control:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--cb-rail);
+  color: var(--cb-ink);
+}
+
+.cb-chat-controls .cb-quiet-control:disabled {
+  color: var(--cb-faint);
+  cursor: default;
+}
+
+.cb-chat-controls .cb-quiet-control:focus-visible {
+  outline: 1px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+
+/* Live status reads in the accent because it is the one thing on the bar that
+   is happening rather than available. */
+.cb-chat-status {
+  flex: 0 8 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cb-live);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+  animation: cb-breathe 1.6s ease-in-out infinite;
 }
 
 .cb-chat-list {
@@ -30,58 +140,107 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-right: 4px;
+  gap: var(--size-4-3);
+  padding-right: var(--size-4-1);
 }
 
+/* Every row shares one left edge; nothing in the transcript is centred or
+   right-aligned, so the column scans as a single document. */
 .cb-msg {
-  max-width: 90%;
-  padding: 6px 10px;
-  border-radius: 8px;
-  white-space: pre-wrap;
+  align-self: stretch;
+  max-width: none;
   overflow-wrap: anywhere;
 }
 
-.cb-msg-user {
-  align-self: flex-end;
-  background-color: var(--background-secondary);
+/* The interviewer's turn: the live thing, set full-bleed in the vault's
+   reading face with prose leading. No container — it is not an object. */
+.cb-msg-assistant {
+  padding: 0;
+  color: var(--cb-ink);
+  font-family: var(--cb-voice);
+  font-size: var(--font-ui-medium);
+  line-height: 1.65;
 }
 
-.cb-msg-assistant {
-  align-self: flex-start;
-  white-space: normal;
+.cb-msg-assistant > :first-child { margin-top: 0; }
+.cb-msg-assistant > :last-child { margin-bottom: 0; }
+
+/* Your turn: already in the record, so it is set tighter and rail-attached
+   rather than floated as a bubble. Full text colour — recorded is not faded. */
+.cb-msg-user {
+  padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
+  border-left: 2px solid var(--cb-rail);
+  background: none;
+  border-radius: 0;
+  color: var(--cb-ink);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-small);
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .cb-streaming {
-  opacity: 0.85;
+  color: var(--cb-quiet);
+  white-space: pre-wrap;
 }
 
-/* Activity panels — a turn's machinery, set as marginalia rather than as a
-   card. The bordered box in this list means "this needs a click" (approval
-   cards); machinery must never carry that weight. Left padding matches the
-   message bubbles' so the column keeps one left edge. */
+/* The turn boundary is the rule itself, with the cost sitting on it — a
+   divider that happens to be labelled, rather than another row of content. */
+.cb-turn-end {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  color: var(--cb-faint);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+}
+
+.cb-turn-end::before,
+.cb-turn-end::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--cb-rail);
+}
+
+.cb-turn-end::before { flex-grow: 0; width: var(--size-4-3); }
+
+.cb-turn-end-error { color: var(--cb-broken); }
+
+/* Sits where the first message will sit, so nothing jumps when one arrives. */
+.cb-chat-empty {
+  margin: var(--size-4-2) 0 0;
+  padding-left: var(--size-4-3);
+  border-left: 2px solid var(--cb-rail);
+  color: var(--cb-quiet);
+  font-family: var(--cb-voice);
+  font-size: var(--font-ui-small);
+  line-height: 1.6;
+}
+
+/* Activity panels — a turn's machinery, set as marginalia. The rail ties the
+   lines to their header without enclosing them; the lines are in the editor's
+   monospace face because the header speaks in the buddy's voice and the rail
+   is the machinery quoting itself, where a raw glob reads as code, not a typo. */
 .cb-activity {
+  font-family: var(--cb-hand);
   font-size: var(--font-ui-smaller);
   line-height: 1.5;
-  padding-left: 10px;
 }
 
-/* Obsidian styles bare `button:not(.clickable-icon)` at (0,1,1), which outranks
-   a lone class — so these resets are scoped to win the cascade. Without the
-   descendant selector the header renders with full button chrome. */
 .cb-activity > .cb-activity-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--size-2-3);
   width: auto;
   height: auto;
   margin: 0;
-  padding: 2px 0;
+  padding: var(--size-2-1) 0;
   background: none;
   border: none;
   border-radius: 0;
   box-shadow: none;
-  color: var(--text-muted);
+  color: var(--cb-quiet);
   font-family: inherit;
   font-size: inherit;
   font-weight: 500;
@@ -94,7 +253,7 @@
 .cb-activity > .cb-activity-head:active {
   background: none;
   box-shadow: none;
-  color: var(--text-normal);
+  color: var(--cb-ink);
 }
 
 .cb-activity > .cb-activity-head:focus-visible {
@@ -118,31 +277,27 @@
 /* While the run is live the label breathes. Carries "still going" without a
    per-second re-render, and stops dead when the turn settles. */
 .cb-activity-running .cb-activity-label {
-  animation: cb-activity-breathe 1.6s ease-in-out infinite;
+  animation: cb-breathe 1.6s ease-in-out infinite;
 }
 
-@keyframes cb-activity-breathe {
+@keyframes cb-breathe {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 
-/* The rail ties the lines to their header without enclosing them. The lines
-   are set in the editor's monospace face on purpose: the header speaks in the
-   buddy's voice, the rail is the machinery quoting itself, and a raw glob or
-   regex reads as code rather than as a typo. */
 .cb-activity-body {
-  margin: 2px 0 2px 0.4em;
-  padding: 2px 0 2px 12px;
-  border-left: 2px solid var(--background-modifier-border);
+  margin: var(--size-2-1) 0 var(--size-2-1) 0.4em;
+  padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
+  border-left: 2px solid var(--cb-rail);
   list-style: none;
-  color: var(--text-muted);
+  color: var(--cb-quiet);
   font-family: var(--font-monospace);
   font-size: 0.95em;
   transition: border-color 120ms ease;
 }
 
 .cb-activity:hover .cb-activity-body {
-  border-left-color: var(--text-faint);
+  border-left-color: var(--cb-faint);
 }
 
 .cb-activity-body li {
@@ -150,64 +305,80 @@
   overflow-wrap: anywhere;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cb-activity-chevron {
-    transition: none;
-  }
-
-  .cb-activity-running .cb-activity-label {
-    animation: none;
-  }
+/* Notices are the plugin reporting on itself, so they take the machinery
+   treatment — rail, monospace, quiet — not the interviewer's voice. */
+.cb-notice {
+  padding-left: var(--size-4-3);
+  border-left: 2px solid var(--cb-rail);
+  color: var(--cb-quiet);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
+.cb-notice-error {
+  border-left-color: var(--cb-broken);
+  color: var(--cb-broken);
+}
+
+/* The one bordered box in the transcript. Orange edge because orange means
+   owed everywhere in this plugin, and what is owed here is your decision. */
 .cb-approval {
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 8px 10px;
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--cb-rail);
+  border-left: 3px solid var(--cb-owed);
+  border-radius: var(--radius-s);
   background-color: var(--background-secondary);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-small);
 }
 
 .cb-approval-title {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .cb-approval-reason {
-  color: var(--text-muted);
-  margin: 4px 0 8px;
+  margin: var(--size-2-2) 0 var(--size-4-2);
+  color: var(--cb-quiet);
+  font-size: var(--font-ui-smaller);
+  overflow-wrap: anywhere;
 }
 
 .cb-approval-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--size-4-1);
   flex-wrap: wrap;
 }
 
 .cb-approval-actions input {
-  flex: 1 1 180px;
+  flex: 1 1 160px;
   min-width: 0;
-}
-
-.cb-approval-settled {
-  color: var(--text-muted);
-}
-
-.cb-notice-error {
-  color: var(--color-red);
-}
-
-.cb-cost {
-  color: var(--text-muted);
   font-size: var(--font-ui-smaller);
-  align-self: center;
+}
+
+/* Settled cards drop the box: the decision is made, so it is a record now. */
+.cb-approval-settled {
+  padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
+  border: none;
+  border-left: 2px solid var(--cb-rail);
+  border-radius: 0;
+  background: none;
+  color: var(--cb-quiet);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  overflow-wrap: anywhere;
 }
 
 .cb-chat-composer {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  border-top: 1px solid var(--background-modifier-border);
-  padding-top: 8px;
+  gap: var(--size-4-2);
+  border-top: 1px solid var(--cb-rail);
+  padding-top: var(--size-4-2);
 }
 
 .cb-chat-composer textarea {
@@ -215,50 +386,135 @@
   min-height: 3lh;
   max-height: 12lh;
   resize: vertical;
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-small);
+  line-height: 1.55;
 }
+
+/* ──────────────────────────────────────────────────────────── picker ──── */
 
 .cb-picker {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--size-4-2);
+  max-width: 34em;
+}
+
+.cb-picker h3 {
+  margin: 0;
+  font-family: var(--cb-hand);
+}
+
+.cb-picker p {
+  margin: 0;
+  color: var(--cb-quiet);
+  font-size: var(--font-ui-small);
+  line-height: 1.6;
+}
+
+.cb-picker-graphs {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  gap: 0;
+  border-top: 1px solid var(--cb-rail);
+}
+
+/* Each graph is a row you pick, not a chiclet: the list is the object. */
+.cb-picker-graphs .cb-picker-graph {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: var(--size-4-2) var(--size-4-2) var(--size-4-2) var(--size-4-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--cb-rail);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--cb-ink);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-small);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 100ms ease, padding-left 100ms ease;
+}
+
+.cb-picker-graphs .cb-picker-graph:hover,
+.cb-picker-graphs .cb-picker-graph:focus-visible {
+  background: var(--background-modifier-hover);
+  box-shadow: none;
+  padding-left: var(--size-4-4);
+  color: var(--cb-ink);
 }
 
 .cb-picker-hint {
-  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
 }
 
-/* Creative Buddy — mindmap surface. */
+/* ─────────────────────────────────────────────────────────── mindmap ──── */
 
 .cb-mindmap {
-  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 8px;
+  gap: var(--size-4-2);
 }
 
 .cb-mm-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  gap: var(--size-4-2);
+  padding-bottom: var(--size-4-2);
+  border-bottom: 1px solid var(--cb-rail);
+}
+
+.cb-mm-header .cb-quiet-control {
+  height: auto;
+  margin: 0;
+  padding: var(--size-2-1) var(--size-4-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+
+.cb-mm-header .cb-quiet-control:hover,
+.cb-mm-header .cb-quiet-control:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--cb-rail);
+  color: var(--cb-ink);
 }
 
 .cb-mm-stats {
-  color: var(--text-muted);
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
   font-size: var(--font-ui-smaller);
+  white-space: nowrap;
 }
 
 /* A hub with ten-plus direct children has gone flat — worth noticing. */
 .cb-mm-flat {
-  color: var(--color-orange);
+  color: var(--cb-owed);
+}
+
+.cb-mm-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .cb-mm-svg-host {
-  flex: 1 1 auto;
-  min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -273,99 +529,245 @@
   cursor: grabbing;
 }
 
+/* Edges take the text-faint ink rather than the border grey: a border colour is
+   a hairline meant to disappear, and in a light theme it does — these are the
+   graph's actual structure and have to stay readable. */
 .cb-mm-edge {
   fill: none;
-  stroke: var(--background-modifier-border);
-  stroke-width: 1.5px;
+  stroke: var(--cb-faint);
+  stroke-linecap: round;
 }
 
+/* Texture, not lines. A graph of any size draws dozens of these, and at a
+   weight you can actually follow they scribble across the tree — so they read
+   as a faint mesh until a node claims its own. */
 .cb-mm-crosslink {
   fill: none;
-  stroke: var(--text-accent);
+  stroke: var(--cb-live);
   stroke-width: 1px;
   stroke-dasharray: 3 4;
-  opacity: 0.3;
+  opacity: 0.16;
+  transition: opacity 100ms ease, stroke-width 100ms ease;
+}
+
+.cb-mm-crosslink-live {
+  stroke-width: 1.75px;
+  opacity: 0.95;
 }
 
 .cb-mm-node {
   cursor: pointer;
+  outline: none;
 }
 
 .cb-mm-box {
   fill: var(--background-secondary);
-  stroke: var(--background-modifier-border);
+  stroke: var(--cb-rail);
   stroke-width: 1px;
+  transition: stroke 100ms ease, fill 100ms ease;
 }
 
-.cb-mm-node:hover .cb-mm-box {
-  stroke: var(--text-accent);
+.cb-mm-node:hover .cb-mm-box,
+.cb-mm-node:focus-visible .cb-mm-box {
+  fill: var(--background-modifier-hover);
+  stroke: var(--cb-live);
+  stroke-width: 1.5px;
 }
 
+/* Dashed as well as red, so "this note is broken" survives a reader who
+   cannot tell the red from the border grey. */
 .cb-mm-problem {
-  stroke: var(--color-red);
+  stroke: var(--cb-broken);
   stroke-width: 2px;
+  stroke-dasharray: 5 3;
 }
 
 .cb-mm-dot {
-  fill: var(--color-orange);
+  fill: var(--cb-owed);
 }
 
+/* `central` rather than `middle`: the label is centred on the node's anchor
+   at y=0, so the box needs no hand-tuned baseline offset. */
 .cb-mm-node text {
-  fill: var(--text-normal);
+  fill: var(--cb-ink);
+  font-family: var(--cb-hand);
   font-size: var(--font-ui-small);
-  dominant-baseline: middle;
+  dominant-baseline: central;
   pointer-events: none;
   user-select: none;
 }
 
-.cb-mm-tray,
-.cb-mm-obligations {
-  position: absolute;
-  max-width: 40%;
-  max-height: 40%;
-  overflow: auto;
-  padding: 8px 10px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  background-color: var(--background-primary);
-  box-shadow: var(--shadow-s);
+/* A folded branch's count is metadata, not part of the note's name. */
+.cb-mm-fold {
+  fill: var(--cb-quiet);
   font-size: var(--font-ui-smaller);
 }
 
-.cb-mm-tray {
-  right: 12px;
-  top: 48px;
+/* The hub carries the charter and is what everything else hangs off, so it is
+   a title with a spine rather than another box in the row of boxes. */
+.cb-mm-hub text {
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
 }
 
-.cb-mm-obligations {
-  right: 12px;
-  bottom: 12px;
+.cb-mm-hub-spine {
+  fill: var(--cb-live);
 }
 
-.cb-mm-tray h4,
-.cb-mm-obligations h4 {
-  margin: 0 0 6px;
+/* The hub has no box to redden, so its spine carries the alarm. */
+.cb-mm-hub-spine-problem {
+  fill: var(--cb-broken);
+}
+
+.cb-mm-hub:hover text,
+.cb-mm-hub:focus-visible text {
+  fill: var(--cb-live);
+}
+
+/* One fixed readout beats a tooltip that moves with a pannable canvas — and it
+   answers to the keyboard, which a hover tooltip never does. */
+/* A block, not a flex row: text-overflow never applies to the anonymous item
+   a bare text node becomes inside a flex container, so the readout was cut
+   mid-word instead of ellipsised. */
+.cb-mm-inspector {
+  flex: none;
+  min-height: 1.6em;
+  line-height: 1.6;
+  padding-top: var(--size-4-1);
+  border-top: 1px solid var(--cb-rail);
+  color: var(--cb-quiet);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-mm-inspector-idle {
+  color: var(--cb-faint);
+}
+
+/* Both panels start closed and carry their count in the summary, so a graph
+   with loose notes says so in one line instead of opening a list over the map.
+   Stacked in one column, they also cannot land on top of each other the way
+   two separately-pinned panels did. */
+.cb-mm-dock {
+  position: absolute;
+  right: var(--size-4-3);
+  top: var(--size-4-2);
+  bottom: var(--size-4-2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--size-4-2);
+  width: min(45%, 20em);
+  pointer-events: none;
+}
+
+.cb-mm-dock .cb-mm-panel {
+  pointer-events: auto;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  padding: var(--size-4-1) var(--size-4-2);
+  border: 1px solid var(--cb-rail);
+  border-radius: var(--radius-s);
+  background-color: var(--background-primary);
+  box-shadow: var(--shadow-s);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+}
+
+.cb-mm-dock .cb-mm-panel[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cb-mm-dock .cb-mm-panel summary {
+  color: var(--cb-quiet);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  /* Wraps rather than clips: a narrow pane used to cut the heading mid-word. */
+  overflow-wrap: anywhere;
+}
+
+/* Notes the hub cannot reach are the map's own bad news, so the closed bar
+   says it in the colour this plugin uses for everything owed. */
+.cb-mm-dock .cb-mm-panel-alert summary {
+  color: var(--cb-owed);
+}
+
+.cb-mm-dock .cb-mm-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.cb-mm-dock .cb-mm-panel summary:hover {
+  color: var(--cb-ink);
+}
+
+.cb-mm-dock .cb-mm-panel summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 0.9em;
+  opacity: 0.75;
+  transition: transform 120ms ease;
+}
+
+.cb-mm-dock .cb-mm-panel[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.cb-mm-panel-body {
+  min-height: 0;
+  overflow: auto;
+  margin-top: var(--size-4-1);
+  padding-top: var(--size-4-1);
+  border-top: 1px solid var(--cb-rail);
 }
 
 .cb-mm-tray-row {
-  color: var(--text-muted);
+  padding: 1px 0;
+  color: var(--cb-quiet);
+  overflow-wrap: anywhere;
 }
 
 .cb-mm-tray-row a {
+  color: var(--cb-ink);
   cursor: pointer;
 }
 
-.cb-mm-obligations pre {
+.cb-mm-panel-body pre {
   margin: 0;
+  padding: 0;
+  background: none;
+  color: var(--cb-quiet);
+  font-size: inherit;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: none;
-  padding: 0;
 }
 
-.cb-chat-status {
-  color: var(--text-muted);
-  font-size: 0.85em;
-  font-style: italic;
-  margin-left: auto;
+.cb-mm-empty {
+  margin: 0;
+  padding: var(--size-4-4) 0;
+  max-width: 34em;
+  color: var(--cb-quiet);
+  font-family: var(--cb-voice);
+  font-size: var(--font-ui-small);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-activity-chevron,
+  .cb-mm-box,
+  .cb-mm-crosslink,
+  .cb-picker-graphs .cb-picker-graph,
+  .cb-mm-dock .cb-mm-panel summary::before {
+    transition: none;
+  }
+
+  .cb-activity-running .cb-activity-label,
+  .cb-chat-status {
+    animation: none;
+  }
 }

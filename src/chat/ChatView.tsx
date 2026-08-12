@@ -326,11 +326,13 @@ function GraphPicker({ plugin, onPick }: { plugin: CreativeBuddyPlugin; onPick: 
       ) : graphs.length === 0 ? (
         <p>No graphs found — a graph is a folder whose hub note carries a ## Charter heading.</p>
       ) : null}
-      {graphs.map((dir) => (
-        <button key={dir} onClick={() => onPick(dir)}>
-          {dir === "" ? "(vault root)" : dir}
-        </button>
-      ))}
+      <div className="cb-picker-graphs">
+        {graphs.map((dir) => (
+          <button className="cb-picker-graph" key={dir} onClick={() => onPick(dir)}>
+            {dir === "" ? "(vault root)" : dir}
+          </button>
+        ))}
+      </div>
       <p className="cb-picker-hint">To start a brand-new graph, bind to the vault root and ask for a bootstrap — the interviewer asks the folder name first.</p>
     </div>
   );

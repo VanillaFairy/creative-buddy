@@ -42,16 +42,27 @@ export function ChatSurface(props: {
       <header className="cb-chat-header">
         <span className="cb-chat-graph">{props.graphLabel}</span>
         {props.duplicateTab ? <span className="cb-chat-dup" title="Another tab is bound to this graph — last write wins.">⚠ shared</span> : null}
-        <select value={props.model} onChange={(e) => callbacks.onModelChange(e.target.value)}>
-          {Object.entries(MODEL_CHOICES).map(([id, label]) => (
-            <option key={id} value={id}>{label}</option>
-          ))}
-        </select>
-        <button onClick={() => callbacks.onWrapUp()} disabled={props.busy}>Wrap up</button>
-        {props.busy ? <span className="cb-chat-status">{props.status ?? "thinking…"}</span> : null}
-        {props.busy ? <button onClick={() => callbacks.onInterrupt()}>Stop</button> : null}
+        <div className="cb-chat-controls">
+          {props.busy ? <span className="cb-chat-status">{props.status ?? "thinking…"}</span> : null}
+          <select className="cb-quiet-control" value={props.model} onChange={(e) => callbacks.onModelChange(e.target.value)}>
+            {Object.entries(MODEL_CHOICES).map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
+          {/* One slot, one button: a disabled "Wrap up" during a turn is a
+              control you cannot use sitting next to the one you want. */}
+          {props.busy
+            ? <button className="cb-quiet-control" onClick={() => callbacks.onInterrupt()}>Stop</button>
+            : <button className="cb-quiet-control" onClick={() => callbacks.onWrapUp()}>Wrap up</button>}
+        </div>
       </header>
       <div className="cb-chat-list" ref={listRef}>
+        {props.items.length === 0 ? (
+          <p className="cb-chat-empty">
+            Nothing said yet. Tell the interviewer what you are working on — it asks one question at a
+            time and files your answers into the graph as it goes.
+          </p>
+        ) : null}
         {groupActivity(props.items, props.busy).map((row) =>
           row.kind === "group"
             ? <ActivityPanel key={row.key} row={row} />
@@ -61,7 +72,7 @@ export function ChatSurface(props: {
       <div className="cb-chat-composer">
         <textarea
           value={draft}
-          placeholder="Say something to the interviewer…"
+          placeholder="Say something to the interviewer — Enter sends"
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -85,9 +96,15 @@ function TranscriptRow({ item, callbacks }: { item: ActivityItem; callbacks: Cha
     case "approval":
       return <ApprovalCard item={item} callbacks={callbacks} />;
     case "notice":
-      return <div className={`cb-msg cb-notice cb-notice-${item.tone}`}>{item.text}</div>;
+      return <div className={`cb-notice cb-notice-${item.tone}`}>{item.text}</div>;
     case "result":
-      return <div className="cb-msg cb-cost">turn done · ${item.costUsd.toFixed(2)}{item.isError ? " · errored" : ""}</div>;
+      // The rule is the row: a turn boundary that happens to carry its cost,
+      // rather than one more block of content in the column.
+      return (
+        <div className={`cb-turn-end${item.isError ? " cb-turn-end-error" : ""}`}>
+          <span>{item.isError ? "turn errored" : "turn done"} · ${item.costUsd.toFixed(2)}</span>
+        </div>
+      );
   }
 }
 
