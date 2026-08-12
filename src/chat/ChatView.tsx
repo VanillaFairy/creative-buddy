@@ -14,6 +14,7 @@ import {
   closeSession,
   highestApprovalSeq,
   isPristine,
+  openOn,
   replaceSession,
   restoreSessions,
   sharedGraphs,
@@ -104,6 +105,12 @@ export class ChatView extends ItemView {
 
   // ── per-conversation state ────────────────────────────────────────────────
 
+  /** The clock is the shell's business; every pure module takes the day as an argument. */
+  private today(): { y: number; m: number; d: number } {
+    const now = new Date();
+    return { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
+  }
+
   private runtime(key: string): Runtime {
     const existing = this.runtimes.get(key);
     if (existing !== undefined) return existing;
@@ -147,24 +154,52 @@ export class ChatView extends ItemView {
     this.render();
   }
 
+  /**
+   * The strip's "+": another conversation, on the project you are reading. It
+   * always adds — asking for a new conversation while you already have one on
+   * that project is the point of the button, and the ⚠ badge is there to say
+   * both are writing to the same graph.
+   */
   private newTab(): void {
-    this.list = addSession(this.list, this.plugin.settings.defaultModel);
+    this.list = addSession(this.list, this.plugin.settings.defaultModel, this.plugin.activeGraphDir());
     this.app.workspace.requestSaveLayout();
     this.render();
   }
 
   /**
-   * The command's entry point. Unlike the strip's "+", which is an explicit
-   * click and always adds, this is reached by asking for a fresh conversation
-   * — and if the panel it just revealed is already sitting on an unused one,
-   * that is the fresh conversation.
+   * The ribbon's, the palette's and the note menu's way in: the conversation
+   * about this project, or a new one when there is none. Pressing the icon
+   * again is then a way back to the thread you already have rather than a
+   * second one beside it.
+   *
+   * With nothing to resolve there is nothing to open: the panel is revealed and
+   * whatever is on screen stays. A blank tab is already asking the question,
+   * and another blank tab would not be an answer.
+   */
+  openConversation(graphDir: string | null): void {
+    const next = graphDir === null ? this.list : openOn(this.list, graphDir, this.plugin.settings.defaultModel);
+    if (next !== this.list) {
+      this.list = next;
+      this.app.workspace.requestSaveLayout();
+    }
+    this.render();
+  }
+
+  /**
+   * The palette's "New conversation" — the same thing the strip's "+" does, on
+   * the project you are reading, except that a blank conversation already on
+   * screen *is* a new conversation and gets the project rather than a tab beside
+   * it. The picker is left to ask only when nothing resolved.
    */
   newConversation(): void {
-    if (isPristine(activeSession(this.list))) {
-      this.render();
+    const current = activeSession(this.list);
+    if (!isPristine(current)) {
+      this.newTab();
       return;
     }
-    this.newTab();
+    const graphDir = this.plugin.activeGraphDir();
+    if (graphDir === null) this.render();
+    else this.patch(current.key, { graphDir });
   }
 
   private closeTab(index: number): void {
@@ -232,8 +267,8 @@ export class ChatView extends ItemView {
       new Notice("This graph's hub note is gone — rebind the tab.");
       return null;
     }
-    const today = new Date();
-    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const today = this.today();
+    const todayIso = `${today.y}-${String(today.m).padStart(2, "0")}-${String(today.d).padStart(2, "0")}`;
     const key = session.key;
 
     try {

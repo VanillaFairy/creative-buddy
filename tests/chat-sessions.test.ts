@@ -7,6 +7,7 @@ import {
   closeSession,
   emptySession,
   highestApprovalSeq,
+  openOn,
   replaceSession,
   restoreSessions,
   sharedGraphs,
@@ -36,6 +37,74 @@ describe("addSession", () => {
     const firstKey = activeSession(list).key;
     list = addSession(closeSession(list, 1), MODEL);
     expect(activeSession(list).key).not.toBe(firstKey);
+  });
+
+  it("opens the new conversation on a project when given one", () => {
+    const list = addSession(listOf("A"), MODEL, "B");
+    expect(activeSession(list).graphDir).toBe("B");
+    expect(activeSession(list).items).toEqual([]);
+  });
+
+  /** A second conversation on the same project is legal — you asked for it twice. */
+  it("will open a second conversation on a project that already has one", () => {
+    const list = addSession(listOf("A"), MODEL, "A");
+    expect(list.sessions.map((s) => s.graphDir)).toEqual(["A", "A"]);
+    expect(list.active).toBe(1);
+  });
+});
+
+describe("openOn", () => {
+  it("goes back to the conversation already on that project instead of starting a second", () => {
+    const list = openOn(activate(listOf("A", "B"), 1), "A", MODEL);
+    expect(list.sessions).toHaveLength(2);
+    expect(list.active).toBe(0);
+  });
+
+  it("does nothing at all when you are already in that project's conversation", () => {
+    const before = activate(listOf("A", "B"), 1);
+    expect(openOn(before, "B", MODEL)).toBe(before); // same object → nothing to save or redraw
+  });
+
+  /** Two tabs on one project predate this rule; landing on the one you are on beats jumping. */
+  it("stays on the active tab when more than one is bound to the project", () => {
+    const before = activate(listOf("A", "A"), 1);
+    expect(openOn(before, "A", MODEL).active).toBe(1);
+  });
+
+  it("binds the blank conversation you are sitting on rather than adding beside it", () => {
+    const list = openOn(listOf(null), "A", MODEL);
+    expect(list.sessions).toHaveLength(1);
+    expect(activeSession(list).graphDir).toBe("A");
+  });
+
+  it("adds a conversation on the project when the one you are on is in use", () => {
+    const list = openOn(listOf("A"), "B", MODEL);
+    expect(list.sessions).toHaveLength(2);
+    expect(list.active).toBe(1);
+    expect(activeSession(list).graphDir).toBe("B");
+  });
+
+  /** Rebinding a live conversation would drop its session and orphan its transcript. */
+  it("never rebinds a conversation that is already in use", () => {
+    const list = openOn(listOf("A"), "B", MODEL);
+    expect(list.sessions[0]!.graphDir).toBe("A");
+    expect(list.sessions[0]!.key).toBe("t0");
+  });
+
+  it("leaves the other conversations' transcripts alone", () => {
+    const before = listOf("A", "B");
+    const withTalk = replaceSession(before, "t1", {
+      ...before.sessions[1]!,
+      items: [{ kind: "user", text: "hello" } as TranscriptItem],
+    });
+    const list = openOn(withTalk, "C", MODEL);
+    expect(list.sessions[1]!.items).toHaveLength(1);
+  });
+
+  it("treats a project at the vault root as a project like any other", () => {
+    const list = openOn(activate(listOf("", "A"), 1), "", MODEL);
+    expect(list.sessions).toHaveLength(2);
+    expect(list.active).toBe(0);
   });
 });
 

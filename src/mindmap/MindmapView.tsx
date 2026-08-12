@@ -59,6 +59,18 @@ export class MindmapView extends ItemView {
     if (this.redrawTimer !== null) window.clearTimeout(this.redrawTimer);
   }
 
+  /**
+   * Draw another project. The stored transform belongs to the one on screen, so
+   * it is dropped — a new project gets fitted rather than inheriting somebody
+   * else's pan and opening somewhere off in the white.
+   */
+  showGraph(graphDir: string): void {
+    this.graphDir = graphDir;
+    this.lastTransform = null;
+    this.app.workspace.requestSaveLayout();
+    this.redraw();
+  }
+
   private scheduleRedraw(): void {
     if (this.redrawTimer !== null) window.clearTimeout(this.redrawTimer);
     this.redrawTimer = window.setTimeout(() => this.redraw(), 300);
@@ -86,12 +98,7 @@ export class MindmapView extends ItemView {
     // than render a blank selector over an empty map.
     if (this.graphDir !== null && !graphs.includes(this.graphDir)) this.graphDir = graphs[0] ?? null;
     if (this.graphDir !== null) selector.value = this.graphDir;
-    selector.onchange = () => {
-      this.graphDir = selector.value;
-      this.lastTransform = null;
-      this.app.workspace.requestSaveLayout();
-      this.redraw();
-    };
+    selector.onchange = () => this.showGraph(selector.value);
 
     if (this.graphDir === null) {
       container.createEl("p", { cls: "cb-mm-empty", text: "No graphs found in this vault." });
@@ -260,7 +267,6 @@ export class MindmapView extends ItemView {
       if (box.suffix !== null && box.suffixX !== null) {
         g.append("text").attr("class", "cb-mm-fold").attr("x", box.suffixX).attr("y", textY).text(box.suffix);
       }
-
       const foldable = node.children.length > 0 || node.collapsedChildren > 0;
       const fold = (): void => {
         this.collapse.toggle(this.graphDir!, node.path);

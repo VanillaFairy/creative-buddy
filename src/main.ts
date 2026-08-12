@@ -35,18 +35,50 @@ export default class CreativeBuddyPlugin extends Plugin {
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
     this.registerView(MINDMAP_VIEW_TYPE, (leaf) => new MindmapView(leaf, this));
 
-    // One ribbon icon for the whole plugin. A sidebar panel already shows its
-    // own icon in the sidebar's strip, so a second ribbon icon per view just
-    // puts the same glyph on screen twice.
-    this.addRibbonIcon("messages-square", "Open Creative Buddy", () => {
-      void this.openChat();
+    // One icon per surface, each carrying its own view's glyph: closing either
+    // panel has to leave a way back to it, and a single icon can only ever
+    // reopen one of them. Both read the note you are on and go straight to its
+    // project, so the picker is for when there is nothing to read — and both
+    // are a way *back* to that project, never a second copy of it.
+    this.addRibbonIcon("messages-square", "Open Creative Buddy chat", () => {
+      void this.openChat(this.activeGraphDir());
+    });
+    this.addRibbonIcon("git-fork", "Open Creative Buddy map", () => {
+      void this.openMap(this.activeGraphDir());
     });
 
     // Command ids are what keybindings hang on, so `new-chat-tab` keeps its id
-    // even though it now says panel.
-    this.addCommand({ id: "open-chat", name: "Open chat panel", callback: () => void this.openChat() });
+    // even though it now says panel. Every one of these resolves the project you
+    // are reading; they differ only in whether they hand back the conversation
+    // you already have there (open-chat) or another one beside it
+    // (new-chat-tab).
+    this.addCommand({ id: "open-chat", name: "Open chat panel", callback: () => void this.openChat(this.activeGraphDir()) });
     this.addCommand({ id: "new-chat-tab", name: "New conversation", callback: () => void this.newConversation() });
-    this.addCommand({ id: "open-mindmap", name: "Open graph mindmap", callback: () => void this.openMindmap() });
+    this.addCommand({ id: "open-mindmap", name: "Open graph mindmap", callback: () => void this.openMap(this.activeGraphDir()) });
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (!(file instanceof TFile) || file.extension.toLowerCase() !== "md") return;
+        const graphDir = this.model?.graphOf(file.path) ?? null;
+        // In the "open" section, beside Obsidian's own open-in actions, because
+        // that is what these are. Offered for any note: one outside every
+        // project lands on the picker rather than on nothing.
+        menu.addItem((item) =>
+          item
+            .setSection("open")
+            .setTitle("Open in Creative Buddy chat")
+            .setIcon("messages-square")
+            .onClick(() => void this.openChat(graphDir)),
+        );
+        menu.addItem((item) =>
+          item
+            .setSection("open")
+            .setTitle("Show in Creative Buddy map")
+            .setIcon("git-fork")
+            .onClick(() => void this.openMap(graphDir)),
+        );
+      }),
+    );
 
     this.app.workspace.onLayoutReady(() => {
       void this.buildModel();
@@ -58,6 +90,21 @@ export default class CreativeBuddyPlugin extends Plugin {
   }
 
   /**
+   * The project owning the note you are looking at. Null when no note is open,
+   * when it belongs to no project, or before indexing has finished — in every
+   * one of those cases the surface asks instead of guessing.
+   *
+   * Public because the chat panel resolves it for itself too: its "+" opens the
+   * new conversation on whatever you are reading, and only the panel knows when
+   * that button was pressed.
+   */
+  activeGraphDir(): string | null {
+    const file = this.app.workspace.getActiveFile();
+    if (file === null) return null;
+    return this.model?.graphOf(file.path) ?? null;
+  }
+
+  /**
    * Both surfaces live in the right sidebar, beside the vault rather than in
    * it — you read and edit notes in the main area while the buddy watches from
    * the side. getRightLeaf only returns null where there is no right sidebar
@@ -66,8 +113,9 @@ export default class CreativeBuddyPlugin extends Plugin {
    * revealLeaf on every path, because a sidebar the user has collapsed would
    * otherwise swallow the panel they just asked for.
    */
-  private async openChat(): Promise<void> {
-    await this.revealOrCreate(CHAT_VIEW_TYPE);
+  private async openChat(graphDir: string | null): Promise<void> {
+    const leaf = await this.revealOrCreate(CHAT_VIEW_TYPE);
+    if (leaf.view instanceof ChatView) leaf.view.openConversation(graphDir);
   }
 
   /** Conversations live inside the panel, so this reveals it and adds a tab. */
@@ -76,8 +124,9 @@ export default class CreativeBuddyPlugin extends Plugin {
     if (leaf.view instanceof ChatView) leaf.view.newConversation();
   }
 
-  private async openMindmap(): Promise<void> {
-    await this.revealOrCreate(MINDMAP_VIEW_TYPE);
+  private async openMap(graphDir: string | null): Promise<void> {
+    const leaf = await this.revealOrCreate(MINDMAP_VIEW_TYPE);
+    if (leaf.view instanceof MindmapView && graphDir !== null) leaf.view.showGraph(graphDir);
   }
 
   /**

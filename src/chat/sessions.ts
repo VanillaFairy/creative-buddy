@@ -24,14 +24,19 @@ export interface SessionList {
   seq: number;
 }
 
-export function emptySession(key: string, model: string): ChatSession {
-  return { key, graphDir: null, model, sessionId: null, items: [] };
+export function emptySession(key: string, model: string, graphDir: string | null = null): ChatSession {
+  return { key, graphDir, model, sessionId: null, items: [] };
 }
 
-/** A new conversation always opens focused — you asked for it. */
-export function addSession(list: SessionList, model: string): SessionList {
+/**
+ * A new conversation always opens focused — you asked for it. It opens on a
+ * project when the caller resolved one, and unbound (so the picker asks) when it
+ * did not; a second conversation on a project that already has one is allowed,
+ * because asking for a new conversation twice is a thing people do.
+ */
+export function addSession(list: SessionList, model: string, graphDir: string | null = null): SessionList {
   return {
-    sessions: [...list.sessions, emptySession(`t${list.seq}`, model)],
+    sessions: [...list.sessions, emptySession(`t${list.seq}`, model, graphDir)],
     active: list.sessions.length,
     seq: list.seq + 1,
   };
@@ -63,6 +68,28 @@ export function replaceSession(list: SessionList, key: string, next: ChatSession
 /** A conversation nobody has used yet — another one beside it would be a copy. */
 export function isPristine(session: ChatSession): boolean {
   return session.graphDir === null && session.items.length === 0;
+}
+
+/**
+ * Open the panel on a project: the conversation you already have about it, or a
+ * new one when there is none.
+ *
+ * Asking for a project you are already talking about has to be a way *back* to
+ * that thread, not a second thread beside it — two conversations on one graph
+ * both write to it and the last write wins. A conversation already in use is
+ * never rebound either: its Claude session and transcript belong to the project
+ * it was opened on, so a fresh tab is the only honest place to put another.
+ */
+export function openOn(list: SessionList, graphDir: string, model: string): SessionList {
+  // Returned unchanged, so the caller has nothing to save and nothing to redraw.
+  if (activeSession(list).graphDir === graphDir) return list;
+  const existing = list.sessions.findIndex((s) => s.graphDir === graphDir);
+  if (existing !== -1) return activate(list, existing);
+  // The blank conversation you are sitting on is the one to use; anything in use
+  // keeps its own project and gets a new tab beside it.
+  if (!isPristine(activeSession(list))) return addSession(list, model, graphDir);
+  const target = activeSession(list);
+  return replaceSession(list, target.key, { ...target, graphDir });
 }
 
 export function activeSession(list: SessionList): ChatSession {
