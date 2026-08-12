@@ -64,18 +64,31 @@ export default class CreativeBuddyPlugin extends Plugin {
    * otherwise swallow the panel they just asked for.
    */
   private async openChatTab(): Promise<void> {
-    // A fresh leaf every time — one panel, one session.
+    // A fresh leaf every time — one panel, one session. split:true splits off
+    // the sidebar's current leaf rather than taking it over, so opening a chat
+    // never costs you the panel already docked there.
     const leaf = this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf(true);
     await leaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
     await this.app.workspace.revealLeaf(leaf);
   }
 
-  /** The mindmap is one shared surface — reveal the open one, or make the first. */
+  /**
+   * The mindmap is one shared surface — reveal the open one, or make the first.
+   *
+   * ensureSideLeaf rather than getRightLeaf(false): the latter hands back the
+   * sidebar's most recent leaf *whatever it is showing*, so setViewState then
+   * overwrites it — opening the map on top of a chat panel silently destroyed
+   * that session. ensureSideLeaf exists to avoid exactly that.
+   */
   private async openMindmap(): Promise<void> {
+    // A map open anywhere already is the map, including one dragged into the
+    // main area — reveal it rather than growing a second copy in the sidebar.
     const existing = this.app.workspace.getLeavesOfType(MINDMAP_VIEW_TYPE)[0];
-    const leaf = existing ?? this.app.workspace.getRightLeaf(false) ?? this.app.workspace.getLeaf(true);
-    if (existing === undefined) await leaf.setViewState({ type: MINDMAP_VIEW_TYPE, active: true });
-    await this.app.workspace.revealLeaf(leaf);
+    if (existing !== undefined) {
+      await this.app.workspace.revealLeaf(existing);
+      return;
+    }
+    await this.app.workspace.ensureSideLeaf(MINDMAP_VIEW_TYPE, "right", { active: true, reveal: true });
   }
 
   private async buildModel(): Promise<void> {

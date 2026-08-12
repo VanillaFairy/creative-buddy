@@ -17,6 +17,9 @@ older than the code.
       sidebar first, then click a ribbon icon → the sidebar reopens onto the
       new panel rather than creating it out of sight. The chat icon makes a
       fresh panel each time; the map icon reveals the one map.
+- [ ] Open a chat panel, then click the map icon → the chat panel is **still
+      there**. Opening the map must never take over the sidebar leaf a chat is
+      sitting in; that silently ends the session.
 - [ ] Open a chat panel from the ribbon; bind to a test graph; send a message on
       Haiku. Streaming text appears as plain text, then renders as markdown
       when the turn finishes; the tool machinery shows beneath it as activity
@@ -96,6 +99,9 @@ older than the code.
 - [ ] On a graph with many wikilinks, the dashed cross-links read as a faint
       mesh rather than a scribble over the tree; hover or focus a node and its
       own cross-links light up at both ends.
+- [ ] Two notes that link **each other** get one dashed arc between them, not
+      two stacked on the same pair. Same for a note that names the same target
+      twice, or reaches it once by name and once by alias.
 - [ ] Long note titles are ellipsised inside their box rather than overrunning
       it, and a collapsed node's `+N` sits after the name in a quieter face.
 - [ ] Tab into the map → node outlines pick up the accent as focus moves.
