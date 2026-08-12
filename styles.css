@@ -560,6 +560,160 @@
   line-height: 1.55;
 }
 
+/* The stop is the send button's slot, not a second control beside it: while a
+   turn is up there is only one thing a click here can usefully do. The square
+   is drawn rather than typed, so no font gets a vote on how it lands. */
+.cb-chat-composer .cb-stop {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+.cb-stop-glyph {
+  width: 0.6em;
+  height: 0.6em;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+/* ────────────────────────────────────────────────── waiting to be said ──── */
+
+/* Said but not yet delivered. Same rail-attached shape as your turn in the
+   transcript above, drawn dashed: the rail means "this hangs off the
+   conversation", the dash means "not part of it yet". They sit between the
+   transcript and the composer because that is the order they happened in. */
+.cb-queued-note {
+  flex: none;
+  margin: 0;
+  color: var(--cb-faint);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+}
+
+.cb-queued {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-2);
+  /* Queue enough and it starts eating the transcript, so it scrolls instead. */
+  max-height: 9lh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* baseline, not flex-start: the label and the buttons are set smaller and
+   larger than the message, and only a shared baseline keeps all three sitting
+   on its first line as the sizes move around. */
+.cb-queued-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+  padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
+  border-left: 2px dashed var(--cb-rail);
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-medium);
+  line-height: 1.65;
+}
+
+.cb-queued-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* Taken back or not, the words stay selectable — being able to lift them out
+     again is the reason a cancelled one is left on screen at all. */
+  user-select: text;
+}
+
+/* Canceled. The rail goes rather than the words: a rail means "this hangs off
+   the conversation" and a canceled message no longer does, while the words
+   themselves are the reason it is still on screen — fading them below
+   --text-muted would put the thing you are meant to copy under the contrast
+   floor. It keeps its indent so the column does not jump. */
+.cb-queued-canceled {
+  border-left-color: transparent;
+}
+
+/* Italic because it is the panel talking about the message rather than any
+   part of the message. */
+.cb-queued-state {
+  flex: none;
+  color: var(--cb-faint);
+  font-size: var(--font-ui-smaller);
+  font-style: italic;
+}
+
+/* The only live thing on a canceled row, so unlike the × it neither waits to
+   be hovered nor sits at the faint end — nobody hunts for an affordance they
+   have no reason to expect. A size up from the row so the arrow reads as an
+   arrow rather than a speck at the margin. */
+.cb-queued .cb-queued-resend {
+  flex: none;
+  height: auto;
+  margin: 0;
+  padding: 0 var(--size-4-1);
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--cb-quiet);
+  /* Relative to the row, so it stays a touch larger than the words whatever
+     size they are set at. */
+  font-size: 1.2em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cb-queued .cb-queued-resend:hover,
+.cb-queued .cb-queued-resend:focus-visible {
+  background: none;
+  box-shadow: none;
+  color: var(--cb-ink);
+}
+
+.cb-queued .cb-queued-resend:focus-visible {
+  outline: 1px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+
+/* Revealed on hover and on keyboard focus, the way the tab strip's close is. */
+.cb-queued .cb-queued-cancel {
+  flex: none;
+  height: auto;
+  margin: 0;
+  padding: 0 var(--size-4-1);
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--cb-faint);
+  font-size: var(--font-ui-small);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.cb-queued-item:hover .cb-queued-cancel,
+.cb-queued .cb-queued-cancel:focus-visible {
+  opacity: 1;
+}
+
+.cb-queued .cb-queued-cancel:hover {
+  background: none;
+  box-shadow: none;
+  color: var(--cb-ink);
+}
+
+.cb-queued .cb-queued-cancel:focus-visible {
+  outline: 1px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+
 /* ──────────────────────────────────────────────────────────── picker ──── */
 
 .cb-picker {
@@ -972,6 +1126,7 @@
 @media (prefers-reduced-motion: reduce) {
   .cb-activity-chevron,
   .cb-tabs .cb-tab-close,
+  .cb-queued .cb-queued-cancel,
   .cb-mm-box,
   .cb-mm-crosslink,
   .cb-picker-graphs .cb-picker-graph,

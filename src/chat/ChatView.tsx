@@ -19,6 +19,7 @@ import {
   restoreSessions,
   sharedGraphs,
 } from "./sessions";
+import { Queued, advance, cancelAll, setCanceled } from "./queue";
 import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
 import { bootstrapHint, projectRows } from "../project-list";
@@ -34,6 +35,8 @@ interface Runtime {
   wrapUpPending: boolean;
   approvalSeq: number;
   responders: Map<string, (allow: boolean, msg?: string) => void>;
+  /** Typed during a turn and not yet said, plus whatever was taken back. */
+  queue: Queued[];
 }
 
 /**
@@ -127,6 +130,7 @@ export class ChatView extends ItemView {
       wrapUpPending: false,
       approvalSeq: 0,
       responders: new Map(),
+      queue: [],
     };
     this.runtimes.set(key, fresh);
     return fresh;
@@ -323,6 +327,9 @@ export class ChatView extends ItemView {
               runtime.wrapUpPending = false;
               this.dispatch(key, { type: "notice", text: this.structureCheckText(graphDir) });
             }
+            // Last, so the next message lands under this turn's rule rather
+            // than ahead of it.
+            this.pump(key);
           },
           onStatus: (status) => {
             runtime.status = status;
@@ -336,6 +343,10 @@ export class ChatView extends ItemView {
             runtime.handle?.dispose();
             runtime.handle = null;
             runtime.busy = false;
+            // Anything waiting was riding on the process that just died. It is
+            // taken back rather than quietly restarting claude.exe to spend on
+            // messages you queued against a session that no longer exists.
+            runtime.queue = cancelAll(runtime.queue);
             // The SDK side was told "deny" for anything still pending; the cards
             // must agree, or a click on a stale Allow would record a lie.
             const current = this.list.sessions.find((s) => s.key === key);
@@ -358,15 +369,45 @@ export class ChatView extends ItemView {
     return runtime.handle;
   }
 
+  /**
+   * One move of the outbox: line the typed message up, then hand the front of
+   * the queue to the agent if the conversation is free. Sending, a turn ending
+   * and a reconnect are all this same call — see `queue.ts` for why.
+   *
+   * The transcript is written here rather than where you pressed Enter, so it
+   * keeps saying what was actually said: a queued message is recorded at the
+   * moment it goes out, not at the moment you committed to it.
+   */
+  private pump(key: string, text = ""): void {
+    // Ahead of runtime(), which would otherwise mint live state for a tab that
+    // closed while its turn was still running.
+    const session = this.list.sessions.find((s) => s.key === key);
+    if (session === undefined) return;
+    const runtime = this.runtime(key);
+    const step = advance(runtime.queue, runtime.busy, text);
+    runtime.queue = step.queue;
+    if (step.send === null) {
+      this.render();
+      return;
+    }
+    const handle = this.ensureSession(session);
+    if (handle === null) {
+      // Nothing to send it down — ensureSession has already said why in a
+      // Notice. The message goes back on screen as canceled rather than
+      // disappearing between the queue and the transcript.
+      runtime.queue = [{ text: step.send, canceled: true }, ...runtime.queue];
+      this.render();
+      return;
+    }
+    runtime.busy = true;
+    this.dispatch(key, { type: "user-sent", text: step.send });
+    handle.sendUserMessage(step.send);
+  }
+
   /** Every control belongs to the conversation on screen. */
   private readonly callbacks: ChatCallbacks = {
     onSend: (text: string): void => {
-      const session = activeSession(this.list);
-      const handle = this.ensureSession(session);
-      if (handle === null) return;
-      this.runtime(session.key).busy = true;
-      this.dispatch(session.key, { type: "user-sent", text });
-      handle.sendUserMessage(text);
+      this.pump(activeSession(this.list).key, text);
     },
     onModelChange: (model: string): void => {
       const session = activeSession(this.list);
@@ -398,7 +439,19 @@ export class ChatView extends ItemView {
       const runtime = this.runtime(session.key);
       runtime.handle?.interrupt().catch(() => undefined);
       runtime.busy = false;
+      // Stopping is about not spending any more, so what was lined up behind
+      // this turn comes back too rather than going out one beat later.
+      runtime.queue = cancelAll(runtime.queue);
       this.render();
+    },
+    onQueuedCanceled: (index: number, canceled: boolean): void => {
+      const key = activeSession(this.list).key;
+      const runtime = this.runtime(key);
+      runtime.queue = setCanceled(runtime.queue, index, canceled);
+      // Putting one back in line is itself a send: it goes out now if nothing
+      // is running, and waits its turn like anything else if something is.
+      if (canceled) this.render();
+      else this.pump(key);
     },
     renderMarkdown: (el: HTMLElement, markdown: string): void => {
       void MarkdownRenderer.render(this.app, markdown, el, this.sourcePath(), this);
@@ -488,6 +541,7 @@ export class ChatView extends ItemView {
             busy={runtime.busy}
             status={runtime.status}
             items={session.items}
+            queued={runtime.queue}
             callbacks={this.callbacks}
           />
         )}
