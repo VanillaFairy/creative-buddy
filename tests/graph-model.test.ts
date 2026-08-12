@@ -43,6 +43,21 @@ describe("GraphModel", () => {
     expect(model.validation().ok).toBe(false); // orphan-root now
   });
 
+  it("contentOf hands back a note's raw text for the body-level facts views derive", () => {
+    const model = modelFrom("simple");
+    expect(model.contentOf("Noir game/Heavy Rain.md")).toContain("send Farah the pacing doc");
+  });
+
+  it("contentOf matches case the way every other vault lookup does", () => {
+    const model = modelFrom("simple");
+    expect(model.contentOf("noir game/heavy rain.md")).toContain("send Farah the pacing doc");
+  });
+
+  it("contentOf is empty for a path the vault does not hold", () => {
+    const model = modelFrom("simple");
+    expect(model.contentOf("Noir game/Nowhere.md")).toBe("");
+  });
+
   it("notifies listeners once per mutation and honours unsubscribe", () => {
     const model = modelFrom("simple");
     let calls = 0;

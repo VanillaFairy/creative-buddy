@@ -19,6 +19,11 @@ export interface Box {
   labelX: number;
   /** Where the suffix starts, so the shell never has to measure again. */
   suffixX: number | null;
+  /**
+   * Where the rule dividing the note's own area from its child-ref area sits,
+   * or null when nothing is folded away and the box is all one area.
+   */
+  dividerX: number | null;
 }
 
 export interface Bounds {
@@ -44,8 +49,11 @@ export const NODE_HEIGHT = 28;
 export const HUB_HEIGHT = 36;
 
 const PAD_X = 13;
-const SUFFIX_GAP = 6;
+/** Breathing room on each side of the divider rule. */
+const DIVIDER_GAP = 8;
 const MIN_WIDTH = 52;
+/** The box's corner rounding; the child-ref area has to match it to seat cleanly. */
+export const CORNER_RADIUS = 6;
 const MAX_WIDTH = 240;
 const ELLIPSIS = "…";
 
@@ -67,13 +75,15 @@ export function nodeBox(
   const suffix = options.suffix === undefined || options.suffix === "" ? null : options.suffix;
   const pad = isHub ? 0 : PAD_X;
   const height = isHub ? HUB_HEIGHT : NODE_HEIGHT;
-  const suffixWidth = suffix === null ? 0 : SUFFIX_GAP + measure(suffix);
+  // A gap either side of the rule, so the count is not jammed against it.
+  const suffixWidth = suffix === null ? 0 : DIVIDER_GAP * 2 + measure(suffix);
 
   // The suffix is never dropped, so it eats into the label's budget first —
   // "…" plus a count still says more than a fuller name with the count lost.
   const budget = MAX_WIDTH - pad * 2 - suffixWidth;
   const shown = measure(label) <= budget ? label : ellipsise(label, budget, measure);
   const labelWidth = measure(shown);
+  const dividerX = suffix === null ? null : pad + labelWidth + DIVIDER_GAP;
 
   return {
     label: shown,
@@ -81,8 +91,31 @@ export function nodeBox(
     width: Math.max(isHub ? 0 : MIN_WIDTH, pad * 2 + labelWidth + suffixWidth),
     height,
     labelX: pad,
-    suffixX: suffix === null ? null : pad + labelWidth + SUFFIX_GAP,
+    suffixX: dividerX === null ? null : dividerX + DIVIDER_GAP,
+    dividerX,
   };
+}
+
+/**
+ * The child-ref area as a path: a rectangle from the divider to the box's right
+ * edge, rounded on the right corners only so it seats inside the box's outline
+ * instead of poking out of its curves. Null when the node folds nothing away.
+ */
+export function childRegionPath(box: Box): string | null {
+  if (box.dividerX === null) return null;
+  const top = -box.height / 2;
+  const bottom = box.height / 2;
+  const r = CORNER_RADIUS;
+  const right = box.width;
+  return [
+    `M ${box.dividerX},${top}`,
+    `H ${right - r}`,
+    `A ${r},${r} 0 0 1 ${right},${top + r}`,
+    `V ${bottom - r}`,
+    `A ${r},${r} 0 0 1 ${right - r},${bottom}`,
+    `H ${box.dividerX}`,
+    "Z",
+  ].join(" ");
 }
 
 /**
