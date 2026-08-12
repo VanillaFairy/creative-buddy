@@ -70,13 +70,6 @@ describe("GraphModel", () => {
     expect(lateCalls).toBe(1);
   });
 
-  it("obligations flow through with an injected today", () => {
-    const model = modelFrom("simple");
-    expect(model.obligations(TODAY).counts.owed).toBe(2);
-    model.setFile("Noir game/Errand.md", '---\nparent: "[[Noir game]]"\n---\n- [ ] owed: one more\n');
-    expect(model.obligations(TODAY).counts.owed).toBe(3);
-  });
-
   it("exposes rootName and hubPathOf for the views", () => {
     const model = modelFrom("simple");
     expect(model.rootName).toBe("simple");

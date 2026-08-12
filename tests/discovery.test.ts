@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { loadFixtureVault } from "./helpers/load-fixture";
 import { VaultView } from "../src/graph/types";
-import { findGraphs, collectNoteFiles, markdownFiles } from "../src/graph/discovery";
+import { findGraphs, collectNoteFiles } from "../src/graph/discovery";
 
 const view = (name: string) => new VaultView(loadFixtureVault(name));
 
@@ -30,26 +30,6 @@ describe("collectNoteFiles (validation walk)", () => {
       "Noir game/References/References.md",
       "Noir game/Мысли.md",
     ]);
-  });
-});
-
-describe("markdownFiles (obligations walk)", () => {
-  it("excludes lowercase log/ and skip-dirs", () => {
-    const files = markdownFiles(view("edge-cases"), "Edge");
-    expect(files).not.toContain("Edge/log/2026-08-02-a.md");
-    expect(files).toContain("Edge/Inner/Leaf.md");
-  });
-});
-
-describe("markdownFiles ordering", () => {
-  it("sorts with the Windows key like the oracle (prefix-sibling case)", () => {
-    const files = new Map<string, string>([
-      ["G/G.md", "## Charter\n"],
-      ["G/Act/x.md", "x"],
-      ["G/Act2/y.md", "y"],
-    ]);
-    const view = new VaultView({ rootName: "V", files });
-    expect(markdownFiles(view, "G")).toEqual(["G/Act2/y.md", "G/Act/x.md", "G/G.md"]);
   });
 });
 

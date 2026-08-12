@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { casefold, pyRepr, pyStr, sortKeyWindows, comparePathSegments, comparePyStrings, parseIsoDate, epochDays, isoDate } from "../src/graph/py-compat";
+import { casefold, pyRepr, pyStr, sortKeyWindows, comparePathSegments, comparePyStrings } from "../src/graph/py-compat";
 import { normalizeContent, stripBom } from "../src/graph/reader";
 import { baseName, dirName, stemOf, VaultView } from "../src/graph/types";
 
@@ -29,25 +29,6 @@ describe("sort compat", () => {
   });
   it("comparePyStrings uses code-point order (astral chars)", () => {
     expect(comparePyStrings("\u{1F600}.md", "！.md")).toBeGreaterThan(0); // U+1F600 > U+FF01
-  });
-});
-
-describe("dates", () => {
-  it("parses real dates incl. single-digit month/day", () => {
-    expect(parseIsoDate("2026-8-9")).toEqual({ y: 2026, m: 8, d: 9 });
-    expect(isoDate({ y: 2026, m: 8, d: 9 })).toBe("2026-08-09");
-  });
-  it("rejects impossible dates", () => {
-    expect(parseIsoDate("2026-13-45")).toBeNull();
-    expect(parseIsoDate("2026-02-30")).toBeNull();
-  });
-  it("epochDays orders correctly across months", () => {
-    expect(epochDays({ y: 2026, m: 9, d: 1 }) - epochDays({ y: 2026, m: 8, d: 31 })).toBe(1);
-  });
-  it("handles low years without the JS 1900-folding quirk", () => {
-    expect(parseIsoDate("0099-01-01")).toEqual({ y: 99, m: 1, d: 1 });
-    expect(isoDate({ y: 99, m: 1, d: 1 })).toBe("0099-01-01");
-    expect(parseIsoDate("0000-01-01")).toBeNull(); // Python datetime min year is 1
   });
 });
 

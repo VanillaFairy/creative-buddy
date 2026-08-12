@@ -7,7 +7,6 @@ import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { Box, Measure, edgeWeight, fitTransform, inspectorLine, nodeBox } from "./geometry";
 import { CollapseStore } from "./collapse-store";
-import { renderDigestForGraph } from "../agent/digest";
 import { tabTitle } from "../view-title";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
@@ -65,11 +64,6 @@ export class MindmapView extends ItemView {
     this.redrawTimer = window.setTimeout(() => this.redraw(), 300);
   }
 
-  private today(): { y: number; m: number; d: number } {
-    const now = new Date();
-    return { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
-  }
-
   private redraw(): void {
     const container = this.contentEl;
     container.empty();
@@ -104,7 +98,7 @@ export class MindmapView extends ItemView {
       return;
     }
 
-    const data = buildMindmapData(model, this.graphDir, this.today(), this.collapse.collapsedSet(this.graphDir));
+    const data = buildMindmapData(model, this.graphDir, this.collapse.collapsedSet(this.graphDir));
     const stats = data.stats;
     const hubWarn = stats !== null && stats.hubChildren >= 10 ? " cb-mm-flat" : "";
     header.createSpan({
@@ -125,7 +119,6 @@ export class MindmapView extends ItemView {
     this.drawTree(stage, data, report);
     const dock = stage.createDiv({ cls: "cb-mm-dock" });
     this.drawTray(dock, data);
-    this.drawObligationsPanel(dock);
   }
 
   /**
@@ -267,15 +260,6 @@ export class MindmapView extends ItemView {
       if (box.suffix !== null && box.suffixX !== null) {
         g.append("text").attr("class", "cb-mm-fold").attr("x", box.suffixX).attr("y", textY).text(box.suffix);
       }
-      if (node.obligationCount > 0) {
-        // On the hub the dot leads the title: every edge in the tree converges
-        // on the hub's right edge, and a dot there lands inside that knot.
-        g.append("circle")
-          .attr("class", "cb-mm-dot")
-          .attr("cx", isHub ? -12 : box.width - 8)
-          .attr("cy", isHub ? -6 : -box.height / 2 + 7)
-          .attr("r", 3.5);
-      }
 
       const foldable = node.children.length > 0 || node.collapsedChildren > 0;
       const fold = (): void => {
@@ -342,20 +326,6 @@ export class MindmapView extends ItemView {
       link.onclick = () => this.openNote(item.path);
       row.createSpan({ text: item.parent !== null ? ` — parent '${item.parent}'` : " — no parent" });
     }
-  }
-
-  private drawObligationsPanel(dock: HTMLElement): void {
-    const model = this.plugin.model;
-    if (model === null) return;
-    const lines = renderDigestForGraph(model.obligations(this.today()), ""); // "" = every graph
-    // Closed by default: the tray above it reports something wrong and has
-    // earned the space, while this is reference the user opens when they want
-    // it. Two open panels covered the corner of every map.
-    const panel = dock.createEl("details", { cls: "cb-mm-panel" });
-    panel.createEl("summary", { text: `Obligations · all graphs · ${lines.length}` });
-    panel
-      .createDiv({ cls: "cb-mm-panel-body" })
-      .createEl("pre", { text: lines.length > 0 ? lines.join("\n") : "Nothing is due or owed today." });
   }
 
   /**

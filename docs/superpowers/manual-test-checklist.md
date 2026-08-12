@@ -126,15 +126,13 @@ older than the code.
       it, and a collapsed node's `+N` sits after the name in a quieter face.
 - [ ] Tab into the map → node outlines pick up the accent as focus moves.
       Enter opens the focused note; Space folds a branch. Hover or focus any
-      node → the strip under the map reads its kind, status, what is owed and
-      any problems; move away → it returns to the hint.
+      node → the strip under the map reads its kind, status, how many children
+      are folded away and any problems; move away → it returns to the hint.
 - [ ] Break a `parent:` field by hand → within a second the note is counted in
       the orange "Not reachable from the hub · N" bar top-right; open the bar
-      to see it listed; fix it → the map heals. Hand edits are legal.
-- [ ] Add `- [ ] owed: something` to a note → the orange dot appears on that
-      node, and opening the "Obligations · all graphs" bar lists it (every
-      graph, by design). Both bars start closed and must stay closed until
-      clicked — they cover the map when open.
+      to see it listed; fix it → the map heals. Hand edits are legal. The bar
+      starts closed and must stay closed until clicked — it covers the map
+      when open.
 - [ ] Rename a graph's folder in the file explorer while the mindmap shows it
       → the selector falls back to another graph instead of a blank dropdown
       over an empty map.
@@ -161,9 +159,8 @@ session with the original knowledge-graph skill on the same graph.
 - [ ] Bootstrap: bind the vault root, ask to start a new graph "Ferry" → the
       interviewer asks for the folder name, then creates `Ferry/Ferry.md` with
       a charter and an empty Shape, and hangs new notes off it.
-- [ ] Session preamble sanity: the interviewer knows today's date, the graph
-      shape, and any due obligations without reading files first (it was told
-      at session start).
+- [ ] Session preamble sanity: the interviewer knows today's date and the graph
+      shape without reading files first (it was told at session start).
 - [ ] Cost sanity: a short grill turn on Sonnet lands in the cents, visible in
       the per-turn cost line.
 

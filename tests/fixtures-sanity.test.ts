@@ -8,7 +8,6 @@ describe("fixture integrity", () => {
     const vault = loadFixtureVault(name);
     expect(vault.files.size).toBeGreaterThan(0);
     expect(loadExpected(name, "graph-check")).toHaveProperty("graphs");
-    expect(loadExpected(name, "obligations")).toHaveProperty("counts");
   });
 
   it("the BOM fixture really starts with a BOM", () => {

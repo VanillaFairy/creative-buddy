@@ -4,7 +4,7 @@ An Obsidian plugin that embeds a knowledge-graph interviewer — a conversationa
 companion that grows a mindmap of markdown notes under strict "never invent a
 fact" discipline. It began life as a Claude Code CLI skill; this plugin moves it
 into Obsidian: chat tabs for the interview, a living mindmap of the graph, and
-all the mechanical work (discovery, validation, obligations) done by
+all the mechanical work (discovery, validation) done by
 deterministic TypeScript instead of the model. Inference rides your existing
 Claude Code subscription through the Claude Agent SDK — no API metering, no
 hosted service, nothing leaves your machine except the model calls Claude Code
@@ -36,8 +36,8 @@ Until this ships anywhere official, install by hand:
   your project, files what you say into notes, and announces each filing in one
   line. Say *wrap up* to close a session with a log entry and a structure check.
 - **Mindmap** — the fork ribbon icon (or *Open graph mindmap*) shows the graph
-  as a tree: obligation dots, problem outlines, a tray for notes that fell off
-  the hub, and the open-obligations panel. It updates live as notes change,
+  as a tree: problem outlines and a tray for notes that fell off the hub.
+  It updates live as notes change,
   whoever changes them — you, the interviewer, or a sync.
 - Each chat tab is one session on one graph. The model picker seeds from
   settings; switching mid-conversation applies to the next turn.

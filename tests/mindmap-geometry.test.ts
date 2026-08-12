@@ -119,7 +119,7 @@ describe("fitTransform", () => {
 });
 
 describe("inspectorLine", () => {
-  const bare = { stem: "Doors", kind: null, status: null, obligationCount: 0, problemKinds: [], collapsedChildren: 0 };
+  const bare = { stem: "Doors", kind: null, status: null, problemKinds: [], collapsedChildren: 0 };
 
   it("says nothing when the name is all there is to say", () => {
     expect(inspectorLine(bare)).toBeNull();
@@ -129,8 +129,8 @@ describe("inspectorLine", () => {
     expect(inspectorLine({ ...bare, kind: "statement", status: "open" })).toBe("Doors · statement · open");
   });
 
-  it("counts what is owed and what is folded away", () => {
-    expect(inspectorLine({ ...bare, obligationCount: 2, collapsedChildren: 7 })).toBe("Doors · 2 owed · 7 hidden");
+  it("counts what is folded away", () => {
+    expect(inspectorLine({ ...bare, collapsedChildren: 7 })).toBe("Doors · 7 hidden");
   });
 
   it("puts problems last, where the eye lands after the facts", () => {

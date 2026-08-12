@@ -2,12 +2,10 @@ import { describe, it, expect } from "vitest";
 import { GraphModel } from "../src/graph/graph-model";
 import { buildMindmapData } from "../src/mindmap/layout";
 
-const TODAY = { y: 2026, m: 8, d: 12 };
-
 function crossLinksOf(files: Record<string, string>): string[] {
   const model = new GraphModel("vault");
   for (const [path, body] of Object.entries(files)) model.setFile(path, body);
-  return buildMindmapData(model, "G", TODAY, new Set())
+  return buildMindmapData(model, "G", new Set())
     .crossLinks.map((c) => `${c.from} -> ${c.to}`)
     .sort();
 }

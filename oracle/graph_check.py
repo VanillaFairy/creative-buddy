@@ -45,7 +45,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
 SKIP_DIRS = {".obsidian", ".claude", ".git", ".trash", "node_modules"}
-LOG_DIR = "log"  # matched case-insensitively, as the sibling obligations.py does
+LOG_DIR = "log"  # matched case-insensitively
 CHARTER = "## Charter"
 
 

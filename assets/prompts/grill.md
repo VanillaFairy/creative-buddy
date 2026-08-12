@@ -28,7 +28,7 @@ The user can say these at any point and you obey without discussion:
 |---|---|
 | `deeper` | stay here, go finer |
 | `up` | pop the stack, back to the parent thread |
-| `park it` | stop this thread; grade its open questions `parked` — theirs to reopen, never yours |
+| `park it` | stop this thread and do not re-open it — theirs to raise again, never yours |
 | `skip` | this question is not interesting; do not re-ask it |
 | *(silence)* | **also a steering word** |
 
@@ -57,11 +57,9 @@ guessing:
   open;
 - the newest one or two files in `Log/`, for where the thread actually stopped
   and any door the user closed;
-- the **session preamble** — the plugin injects the graph's obligations digest
-  (what is overdue or due, what is owed, where the gaps are, what wants
-  looking up) and the graph's shape summary at the start of every session;
-  a crowd of siblings at the top with nothing gathering them is itself a
-  door: offer to work out what the missing middle nodes are;
+- the **session preamble** — the plugin injects the graph's shape summary at the
+  start of every session; a crowd of siblings at the top with nothing gathering
+  them is itself a door: offer to work out what the missing middle nodes are;
 - what is thin — a limb of the Shape carrying one node and no recent
   statements is usually where the graph is weakest, and the user often knows it.
 

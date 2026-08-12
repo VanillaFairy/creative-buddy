@@ -18,7 +18,7 @@ export function loadFixtureVault(name: string): Vault {
   return { rootName: name, files };
 }
 
-export function loadExpected(name: string, kind: "graph-check" | "obligations"): unknown {
+export function loadExpected(name: string, kind: "graph-check"): unknown {
   const p = path.join(__dirname, "..", "expected", `${name}.${kind}.json`);
   return JSON.parse(fs.readFileSync(p, "utf8"));
 }

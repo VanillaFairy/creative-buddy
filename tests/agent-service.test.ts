@@ -34,7 +34,6 @@ const CONFIG: SessionConfig = {
   claudePath: "C:/fake/claude.exe",
   todayIso: "2026-08-11",
   stats: { nodes: 4, hubChildren: 2 },
-  digestLines: [],
 };
 
 const INIT: SdkMessage = { type: "system", subtype: "init", session_id: "sess-1", tools: ["Read", "Write", "Edit", "Glob", "Grep", "Task"], model: "claude-sonnet-5", apiKeySource: "none" };

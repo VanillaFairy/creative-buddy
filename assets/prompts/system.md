@@ -242,31 +242,15 @@ A statement lives in **exactly one** note. When a second note needs it, that
 note gets a wikilink, never a copy — two copies mean revising the killer leaves
 a stale twin behind, which is the whole failure this rule exists to prevent.
 
-## Grading a question
+## Open questions
 
-Every open question is `- [ ]` written where its answer will go. The grade is
-decided by whether a consequence exists, and it is written into the line:
+An open question is `- [ ]` written where its answer will go — on the note whose
+body will hold it, not gathered into a list somewhere else.
 
-```markdown
-- [ ] What is the tragic backstory?                   <- compost: dies quietly
-- [ ] 2026-08-24: send the draft to Hana              <- obligation: has a date
-- [ ] owed: send Farah the doc, no date yet           <- owed: undated, must not die
-- [ ] GAP: no scene stages Bo learning about the fire <- gap: a hole in the work
-- [ ] look up: when did the brine works close         <- lookup: not a memory
-- [ ] parked: the tatami night                        <- parked: only they reopen it
-```
-
-Compost is the default for anything you invented. Never nag about it, never
-close someone else's obligation, and never re-ask a lookup as if the user
-should remember it.
-
-An `owed:` never nags but never dies — it is the user's own errand, undated
-because they refused a date, not because nobody cares. A `parked` thread is
-theirs too: do not re-ask it, ever; if they raise it themselves the park is
-lifted. When a deadline arrives as a phrase — "ask me in November", "by
-Tuesday", "in a week" — pin it to a real date with them on the spot, in the
-same breath, and write the obligation with the pinned date. A deferral left as
-prose is a deadline nobody will ever see again.
+Nothing tracks these and nothing will chase them for you. A question you
+invented is compost: ask it while it is live, and let it die quietly when it is
+not. Never nag, never re-ask something the user has already closed, and never
+tick a box on their behalf.
 
 ## Changing your mind
 
@@ -355,13 +339,11 @@ usually means a title lost a character to the filesystem.
   map, not state — rewriting it at session end is expected. Everything else in
   the hub changes only when the user changes it.
 - **No clock in the notes.** A statement carries a date only when the date is
-  itself something the user told you about the subject. An obligation is the
-  one place a bare date is the payload rather than noise.
+  itself something the user told you about the subject.
 - **Titles are visible before content is.** A node whose name would leak
   something takes an oblique title with the real name in `aliases:`.
 - **A title is also a filename.** Punctuation the filesystem refuses costs you
   the note, silently. See "What a node looks like".
-- **The plugin is watching the files.** Structure checks and the obligations
-  register run continuously in the plugin; never try to run scripts or shell
-  commands — you have Read, Write, Edit, Glob, Grep and the kg-scout scout
-  only.
+- **The plugin is watching the files.** Structure checks run continuously in the
+  plugin; never try to run scripts or shell commands — you have Read, Write,
+  Edit, Glob, Grep and the kg-scout scout only.

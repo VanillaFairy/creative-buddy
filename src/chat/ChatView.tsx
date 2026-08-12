@@ -3,7 +3,6 @@ import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
 import type CreativeBuddyPlugin from "../main";
 import { AgentService, SessionHandle } from "../agent/agent-service";
-import { renderDigestForGraph } from "../agent/digest";
 import { reduceTranscript, TranscriptEvent } from "./transcript";
 import { ChatCallbacks, ChatPanel, ChatSurface, ChatTab, GraphPicker } from "./components";
 import {
@@ -235,7 +234,6 @@ export class ChatView extends ItemView {
     }
     const today = new Date();
     const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    const report = model.obligations({ y: today.getFullYear(), m: today.getMonth() + 1, d: today.getDate() });
     const key = session.key;
 
     try {
@@ -248,7 +246,6 @@ export class ChatView extends ItemView {
           claudePath,
           todayIso,
           stats,
-          digestLines: renderDigestForGraph(report, graphDir),
           apiKeyOverride: this.plugin.settings.apiKeyOverride === "" ? undefined : this.plugin.settings.apiKeyOverride,
           resumeSessionId: session.sessionId ?? undefined,
         },

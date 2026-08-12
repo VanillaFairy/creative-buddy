@@ -87,19 +87,3 @@ export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
   return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
 }
 
-/** obligations.py markdown_files: SKIP_DIRS and log/ both excluded. */
-export function markdownFiles(view: VaultView, graphDir: string): string[] {
-  const out: string[] = [];
-  const pending: string[] = [graphDir];
-  while (pending.length > 0) {
-    const dir = pending.pop()!;
-    for (const child of childDirectories(view, dir, null)) {
-      const name = baseName(child);
-      if (!SKIP_DIRS.has(name) && casefold(name) !== LOG_DIR) pending.push(child);
-    }
-    for (const file of filesDirectlyIn(view, dir)) {
-      if (isMarkdown(file)) out.push(file);
-    }
-  }
-  return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
-}

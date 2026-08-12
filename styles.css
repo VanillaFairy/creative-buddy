@@ -731,10 +731,6 @@
   stroke-dasharray: 5 3;
 }
 
-.cb-mm-dot {
-  fill: var(--cb-owed);
-}
-
 /* `central` rather than `middle`: the label is centred on the node's anchor
    at y=0, so the box needs no hand-tuned baseline offset. */
 .cb-mm-node text {

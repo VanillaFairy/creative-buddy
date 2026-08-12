@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate tests/expected/*.json by running the vendored oracle scripts
+"""Regenerate tests/expected/*.json by running the vendored oracle script
 over every fixture vault. Run from anywhere; paths are script-relative.
 
 Usage:  python oracle/gen_expected.py
@@ -8,16 +8,13 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "oracle"))
 
 import graph_check  # noqa: E402
-import obligations  # noqa: E402
 
-TODAY = date(2026, 8, 11)
 FIXTURES = ROOT / "tests" / "fixtures"
 EXPECTED = ROOT / "tests" / "expected"
 
@@ -37,11 +34,8 @@ def main() -> int:
             continue
         root = fixture.resolve()
         gc = relativize(graph_check.build_report(root), root)
-        ob = obligations.build_report(root, TODAY)
         (EXPECTED / f"{fixture.name}.graph-check.json").write_text(
             json.dumps(gc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
-        (EXPECTED / f"{fixture.name}.obligations.json").write_text(
-            json.dumps(ob, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         print(f"{fixture.name}: {gc['graphs'] and len(gc['graphs'])} graph(s)")
     return 0
 

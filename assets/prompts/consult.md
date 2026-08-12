@@ -57,7 +57,7 @@ moment it matters — here, in an answer — is the mechanism, and it is enough.
 
 Say so. "Nothing in the graph answers that" is a good answer and a useful one —
 it tells the user where the hole is. Offer to open a question in the note where
-the answer would live, graded per SKILL.md. Never fill a gap with plausible
+the answer would live, as SKILL.md describes. Never fill a gap with plausible
 inference and never dress a guess as a finding.
 
 ## Deadlines override the stack

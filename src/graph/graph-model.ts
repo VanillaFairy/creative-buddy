@@ -1,7 +1,5 @@
 import { Vault, VaultView } from "./types";
-import { DateOnly, isoDate } from "./py-compat";
 import { buildValidationReport, ValidationReport, graphStats, GraphStats, loadGraphNotes } from "./validation";
-import { buildObligationsReport, ObligationsReport } from "./obligations";
 import { findGraphs, hubPath } from "./discovery";
 import { Note } from "./notes";
 
@@ -18,7 +16,6 @@ export class GraphModel {
   private cachedView: VaultView | null = null;
   private cachedValidation: ValidationReport | null = null;
   private cachedGraphs: string[] | null = null;
-  private cachedObligations = new Map<string, ObligationsReport>();
 
   constructor(rootName: string, initial?: ReadonlyMap<string, string>) {
     this.rootName = rootName;
@@ -55,7 +52,6 @@ export class GraphModel {
     this.cachedView = null;
     this.cachedValidation = null;
     this.cachedGraphs = null;
-    this.cachedObligations.clear();
     // Snapshot before notifying: a listener that subscribes another mid-notification
     // (JS Set iteration would otherwise visit it live) must not see it fire for this
     // same mutation — only for the next one.
@@ -82,15 +78,6 @@ export class GraphModel {
   validation(): ValidationReport {
     if (this.cachedValidation === null) this.cachedValidation = buildValidationReport(this.view());
     return this.cachedValidation;
-  }
-
-  obligations(today: DateOnly): ObligationsReport {
-    const key = isoDate(today);
-    const cached = this.cachedObligations.get(key);
-    if (cached !== undefined) return cached;
-    const report = buildObligationsReport(this.view(), today);
-    this.cachedObligations.set(key, report);
-    return report;
   }
 
   stats(graphDir: string): GraphStats | null {

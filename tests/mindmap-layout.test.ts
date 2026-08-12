@@ -4,12 +4,10 @@ import { GraphModel } from "../src/graph/graph-model";
 import { buildMindmapData } from "../src/mindmap/layout";
 import { CollapseStore } from "../src/mindmap/collapse-store";
 
-const TODAY = { y: 2026, m: 8, d: 11 };
-
 function dataFor(fixture: string, graphDir: string, collapsed: string[] = []) {
   const vault = loadFixtureVault(fixture);
   const model = new GraphModel(vault.rootName, vault.files);
-  return buildMindmapData(model, graphDir, TODAY, new Set(collapsed));
+  return buildMindmapData(model, graphDir, new Set(collapsed));
 }
 
 describe("buildMindmapData", () => {
@@ -44,14 +42,11 @@ describe("buildMindmapData", () => {
     expect(data.crossLinks).toContainEqual({ from: "Noir game/Noir game.md", to: "Noir game/Heavy Rain.md" });
   });
 
-  it("badges carry validation kinds and per-note obligation counts", () => {
+  it("badges carry the validation kinds, and stay empty for a clean note", () => {
     const data = dataFor("problems", "Tangle");
-    const badDate = findNode(data.root!, "Bad Date");
-    expect(badDate!.obligationCount).toBe(2); // two malformed entries surface
+    expect(findNode(data.root!, "Lost")!.problemKinds).toContain("misfiled");
     const tangle = dataFor("simple", "Noir game");
-    const observer = findNode(tangle.root!, "Observer");
-    expect(observer!.obligationCount).toBe(3); // overdue + due_today + upcoming (later/parked hidden)
-    expect(observer!.problemKinds).toEqual([]);
+    expect(findNode(tangle.root!, "Observer")!.problemKinds).toEqual([]);
   });
 
   it("stats ride along for the hub badge", () => {

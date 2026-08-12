@@ -12,7 +12,6 @@ export interface SessionConfig {
   claudePath: string;
   todayIso: string;
   stats: GraphStats;
-  digestLines: string[];
   apiKeyOverride?: string;
   resumeSessionId?: string;
 }
@@ -176,7 +175,6 @@ export class AgentService {
         hubPath: config.hubPath,
         todayIso: config.todayIso,
         stats: config.stats,
-        digestLines: config.digestLines,
       });
 
     const options: Record<string, unknown> = {

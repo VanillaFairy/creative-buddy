@@ -147,14 +147,12 @@ export function inspectorLine(node: {
   stem: string;
   kind: string | null;
   status: string | null;
-  obligationCount: number;
   problemKinds: string[];
   collapsedChildren: number;
 }): string | null {
   const facts = [
     node.kind,
     node.status,
-    node.obligationCount > 0 ? `${node.obligationCount} owed` : null,
     node.collapsedChildren > 0 ? `${node.collapsedChildren} hidden` : null,
     ...node.problemKinds,
   ].filter((fact): fact is string => fact !== null && fact !== "");
