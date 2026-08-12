@@ -206,6 +206,41 @@ older than the code.
       indexing finishes, reopen it → it works; nothing in the console suggests
       the closed tab kept redrawing.
 
+### Heat
+
+- [ ] The header carries a **Heat** switch, off when the map first opens. Off,
+      every node's *colour* is what it always was — flat fill, grey rail. The
+      areas are permanent and only their colours are conditional, so the one
+      deliberate difference is that a folded node now carries the divider rule
+      and sits a little wider to make room for it. Colour drift here is a bug;
+      the rule is not.
+- [ ] Turn Heat on → nodes take colour by how many `- [ ]` questions their own
+      body holds: green at none, red at ten or more, ambers in between. Add a
+      `- [ ] ` line to a note and save → within a second that node warms by one
+      step, and nothing else on the map moves.
+- [ ] Put a `- [ ]` inside a fenced code block → the node does **not** warm. Tick
+      an existing box to `- [x]` → it cools. A `- [-]` cancelled line and a
+      numbered `1. [ ]` line both count for nothing.
+- [ ] Fold a branch → the node splits at a thin vertical rule: its own colour on
+      the left with the title, the colour of everything it is hiding on the
+      right with the `+N`. The two sides are read independently — a cool parent
+      hiding hot children shows green beside red.
+- [ ] Check that split against the numbers: fold a branch whose children hold,
+      say, seven questions between them → the right-hand side is the seven-step
+      colour, and the `+N` counts the same notes the colour is summing.
+- [ ] Fold the **hub** → its spine splits the same way rather than staying one
+      accent-coloured bar.
+- [ ] A note with a validation problem keeps its red dashed border with Heat on,
+      and shows its heat in the fill instead. A colour scale must not cost the
+      map the "this note is broken" signal.
+- [ ] Switch the vault between light and dark themes with Heat on → both ends of
+      the scale stay legible and the labels stay readable on top of the fills.
+- [ ] Toggle Heat, close the map tab, reopen it → the switch is where you left
+      it. Restart Obsidian → still where you left it.
+- [ ] With Heat on, hover and focus a node → the hover highlight still reads.
+      Fold and unfold a few branches quickly → no flicker, no stray outline
+      left behind at the divider.
+
 ## 3 — Vault copy: parity with the CLI skill
 
 Work on a **copy** of the real vault. The reference is a Claude Code CLI
