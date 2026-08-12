@@ -1,6 +1,7 @@
 import { Vault, VaultView } from "./types";
 import { buildValidationReport, ValidationReport, graphStats, GraphStats, loadGraphNotes } from "./validation";
 import { findGraphs, hubPath } from "./discovery";
+import { graphOfNote } from "./ownership";
 import { Note } from "./notes";
 
 /**
@@ -73,6 +74,11 @@ export class GraphModel {
 
   hubPathOf(graphDir: string): string {
     return hubPath(this.view(), graphDir);
+  }
+
+  /** The graph a note belongs to, over the cached graph list. Null when none does. */
+  graphOf(notePath: string): string | null {
+    return graphOfNote(this.graphs(), notePath);
   }
 
   validation(): ValidationReport {
