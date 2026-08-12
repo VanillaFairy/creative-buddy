@@ -41,6 +41,29 @@
   --cb-hand: var(--font-interface);
 }
 
+/* Native chrome — a <select>'s arrow and its option list, a textarea's
+   scrollbar — is painted by Chromium rather than by anything above, and it takes
+   its palette from `color-scheme`, which no amount of background-color will
+   move. Left at `normal` it paints light, so a dark vault got a light popup.
+   Obsidian's own theme class is the source of truth, so the panels follow the
+   vault rather than whatever the desktop happens to be set to; color-scheme
+   inherits, so declaring it on the roots covers everything inside them. */
+.theme-dark :is(.cb-panel, .cb-chat, .cb-mindmap, .cb-picker) {
+  color-scheme: dark;
+}
+
+.theme-light :is(.cb-panel, .cb-chat, .cb-mindmap, .cb-picker) {
+  color-scheme: light;
+}
+
+/* The bar's controls are muted on purpose, but an option list is not a bar: the
+   rows inherit that grey and land washed out on the popup's own surface, so they
+   are named in the vault's reading colours instead. */
+.cb-quiet-control option {
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+}
+
 /* ───────────────────────────────────────────────────── panel + tabs ──── */
 
 /* One panel, several conversations. A tab is a Claude session, so the strip is

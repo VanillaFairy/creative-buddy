@@ -128,6 +128,11 @@ older than the code.
       bootstrap a new folder for you. In a vault where it is not, the hint
       instead explains the folder-plus-charter shape — it must never point at a
       "whole vault" row that is not on the list.
+- [ ] **Open** the model dropdown in a dark theme → the list itself is dark and
+      its rows are readable, not a light popup with washed-out grey text. Switch
+      Obsidian to a light theme and open it again → it follows. Same for the
+      map's project selector. Then set the OS to the *opposite* of the vault's
+      theme and check again: the list follows Obsidian, not the desktop.
 - [ ] While a reply streams, the header shows a thinking indicator next to
       Stop. The header's last slot holds exactly one button: Wrap up when
       idle, Stop while a turn runs — never a greyed-out Wrap up.
