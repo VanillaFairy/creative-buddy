@@ -943,11 +943,6 @@
   white-space: nowrap;
 }
 
-/* A hub with ten-plus direct children has gone flat — worth noticing. */
-.cb-mm-flat {
-  color: var(--cb-owed);
-}
-
 .cb-mm-stage {
   position: relative;
   flex: 1 1 auto;

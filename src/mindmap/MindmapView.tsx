@@ -134,10 +134,9 @@ export class MindmapView extends ItemView {
 
     const data = buildMindmapData(model, this.graphDir, this.collapse.collapsedSet(this.graphDir));
     const stats = data.stats;
-    const hubWarn = stats !== null && stats.hubChildren >= 10 ? " cb-mm-flat" : "";
     header.createSpan({
-      cls: `cb-mm-stats${hubWarn}`,
-      text: stats === null ? "no hub found" : `${stats.nodes} notes · ${stats.hubChildren} off the hub`,
+      cls: "cb-mm-stats",
+      text: stats === null ? "no hub found" : `${stats.nodes} notes`,
     });
 
     // Stage first, then the inspector below it, then the dock inside the stage:
