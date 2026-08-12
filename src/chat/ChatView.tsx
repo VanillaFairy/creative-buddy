@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice } from "obsidian";
+import { ItemView, WorkspaceLeaf, Keymap, MarkdownRenderer, Notice, parseLinktext } from "obsidian";
 import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
 import type CreativeBuddyPlugin from "../main";
@@ -19,6 +19,7 @@ import {
   restoreSessions,
   sharedGraphs,
 } from "./sessions";
+import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
 import { bootstrapHint, projectRows } from "../project-list";
 import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
@@ -96,6 +97,10 @@ export class ChatView extends ItemView {
     // badges whenever the workspace layout shifts.
     this.register(this.plugin.onModelReady(() => this.render()));
     this.registerEvent(this.app.workspace.on("layout-change", () => this.render()));
+    // One listener for the whole panel rather than per message: the transcript
+    // re-renders constantly, and a listener attached to the container outlives
+    // every block React swaps underneath it.
+    this.registerDomEvent(this.contentEl, "click", (event) => this.openLink(event));
     this.render();
   }
 
@@ -396,13 +401,49 @@ export class ChatView extends ItemView {
       this.render();
     },
     renderMarkdown: (el: HTMLElement, markdown: string): void => {
-      // Relative links resolve against a NOTE path, so hand the renderer the
-      // hub note rather than the graph folder.
-      const dir = activeSession(this.list).graphDir;
-      const source = dir !== null ? this.plugin.model?.hubPathOf(dir) ?? dir : "/";
-      void MarkdownRenderer.render(this.app, markdown, el, source, this);
+      void MarkdownRenderer.render(this.app, markdown, el, this.sourcePath(), this);
     },
   };
+
+  // ── links out of the transcript ───────────────────────────────────────────
+
+  /**
+   * What a link in a message is relative to. Link resolution is done from a
+   * NOTE, so this is the graph's hub note rather than the graph folder — and
+   * the same answer has to serve both the renderer and the click, or a click
+   * could resolve a name differently from the way it was drawn.
+   */
+  private sourcePath(): string {
+    const dir = activeSession(this.list).graphDir;
+    return dir !== null ? this.plugin.model?.hubPathOf(dir) ?? dir : "/";
+  }
+
+  /**
+   * `MarkdownRenderer.render` draws the anchors and leaves them inert —
+   * Obsidian only wires link clicks inside containers it registered itself, and
+   * a plugin's own div is never one. So the panel opens its own links.
+   *
+   * A missing note says so instead of being created: the transcript is
+   * something said about the graph, and a click on a name the interviewer got
+   * wrong should not add a note to the vault.
+   */
+  private openLink(event: MouseEvent): void {
+    const anchor = (event.target as HTMLElement | null)?.closest("a") ?? null;
+    if (anchor === null) return;
+    const linktext = noteLinktext(anchor);
+    if (linktext === null) return;
+    event.preventDefault();
+    const source = this.sourcePath();
+    const { path } = parseLinktext(linktext);
+    if (this.app.metadataCache.getFirstLinkpathDest(path, source) === null) {
+      new Notice(`No note called "${path}" in this vault.`);
+      return;
+    }
+    // A plain click is false → the main pane you last worked in, the way the
+    // map opens notes. isModEvent keeps ctrl for a tab and ctrl-alt for a
+    // split, so the modifiers mean here what they mean everywhere else.
+    void this.app.workspace.openLinkText(linktext, source, Keymap.isModEvent(event));
+  }
 
   private structureCheckText(graphDir: string): string {
     const graphReport = this.plugin.model?.validation().graphs.find((g) => g.path === (graphDir === "" ? "." : graphDir));
