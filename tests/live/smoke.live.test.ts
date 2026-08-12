@@ -13,7 +13,7 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
     // A hub with no nodes under it reads as "no graph yet" and puts the interviewer in
     // bootstrap mode, where it asks for a folder name instead of reading anything. So the
     // scratch vault gets one real node, and the stats below say so honestly.
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "graph-buddy-smoke-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "creative-buddy-smoke-"));
     fs.mkdirSync(path.join(root, "Probe"));
     fs.writeFileSync(
       path.join(root, "Probe", "Probe.md"),

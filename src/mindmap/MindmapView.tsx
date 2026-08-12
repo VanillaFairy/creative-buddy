@@ -3,12 +3,12 @@ import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
-import type GraphBuddyPlugin from "../main";
+import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { CollapseStore } from "./collapse-store";
 import { renderDigestForGraph } from "../agent/digest";
 
-export const MINDMAP_VIEW_TYPE = "graph-buddy-mindmap";
+export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const NODE_HEIGHT = 28;
 const CHAR_WIDTH = 7.2;
 const H_GAP = 48;
@@ -20,7 +20,7 @@ export class MindmapView extends ItemView {
   private redrawTimer: number | null = null;
   private lastTransform: ZoomTransform | null = null;
 
-  constructor(leaf: WorkspaceLeaf, private readonly plugin: GraphBuddyPlugin) {
+  constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
   }
 
@@ -71,15 +71,15 @@ export class MindmapView extends ItemView {
   private redraw(): void {
     const container = this.contentEl;
     container.empty();
-    container.addClass("gb-mindmap");
+    container.addClass("cb-mindmap");
     const model = this.plugin.model;
     if (model === null) {
-      container.createEl("p", { text: "Graph Buddy is still indexing the vault…" });
+      container.createEl("p", { text: "Creative Buddy is still indexing the vault…" });
       return;
     }
 
     const graphs = model.graphs();
-    const header = container.createDiv({ cls: "gb-mm-header" });
+    const header = container.createDiv({ cls: "cb-mm-header" });
     const selector = header.createEl("select");
     for (const dir of graphs) {
       const option = selector.createEl("option", { text: dir === "" ? "(vault root)" : dir });
@@ -104,9 +104,9 @@ export class MindmapView extends ItemView {
 
     const data = buildMindmapData(model, this.graphDir, this.today(), this.collapse.collapsedSet(this.graphDir));
     const stats = data.stats;
-    const hubWarn = stats !== null && stats.hubChildren >= 10 ? " gb-mm-flat" : "";
+    const hubWarn = stats !== null && stats.hubChildren >= 10 ? " cb-mm-flat" : "";
     header.createSpan({
-      cls: `gb-mm-stats${hubWarn}`,
+      cls: `cb-mm-stats${hubWarn}`,
       text: stats === null ? "no hub found" : `${stats.nodes} nodes · ${stats.hubChildren} off the hub`,
     });
 
@@ -117,8 +117,8 @@ export class MindmapView extends ItemView {
 
   private drawTree(container: HTMLElement, data: MindmapData): void {
     if (data.root === null) return;
-    const host = container.createDiv({ cls: "gb-mm-svg-host" });
-    const svg = select(host).append("svg").attr("class", "gb-mm-svg");
+    const host = container.createDiv({ cls: "cb-mm-svg-host" });
+    const svg = select(host).append("svg").attr("class", "cb-mm-svg");
     const canvas = svg.append("g");
 
     const layout = flextree<MindmapNode>().nodeSize((n) => [NODE_HEIGHT + 8, n.data.stem.length * CHAR_WIDTH + 24 + H_GAP]).spacing(6);
@@ -131,7 +131,7 @@ export class MindmapView extends ItemView {
     root.links().forEach((link) => {
       canvas
         .append("path")
-        .attr("class", "gb-mm-edge")
+        .attr("class", "cb-mm-edge")
         .attr("d", `M${link.source.y},${link.source.x} C${(link.source.y + link.target.y) / 2},${link.source.x} ${(link.source.y + link.target.y) / 2},${link.target.x} ${link.target.y},${link.target.x}`);
     });
 
@@ -142,13 +142,13 @@ export class MindmapView extends ItemView {
       if (from === undefined || to === undefined) continue;
       canvas
         .append("path")
-        .attr("class", "gb-mm-crosslink")
+        .attr("class", "cb-mm-crosslink")
         .attr("d", `M${from.y},${from.x} Q${(from.y + to.y) / 2},${(from.x + to.x) / 2 - 40} ${to.y},${to.x}`);
     }
 
     // nodes
     root.each((n) => {
-      const g = canvas.append("g").attr("class", "gb-mm-node").attr("transform", `translate(${n.y},${n.x})`);
+      const g = canvas.append("g").attr("class", "cb-mm-node").attr("transform", `translate(${n.y},${n.x})`);
       const width = n.data.stem.length * CHAR_WIDTH + 24;
       const rect = g
         .append("rect")
@@ -157,9 +157,9 @@ export class MindmapView extends ItemView {
         .attr("width", width)
         .attr("height", NODE_HEIGHT)
         .attr("rx", 6)
-        .attr("class", n.data.problemKinds.length > 0 ? "gb-mm-box gb-mm-problem" : "gb-mm-box");
+        .attr("class", n.data.problemKinds.length > 0 ? "cb-mm-box cb-mm-problem" : "cb-mm-box");
       g.append("text").attr("x", 12).attr("y", 5).text(n.data.stem + (n.data.collapsedChildren > 0 ? ` (+${n.data.collapsedChildren})` : ""));
-      if (n.data.obligationCount > 0) g.append("circle").attr("class", "gb-mm-dot").attr("cx", width - 6).attr("cy", -NODE_HEIGHT / 2 + 6).attr("r", 4);
+      if (n.data.obligationCount > 0) g.append("circle").attr("class", "cb-mm-dot").attr("cx", width - 6).attr("cy", -NODE_HEIGHT / 2 + 6).attr("r", 4);
       g.append("title").text(
         [
           n.data.stem,
@@ -196,10 +196,10 @@ export class MindmapView extends ItemView {
 
   private drawTray(container: HTMLElement, data: MindmapData): void {
     if (data.unreachable.length === 0) return;
-    const tray = container.createDiv({ cls: "gb-mm-tray" });
+    const tray = container.createDiv({ cls: "cb-mm-tray" });
     tray.createEl("h4", { text: "Not reachable from the hub" });
     for (const item of data.unreachable) {
-      const row = tray.createDiv({ cls: "gb-mm-tray-row" });
+      const row = tray.createDiv({ cls: "cb-mm-tray-row" });
       const link = row.createEl("a", { text: item.stem });
       link.onclick = () => this.openNote(item.path);
       row.createSpan({ text: item.parent !== null ? ` — parent '${item.parent}'` : " — no parent" });
@@ -210,7 +210,7 @@ export class MindmapView extends ItemView {
     const model = this.plugin.model;
     if (model === null) return;
     const lines = renderDigestForGraph(model.obligations(this.today()), ""); // "" = every graph
-    const panel = container.createDiv({ cls: "gb-mm-obligations" });
+    const panel = container.createDiv({ cls: "cb-mm-obligations" });
     panel.createEl("h4", { text: "Obligations (all graphs)" });
     panel.createEl("pre", { text: lines.length > 0 ? lines.join("\n") : "Nothing is due or owed today." });
   }

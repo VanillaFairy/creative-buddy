@@ -1,13 +1,13 @@
 import { Notice, Plugin, TFile } from "obsidian";
 import { GraphModel } from "./graph/graph-model";
-import { GraphBuddySettings, DEFAULT_SETTINGS, GraphBuddySettingTab } from "./settings";
+import { CreativeBuddySettings, DEFAULT_SETTINGS, CreativeBuddySettingTab } from "./settings";
 import { findClaudeExecutable } from "./claude-locator";
 import { ChatView, CHAT_VIEW_TYPE } from "./chat/ChatView";
 import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
 import { existsSync } from "node:fs";
 
-export default class GraphBuddyPlugin extends Plugin {
-  settings: GraphBuddySettings = DEFAULT_SETTINGS;
+export default class CreativeBuddyPlugin extends Plugin {
+  settings: CreativeBuddySettings = DEFAULT_SETTINGS;
   model: GraphModel | null = null;
   private modelReadyCallbacks: Array<() => void> = [];
 
@@ -30,16 +30,16 @@ export default class GraphBuddyPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
-    this.addSettingTab(new GraphBuddySettingTab(this.app, this));
+    this.addSettingTab(new CreativeBuddySettingTab(this.app, this));
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
-    this.addRibbonIcon("messages-square", "Graph Buddy: new chat tab", () => {
+    this.addRibbonIcon("messages-square", "Creative Buddy: new chat tab", () => {
       void this.openChatTab();
     });
     this.addCommand({ id: "new-chat-tab", name: "New graph chat tab", callback: () => void this.openChatTab() });
 
     this.registerView(MINDMAP_VIEW_TYPE, (leaf) => new MindmapView(leaf, this));
-    this.addRibbonIcon("git-fork", "Graph Buddy: open graph mindmap", () => {
+    this.addRibbonIcon("git-fork", "Creative Buddy: open graph mindmap", () => {
       void this.openMindmap();
     });
     this.addCommand({ id: "open-mindmap", name: "Open graph mindmap", callback: () => void this.openMindmap() });
@@ -104,7 +104,7 @@ export default class GraphBuddyPlugin extends Plugin {
         failures += 1; // a vanished or unreadable file must not abort the whole index
       }
     }
-    if (failures > 0) new Notice(`Graph Buddy: ${failures} file(s) could not be read while indexing.`);
+    if (failures > 0) new Notice(`Creative Buddy: ${failures} file(s) could not be read while indexing.`);
     this.model = model;
     const waiting = this.modelReadyCallbacks;
     this.modelReadyCallbacks = [];
@@ -119,7 +119,7 @@ export default class GraphBuddyPlugin extends Plugin {
   vaultRootPath(): string {
     const adapter = this.app.vault.adapter as { getBasePath?: () => string };
     if (!adapter.getBasePath) {
-      new Notice("Graph Buddy needs a vault on the local filesystem — this vault's storage adapter has no disk path.");
+      new Notice("Creative Buddy needs a vault on the local filesystem — this vault's storage adapter has no disk path.");
       return "";
     }
     return adapter.getBasePath();

@@ -5,7 +5,7 @@ import path from "node:path";
 describe("scaffold", () => {
   it("manifest is desktop-only and ids match", () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "manifest.json"), "utf8"));
-    expect(manifest.id).toBe("graph-buddy");
+    expect(manifest.id).toBe("creative-buddy");
     expect(manifest.isDesktopOnly).toBe(true);
   });
 

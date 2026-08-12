@@ -1,14 +1,14 @@
 import { ItemView, WorkspaceLeaf, MarkdownRenderer, Notice } from "obsidian";
 import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
-import type GraphBuddyPlugin from "../main";
+import type CreativeBuddyPlugin from "../main";
 import { AgentService, SessionHandle } from "../agent/agent-service";
 import { renderDigestForGraph } from "../agent/digest";
 import { reduceTranscript, TranscriptItem, TranscriptEvent } from "./transcript";
 import { ChatSurface } from "./components";
 import { baseName } from "../graph/types";
 
-export const CHAT_VIEW_TYPE = "graph-buddy-chat";
+export const CHAT_VIEW_TYPE = "creative-buddy-chat";
 
 interface ChatState {
   graphDir: string | null;
@@ -26,7 +26,7 @@ export class ChatView extends ItemView {
   private approvalSeq = 0;
   private pendingResponders = new Map<string, (allow: boolean, msg?: string) => void>();
 
-  constructor(leaf: WorkspaceLeaf, private readonly plugin: GraphBuddyPlugin) {
+  constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
     this.state = { graphDir: null, model: plugin.settings.defaultModel, sessionId: null, items: [] };
   }
@@ -102,11 +102,11 @@ export class ChatView extends ItemView {
     const claudePath = this.plugin.resolveClaudePath();
     if (this.state.graphDir === null) return null;
     if (model === null) {
-      new Notice("Graph Buddy is still indexing the vault — try again in a moment.");
+      new Notice("Creative Buddy is still indexing the vault — try again in a moment.");
       return null;
     }
     if (claudePath === null) {
-      new Notice("Claude Code executable not found — set it in Graph Buddy settings.");
+      new Notice("Claude Code executable not found — set it in Creative Buddy settings.");
       return null;
     }
     const graphDir = this.state.graphDir;
@@ -182,7 +182,7 @@ export class ChatView extends ItemView {
           this.pendingResponders.clear();
           this.dispatch({ type: "notice", text: "The session ended. Your next message reconnects to the same conversation." });
         },
-          onStderr: (line) => console.debug("[graph-buddy] claude:", line),
+          onStderr: (line) => console.debug("[creative-buddy] claude:", line),
         },
       );
     } catch {
@@ -279,14 +279,14 @@ export const WRAP_UP_MESSAGE = [
   "Then refresh the hub's ## Shape in the same breath. Do not ask a new question after wrapping up.",
 ].join(" ");
 
-function GraphPicker({ plugin, onPick }: { plugin: GraphBuddyPlugin; onPick: (dir: string) => void }): React.JSX.Element {
+function GraphPicker({ plugin, onPick }: { plugin: CreativeBuddyPlugin; onPick: (dir: string) => void }): React.JSX.Element {
   const indexing = plugin.model === null;
   const graphs = plugin.model?.graphs() ?? [];
   return (
-    <div className="gb-picker">
+    <div className="cb-picker">
       <h3>Bind this tab to a graph</h3>
       {indexing ? (
-        <p>Graph Buddy is still indexing the vault — the graphs will appear here in a moment.</p>
+        <p>Creative Buddy is still indexing the vault — the graphs will appear here in a moment.</p>
       ) : graphs.length === 0 ? (
         <p>No graphs found — a graph is a folder whose hub note carries a ## Charter heading.</p>
       ) : null}
@@ -295,7 +295,7 @@ function GraphPicker({ plugin, onPick }: { plugin: GraphBuddyPlugin; onPick: (di
           {dir === "" ? "(vault root)" : dir}
         </button>
       ))}
-      <p className="gb-picker-hint">To start a brand-new graph, bind to the vault root and ask for a bootstrap — the interviewer asks the folder name first.</p>
+      <p className="cb-picker-hint">To start a brand-new graph, bind to the vault root and ask for a bootstrap — the interviewer asks the folder name first.</p>
     </div>
   );
 }

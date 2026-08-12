@@ -1,14 +1,14 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import { execFile } from "node:child_process";
-import type GraphBuddyPlugin from "./main";
+import type CreativeBuddyPlugin from "./main";
 
-export interface GraphBuddySettings {
+export interface CreativeBuddySettings {
   claudePath: string;        // "" = auto-detect
   defaultModel: string;      // claude-opus-5 | claude-sonnet-5 | claude-haiku-4-5
   apiKeyOverride: string;    // "" = subscription (the path)
 }
 
-export const DEFAULT_SETTINGS: GraphBuddySettings = {
+export const DEFAULT_SETTINGS: CreativeBuddySettings = {
   claudePath: "",
   defaultModel: "claude-sonnet-5",
   apiKeyOverride: "",
@@ -20,8 +20,8 @@ export const MODEL_CHOICES: Record<string, string> = {
   "claude-haiku-4-5": "Haiku 4.5 — quick and cheap",
 };
 
-export class GraphBuddySettingTab extends PluginSettingTab {
-  constructor(app: App, private readonly plugin: GraphBuddyPlugin) {
+export class CreativeBuddySettingTab extends PluginSettingTab {
+  constructor(app: App, private readonly plugin: CreativeBuddyPlugin) {
     super(app, plugin);
   }
 

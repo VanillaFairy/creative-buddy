@@ -1,4 +1,4 @@
-# Graph Buddy — manual test checklist
+# Creative Buddy — manual test checklist
 
 The unit suite proves the deterministic core; this pass proves the Obsidian
 shells and the live interviewer. Run it top to bottom: dev vault first, then a
@@ -6,7 +6,7 @@ copy of the real vault, then the side-by-side parity items. Check items off as
 they pass; note anything odd inline.
 
 Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
-`<vault>/.obsidian/plugins/graph-buddy/`, enable the plugin, open the console
+`<vault>/.obsidian/plugins/creative-buddy/`, enable the plugin, open the console
 (Ctrl-Shift-I) to catch stray errors.
 
 ## 1 — Dev vault: chat
@@ -91,7 +91,7 @@ session with the original knowledge-graph skill on the same graph.
 
 ## 4 — Aftercheck
 
-- [ ] Console shows no errors beyond the expected `[graph-buddy] claude:`
+- [ ] Console shows no errors beyond the expected `[creative-buddy] claude:`
       debug lines.
 - [ ] `workspace.json` has not grown absurdly — transcripts persist, but tool
       inputs (note bodies) are trimmed out on save.

@@ -1,13 +1,13 @@
-/* Graph Buddy — chat surface. Obsidian theme variables only, no hard-coded colours. */
+/* Creative Buddy — chat surface. Obsidian theme variables only, no hard-coded colours. */
 
-.gb-chat {
+.cb-chat {
   display: flex;
   flex-direction: column;
   height: 100%;
   gap: 8px;
 }
 
-.gb-chat-header {
+.cb-chat-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -15,17 +15,17 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.gb-chat-graph {
+.cb-chat-graph {
   font-weight: 600;
   margin-right: auto;
 }
 
-.gb-chat-dup {
+.cb-chat-dup {
   color: var(--color-orange);
   cursor: help;
 }
 
-.gb-chat-list {
+.cb-chat-list {
   flex: 1 1 auto;
   overflow-y: auto;
   display: flex;
@@ -34,7 +34,7 @@
   padding-right: 4px;
 }
 
-.gb-msg {
+.cb-msg {
   max-width: 90%;
   padding: 6px 10px;
   border-radius: 8px;
@@ -42,26 +42,26 @@
   overflow-wrap: anywhere;
 }
 
-.gb-msg-user {
+.cb-msg-user {
   align-self: flex-end;
   background-color: var(--background-secondary);
 }
 
-.gb-msg-assistant {
+.cb-msg-assistant {
   align-self: flex-start;
   white-space: normal;
 }
 
-.gb-streaming {
+.cb-streaming {
   opacity: 0.85;
 }
 
-.gb-tool {
+.cb-tool {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 
-.gb-tool-line {
+.cb-tool-line {
   background: none;
   border: none;
   box-shadow: none;
@@ -72,7 +72,7 @@
   text-align: left;
 }
 
-.gb-tool-raw {
+.cb-tool-raw {
   margin: 4px 0 0;
   padding: 6px 8px;
   max-height: 240px;
@@ -81,49 +81,49 @@
   border-radius: 6px;
 }
 
-.gb-approval {
+.cb-approval {
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   padding: 8px 10px;
   background-color: var(--background-secondary);
 }
 
-.gb-approval-title {
+.cb-approval-title {
   font-weight: 600;
 }
 
-.gb-approval-reason {
+.cb-approval-reason {
   color: var(--text-muted);
   margin: 4px 0 8px;
 }
 
-.gb-approval-actions {
+.cb-approval-actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.gb-approval-actions input {
+.cb-approval-actions input {
   flex: 1 1 180px;
   min-width: 0;
 }
 
-.gb-approval-settled {
+.cb-approval-settled {
   color: var(--text-muted);
 }
 
-.gb-notice-error {
+.cb-notice-error {
   color: var(--color-red);
 }
 
-.gb-cost {
+.cb-cost {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   align-self: center;
 }
 
-.gb-chat-composer {
+.cb-chat-composer {
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -131,27 +131,27 @@
   padding-top: 8px;
 }
 
-.gb-chat-composer textarea {
+.cb-chat-composer textarea {
   flex: 1 1 auto;
   min-height: 3lh;
   max-height: 12lh;
   resize: vertical;
 }
 
-.gb-picker {
+.cb-picker {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
 }
 
-.gb-picker-hint {
+.cb-picker-hint {
   color: var(--text-muted);
 }
 
-/* Graph Buddy — mindmap surface. */
+/* Creative Buddy — mindmap surface. */
 
-.gb-mindmap {
+.cb-mindmap {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -159,7 +159,7 @@
   gap: 8px;
 }
 
-.gb-mm-header {
+.cb-mm-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -167,40 +167,40 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.gb-mm-stats {
+.cb-mm-stats {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 
 /* A hub with ten-plus direct children has gone flat — worth noticing. */
-.gb-mm-flat {
+.cb-mm-flat {
   color: var(--color-orange);
 }
 
-.gb-mm-svg-host {
+.cb-mm-svg-host {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
 
-.gb-mm-svg {
+.cb-mm-svg {
   width: 100%;
   height: 100%;
   display: block;
   cursor: grab;
 }
 
-.gb-mm-svg:active {
+.cb-mm-svg:active {
   cursor: grabbing;
 }
 
-.gb-mm-edge {
+.cb-mm-edge {
   fill: none;
   stroke: var(--background-modifier-border);
   stroke-width: 1.5px;
 }
 
-.gb-mm-crosslink {
+.cb-mm-crosslink {
   fill: none;
   stroke: var(--text-accent);
   stroke-width: 1px;
@@ -208,30 +208,30 @@
   opacity: 0.3;
 }
 
-.gb-mm-node {
+.cb-mm-node {
   cursor: pointer;
 }
 
-.gb-mm-box {
+.cb-mm-box {
   fill: var(--background-secondary);
   stroke: var(--background-modifier-border);
   stroke-width: 1px;
 }
 
-.gb-mm-node:hover .gb-mm-box {
+.cb-mm-node:hover .cb-mm-box {
   stroke: var(--text-accent);
 }
 
-.gb-mm-problem {
+.cb-mm-problem {
   stroke: var(--color-red);
   stroke-width: 2px;
 }
 
-.gb-mm-dot {
+.cb-mm-dot {
   fill: var(--color-orange);
 }
 
-.gb-mm-node text {
+.cb-mm-node text {
   fill: var(--text-normal);
   font-size: var(--font-ui-small);
   dominant-baseline: middle;
@@ -239,8 +239,8 @@
   user-select: none;
 }
 
-.gb-mm-tray,
-.gb-mm-obligations {
+.cb-mm-tray,
+.cb-mm-obligations {
   position: absolute;
   max-width: 40%;
   max-height: 40%;
@@ -253,30 +253,30 @@
   font-size: var(--font-ui-smaller);
 }
 
-.gb-mm-tray {
+.cb-mm-tray {
   right: 12px;
   top: 48px;
 }
 
-.gb-mm-obligations {
+.cb-mm-obligations {
   right: 12px;
   bottom: 12px;
 }
 
-.gb-mm-tray h4,
-.gb-mm-obligations h4 {
+.cb-mm-tray h4,
+.cb-mm-obligations h4 {
   margin: 0 0 6px;
 }
 
-.gb-mm-tray-row {
+.cb-mm-tray-row {
   color: var(--text-muted);
 }
 
-.gb-mm-tray-row a {
+.cb-mm-tray-row a {
   cursor: pointer;
 }
 
-.gb-mm-obligations pre {
+.cb-mm-obligations pre {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -284,7 +284,7 @@
   padding: 0;
 }
 
-.gb-chat-status {
+.cb-chat-status {
   color: var(--text-muted);
   font-size: 0.85em;
   font-style: italic;

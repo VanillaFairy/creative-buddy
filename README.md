@@ -1,4 +1,4 @@
-# Graph Buddy
+# Creative Buddy
 
 An Obsidian plugin that embeds a knowledge-graph interviewer — a conversational
 companion that grows a mindmap of markdown notes under strict "never invent a
@@ -26,8 +26,8 @@ Until this ships anywhere official, install by hand:
 
 1. `npm ci && npm run build`
 2. Copy `main.js`, `manifest.json`, and `styles.css` into
-   `<your vault>/.obsidian/plugins/graph-buddy/`
-3. Enable **Graph Buddy** in Obsidian's community-plugins settings.
+   `<your vault>/.obsidian/plugins/creative-buddy/`
+3. Enable **Creative Buddy** in Obsidian's community-plugins settings.
 
 ## Using it
 

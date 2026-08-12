@@ -118,7 +118,7 @@ describe("M2 hardening: hidden directories and Windows filename edge cases", () 
   });
 
   it("asks before reading hidden directories (plugin data lives there)", () => {
-    const d = decideToolUse("Read", { file_path: "C:/vaults/General/.obsidian/plugins/graph-buddy/data.json" }, CTX);
+    const d = decideToolUse("Read", { file_path: "C:/vaults/General/.obsidian/plugins/creative-buddy/data.json" }, CTX);
     expect(d.behavior).toBe("ask");
   });
 

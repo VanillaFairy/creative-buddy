@@ -37,25 +37,25 @@ export function ChatSurface(props: {
   };
 
   return (
-    <div className="gb-chat">
-      <header className="gb-chat-header">
-        <span className="gb-chat-graph">{props.graphLabel}</span>
-        {props.duplicateTab ? <span className="gb-chat-dup" title="Another tab is bound to this graph — last write wins.">⚠ shared</span> : null}
+    <div className="cb-chat">
+      <header className="cb-chat-header">
+        <span className="cb-chat-graph">{props.graphLabel}</span>
+        {props.duplicateTab ? <span className="cb-chat-dup" title="Another tab is bound to this graph — last write wins.">⚠ shared</span> : null}
         <select value={props.model} onChange={(e) => callbacks.onModelChange(e.target.value)}>
           {Object.entries(MODEL_CHOICES).map(([id, label]) => (
             <option key={id} value={id}>{label}</option>
           ))}
         </select>
         <button onClick={() => callbacks.onWrapUp()} disabled={props.busy}>Wrap up</button>
-        {props.busy ? <span className="gb-chat-status">{props.status ?? "thinking…"}</span> : null}
+        {props.busy ? <span className="cb-chat-status">{props.status ?? "thinking…"}</span> : null}
         {props.busy ? <button onClick={() => callbacks.onInterrupt()}>Stop</button> : null}
       </header>
-      <div className="gb-chat-list" ref={listRef}>
+      <div className="cb-chat-list" ref={listRef}>
         {props.items.map((item, i) => (
           <TranscriptRow key={i} item={item} callbacks={callbacks} />
         ))}
       </div>
-      <div className="gb-chat-composer">
+      <div className="cb-chat-composer">
         <textarea
           value={draft}
           placeholder="Say something to the interviewer…"
@@ -76,7 +76,7 @@ export function ChatSurface(props: {
 function TranscriptRow({ item, callbacks }: { item: TranscriptItem; callbacks: ChatCallbacks }): React.JSX.Element {
   switch (item.kind) {
     case "user":
-      return <div className="gb-msg gb-msg-user">{item.text}</div>;
+      return <div className="cb-msg cb-msg-user">{item.text}</div>;
     case "assistant":
       return <MarkdownBlock markdown={item.markdown} streaming={item.streaming} render={callbacks.renderMarkdown} />;
     case "tool":
@@ -84,9 +84,9 @@ function TranscriptRow({ item, callbacks }: { item: TranscriptItem; callbacks: C
     case "approval":
       return <ApprovalCard item={item} callbacks={callbacks} />;
     case "notice":
-      return <div className={`gb-msg gb-notice gb-notice-${item.tone}`}>{item.text}</div>;
+      return <div className={`cb-msg cb-notice cb-notice-${item.tone}`}>{item.text}</div>;
     case "result":
-      return <div className="gb-msg gb-cost">turn done · ${item.costUsd.toFixed(2)}{item.isError ? " · errored" : ""}</div>;
+      return <div className="cb-msg cb-cost">turn done · ${item.costUsd.toFixed(2)}{item.isError ? " · errored" : ""}</div>;
   }
 }
 
@@ -102,7 +102,7 @@ function MarkdownBlock({ markdown, streaming, render }: { markdown: string; stre
     render(el, markdown);
   }, [markdown, streaming, render]);
   return (
-    <div className={`gb-msg gb-msg-assistant${streaming ? " gb-streaming" : ""}`} ref={ref}>
+    <div className={`cb-msg cb-msg-assistant${streaming ? " cb-streaming" : ""}`} ref={ref}>
       {streaming ? markdown : null}
     </div>
   );
@@ -111,11 +111,11 @@ function MarkdownBlock({ markdown, streaming, render }: { markdown: string; stre
 function ToolRow({ item }: { item: Extract<TranscriptItem, { kind: "tool" }> }): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   return (
-    <div className={`gb-tool${item.done ? " gb-tool-done" : ""}`}>
-      <button className="gb-tool-line" onClick={() => setOpen(!open)}>
+    <div className={`cb-tool${item.done ? " cb-tool-done" : ""}`}>
+      <button className="cb-tool-line" onClick={() => setOpen(!open)}>
         {item.done ? "✓" : "…"} {item.line}
       </button>
-      {open && Object.keys(item.input).length > 0 ? <pre className="gb-tool-raw">{JSON.stringify(item.input, null, 2)}</pre> : null}
+      {open && Object.keys(item.input).length > 0 ? <pre className="cb-tool-raw">{JSON.stringify(item.input, null, 2)}</pre> : null}
     </div>
   );
 }
@@ -123,13 +123,13 @@ function ToolRow({ item }: { item: Extract<TranscriptItem, { kind: "tool" }> }):
 function ApprovalCard({ item, callbacks }: { item: Extract<TranscriptItem, { kind: "approval" }>; callbacks: ChatCallbacks }): React.JSX.Element {
   const [why, setWhy] = React.useState("");
   if (item.resolution !== "pending") {
-    return <div className="gb-approval gb-approval-settled">{item.toolName} {item.targetPath ?? ""} — {item.resolution}</div>;
+    return <div className="cb-approval cb-approval-settled">{item.toolName} {item.targetPath ?? ""} — {item.resolution}</div>;
   }
   return (
-    <div className="gb-approval">
-      <div className="gb-approval-title">{item.title ?? `Outside the graph: ${item.targetPath ?? item.toolName}`}</div>
-      <div className="gb-approval-reason">{item.reason}</div>
-      <div className="gb-approval-actions">
+    <div className="cb-approval">
+      <div className="cb-approval-title">{item.title ?? `Outside the graph: ${item.targetPath ?? item.toolName}`}</div>
+      <div className="cb-approval-reason">{item.reason}</div>
+      <div className="cb-approval-actions">
         <button onClick={() => callbacks.onApprove(item.id, true)}>Allow</button>
         <button onClick={() => callbacks.onApprove(item.id, false, why.trim() === "" ? undefined : why.trim())}>Deny</button>
         <input placeholder="why not (optional, the model sees it)" value={why} onChange={(e) => setWhy(e.target.value)} />
