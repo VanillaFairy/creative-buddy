@@ -2,6 +2,8 @@ import * as React from "react";
 import { TranscriptItem } from "./transcript";
 import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
 import { Queued, hasWaiting } from "./queue";
+import { draggedHeight, heightBounds, pxLength } from "./composer-size";
+import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
 import { MODEL_CHOICES } from "../settings";
 import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
 
@@ -86,14 +88,36 @@ export function ChatSurface(props: {
   const { callbacks } = props;
   const [draft, setDraft] = React.useState("");
   const listRef = React.useRef<HTMLDivElement>(null);
+  const boxRef = React.useRef<HTMLTextAreaElement>(null);
+  // null until you drag the grip, so min-height governs the resting size and
+  // the CSS stays in charge of what "three lines" means.
+  const [boxHeight, setBoxHeight] = React.useState<number | null>(null);
   // Anything the agent is spending on your behalf, in flight or lined up behind
   // it. It is what the composer offers to stop, and what Escape stops.
   const running = props.busy || hasWaiting(props.queued);
+  // How much transcript sat below the fold when a resize began. See
+  // scroll-anchor.ts for why that is the number worth holding.
+  const anchorRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     const list = listRef.current;
     if (list !== null) list.scrollTo({ top: list.scrollHeight });
   }, [props.items]);
+
+  // Layout, not effect: this runs once the new height is in the DOM but before
+  // the frame is painted, so the transcript is never drawn in the wrong place
+  // and corrected afterwards — which is the lurch it exists to prevent.
+  React.useLayoutEffect(() => {
+    const list = listRef.current;
+    const gap = anchorRef.current;
+    if (list !== null && gap !== null) list.scrollTop = anchoredScrollTop(list, gap);
+  }, [boxHeight]);
+
+  /** Take the bearing the resize will steer back to. Runs before the box moves. */
+  const takeAnchor = (): void => {
+    const list = listRef.current;
+    anchorRef.current = list === null ? null : bottomGap(list);
+  };
 
   // No busy guard: a message typed during a turn joins the queue rather than
   // being refused, which is the whole reason the queue exists.
@@ -102,6 +126,58 @@ export function ChatSurface(props: {
     if (text === "") return;
     setDraft("");
     callbacks.onSend(text);
+  };
+
+  /** How far the box may be dragged, straight off the CSS that drew it. */
+  const bounds = (box: HTMLTextAreaElement): { min: number; max: number } => {
+    const style = window.getComputedStyle(box);
+    return heightBounds(style.minHeight, style.maxHeight);
+  };
+
+  /**
+   * The box's height in the same coordinates as its own min and max — which is
+   * whichever box `box-sizing` names. getBoundingClientRect is always the
+   * border box, so measuring with it while clamping against content-box limits
+   * drifts by the padding on every step of a keyboard resize.
+   */
+  const currentHeight = (box: HTMLTextAreaElement): number =>
+    pxLength(window.getComputedStyle(box).height) ?? box.getBoundingClientRect().height;
+
+  // Pointer capture rather than window listeners: the pointer keeps reporting
+  // to the grip once it has left it, and the browser tears the gesture down
+  // itself if something else claims the pointer mid-drag.
+  const startResize = (event: React.PointerEvent<HTMLDivElement>): void => {
+    const box = boxRef.current;
+    if (box === null) return;
+    event.preventDefault();
+    const grip = event.currentTarget;
+    const startY = event.clientY;
+    const startHeight = currentHeight(box);
+    const limits = bounds(box);
+    // Once, at the start. Re-reading it per move would measure a transcript the
+    // previous move had already corrected, and the rounding would accumulate
+    // across the drag.
+    takeAnchor();
+    grip.setPointerCapture(event.pointerId);
+    const move = (e: PointerEvent): void => setBoxHeight(draggedHeight(startHeight, e.clientY - startY, limits));
+    const stop = (): void => {
+      grip.removeEventListener("pointermove", move);
+      grip.removeEventListener("pointerup", stop);
+      grip.removeEventListener("pointercancel", stop);
+    };
+    grip.addEventListener("pointermove", move);
+    grip.addEventListener("pointerup", stop);
+    grip.addEventListener("pointercancel", stop);
+  };
+
+  /** The same gesture without a pointer — one line per press. */
+  const nudgeResize = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    const box = boxRef.current;
+    const step = event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
+    if (box === null || step === 0) return;
+    event.preventDefault();
+    takeAnchor();
+    setBoxHeight(draggedHeight(currentHeight(box), step * 24, bounds(box)));
   };
 
   return (
@@ -167,8 +243,27 @@ export function ChatSurface(props: {
           ))}
         </ul>
       ) : null}
+      {/* The line between the transcript and the composer is also the handle
+          that moves it — the boundary you are dragging is the boundary you can
+          see. Double-click puts it back. */}
+      <div
+        className="cb-composer-grip"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize the message box"
+        title="Drag to resize the message box — double-click to reset"
+        tabIndex={0}
+        onPointerDown={startResize}
+        onDoubleClick={() => {
+          takeAnchor();
+          setBoxHeight(null);
+        }}
+        onKeyDown={nudgeResize}
+      />
       <div className="cb-chat-composer">
         <textarea
+          ref={boxRef}
+          style={boxHeight === null ? undefined : { height: `${boxHeight}px` }}
           value={draft}
           placeholder={running ? "Enter queues this for when the turn ends" : "Say something to the interviewer — Enter sends"}
           onChange={(e) => setDraft(e.target.value)}

@@ -547,19 +547,75 @@
   overflow-wrap: anywhere;
 }
 
+/* The hairline that separated the transcript from the composer now lives on
+   .cb-composer-grip, because that line is also the handle you drag. */
 .cb-chat-composer {
+  flex: none;
   display: flex;
   align-items: flex-end;
   gap: var(--size-4-2);
-  border-top: 1px solid var(--cb-rail);
-  padding-top: var(--size-4-2);
 }
 
+/* Our own resize handle, in place of the textarea's native corner grabber.
+   That grabber is a ~16px triangle tucked beside the send button in a pane
+   that is often 300px wide — even working, it is a poor target, and being the
+   host's rather than ours it can be taken away by anything in the page. This
+   is the same gesture spanning the full width, reachable by keyboard, and
+   driven by our own pointer handling.
+
+   flex: none for the same reason the composer has it: a shrinkable row lets
+   the column's flex pass undo the height a drag just set. */
+.cb-composer-grip {
+  flex: none;
+  position: relative;
+  height: 9px;
+  cursor: ns-resize;
+  /* Stops a touch drag from scrolling the panel out from under the gesture. */
+  touch-action: none;
+}
+
+.cb-composer-grip::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 4px;
+  height: 1px;
+  background: var(--cb-rail);
+  transition: height 100ms ease, background-color 100ms ease;
+}
+
+/* Thickens into the accent under the pointer, so the line reads as a thing you
+   can take hold of at exactly the moment you might. */
+.cb-composer-grip:hover::before,
+.cb-composer-grip:focus-visible::before {
+  top: 3px;
+  height: 3px;
+  background: var(--cb-live);
+}
+
+/* The thickened accent line is the focus indicator. An outline as well would
+   draw a second line around a 9px box — and the bar is the stronger signal of
+   the two anyway: full width and in the accent, against a hairline. */
+.cb-composer-grip:focus-visible {
+  outline: none;
+}
+
+/* Set at the size the interviewer answers in, because what you type here is
+   the same words that end up in the column above — see .cb-msg-user.
+   The ceiling is a share of the window rather than a line count: it is a floor
+   under the transcript, not an opinion about how much you should write. Since
+   the composer no longer shrinks, a cap taller than the panel would push the
+   send button off the bottom, so leave the majority of the window to
+   everything else. */
+/* No `resize: vertical`: the grip above owns the gesture, and two mechanisms
+   writing the same inline height would fight — React would win the next render
+   and the native drag would look like it sprang back. min/max stay here, and
+   the grip reads them off this element, so this rule is still the one place
+   that decides how small and how large the box may get. */
 .cb-chat-composer textarea {
   flex: 1 1 auto;
   min-height: 3lh;
-  max-height: 12lh;
-  resize: vertical;
+  max-height: 40vh;
   font-family: var(--cb-hand);
   font-size: var(--font-ui-medium);
   line-height: 1.65;
@@ -1132,6 +1188,7 @@
   .cb-activity-chevron,
   .cb-tabs .cb-tab-close,
   .cb-queued .cb-queued-cancel,
+  .cb-composer-grip::before,
   .cb-mm-box,
   .cb-mm-crosslink,
   .cb-picker-graphs .cb-picker-graph,
