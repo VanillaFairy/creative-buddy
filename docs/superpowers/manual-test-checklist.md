@@ -13,10 +13,42 @@ older than the code.
 
 ## 1 — Dev vault: chat
 
-- [ ] There is exactly **one** ribbon icon. It opens a chat panel in the right
-      sidebar; clicking it again reveals that same panel rather than stacking
-      another. Collapse the sidebar first, then click it → the sidebar reopens
-      onto the panel rather than creating it out of sight.
+- [ ] There are exactly **two** ribbon icons — a speech bubble for the chat and
+      a fork for the map. Either one opens its panel in the right sidebar;
+      clicking it again reveals that same panel rather than stacking another.
+      Collapse the sidebar first, then click → the sidebar reopens onto the
+      panel rather than creating it out of sight. **Close the map, then click
+      the map icon → it comes back.** That is the whole reason there are two.
+- [ ] Open a note inside a project, then click the chat icon → a conversation
+      opens already bound to that project, with no picker. It works from a note
+      several folders deep, and from the hub note itself.
+- [ ] Do the same with a note in a folder that has its own `## Charter` note
+      **inside** an outer project → you land on the **outer** project, the one
+      the map's dropdown also lists. (An inner one would be a project nothing
+      else in the plugin can see.)
+- [ ] Click the chat icon with no note open, or with a note that belongs to no
+      project → on an empty strip the picker appears; with a conversation
+      already open the panel is simply revealed and that conversation is left
+      alone. The picker is the only question, and only when there is nothing to
+      resolve.
+- [ ] Right-click a note in the file explorer (or use its ⋯ menu) → "Open in
+      Creative Buddy chat" and "Show in Creative Buddy map" sit with Obsidian's
+      own open actions. Both resolve the project the same way the ribbon does.
+      Right-click a **folder** or a non-markdown file → neither item appears.
+- [ ] Click the chat icon three times from the same note → **one** conversation.
+      The second and third clicks reveal the one you already have; they must not
+      stack up tabs on the same project, and no ⚠ badge should appear.
+- [ ] Talk in that conversation, then open a note in a **different** project and
+      click the chat icon → a new tab on that project, with the first
+      conversation still there, still bound to its own project and with its
+      transcript intact. Click back to the first project's note and press the
+      icon → you land back on the first conversation, not a fourth tab.
+- [ ] Click the icon while you are already looking at that project's
+      conversation → nothing changes at all (no tab switch, no redraw).
+- [ ] Put the chat panel in the background (another sidebar tab in front of it),
+      then click the chat icon → the panel comes forward **and** a conversation
+      opens. A background panel holds a placeholder view, so this used to be a
+      silent no-op.
 - [ ] The "+" on the tab strip makes a second conversation **inside the same
       panel**. Bind it to another graph and talk in both: each tab keeps its
       own transcript, model, cost and session. A turn running in a background
@@ -28,7 +60,13 @@ older than the code.
       whichever conversation took its place.
 - [ ] "New conversation" in the palette reveals the panel and adds a tab —
       except when the tab you are on is still blank and unused, which already
-      is a new conversation. "Open graph mindmap" reveals the one map.
+      is a new conversation. Unlike the ribbon it stays **unbound** and shows
+      the picker even when you are standing in a project: it is the one command
+      that always leaves you with a conversation you did not have, and how you
+      reach a project other than the one you are reading. Same for the "+" on
+      the strip — including a second tab on a project you already have open, if
+      you deliberately ask for one. "Open chat panel" behaves like the ribbon.
+      "Open graph mindmap" reveals the one map.
 - [ ] Settings → "Open in the main editor area" → the next panel you open
       lands as a centre tab instead of in the sidebar. Panels already open
       stay where they are.
@@ -76,8 +114,20 @@ older than the code.
       approval card was pending, it flips to **denied** — it must not stay
       clickable.
 - [ ] Open a chat tab immediately after Obsidian starts → the picker says it
-      is still indexing, then shows the graphs by itself when done (no
+      is still indexing, then shows the projects by itself when done (no
       close/reopen needed).
+- [ ] The picker's rows read as projects, not paths: the name leads, the folder
+      it sits in is underneath only when the name alone would be ambiguous, and
+      the note count is right-aligned. Squeeze the sidebar narrow → long names
+      and folders ellipsise; the count never wraps or clips.
+- [ ] The picker's question is set in the vault's **reading** font while the
+      rows, counts and hint stay in the interface font — the one place the UI
+      speaks in the interviewer's voice. Set the two fonts to different families
+      in Appearance to see it.
+- [ ] In a vault whose root is itself a project, the picker's hint offers to
+      bootstrap a new folder for you. In a vault where it is not, the hint
+      instead explains the folder-plus-charter shape — it must never point at a
+      "whole vault" row that is not on the list.
 - [ ] While a reply streams, the header shows a thinking indicator next to
       Stop. The header's last slot holds exactly one button: Wrap up when
       idle, Stop while a turn runs — never a greyed-out Wrap up.
@@ -134,8 +184,18 @@ older than the code.
       starts closed and must stay closed until clicked — it covers the map
       when open.
 - [ ] Rename a graph's folder in the file explorer while the mindmap shows it
-      → the selector falls back to another graph instead of a blank dropdown
-      over an empty map.
+      → the map falls back to the picker rather than silently drawing whichever
+      project sorts first. Pick again and it draws.
+- [ ] Open a note in another project and click the map ribbon icon (or use the
+      note's ⋯ menu) → the map switches to that project and **fits** the new
+      tree rather than keeping the pan you had on the old one.
+- [ ] Click the map icon with no note open, on a map that has never been bound →
+      the picker appears, asking "Which project should I draw?" with the same
+      rows the chat's picker shows. Pick one → it draws, and the dropdown
+      appears in the header from then on.
+- [ ] With a bound map on screen, click the map icon while a note outside every
+      project is open → the map keeps drawing what it was drawing. It must not
+      throw away a working map because there was nothing to resolve.
 - [ ] Run a chat session that files new statements → watch the map grow live.
 - [ ] Open the mindmap right after Obsidian starts, close the tab before
       indexing finishes, reopen it → it works; nothing in the console suggests
