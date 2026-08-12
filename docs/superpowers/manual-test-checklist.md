@@ -133,24 +133,105 @@ older than the code.
       Obsidian to a light theme and open it again → it follows. Same for the
       map's project selector. Then set the OS to the *opposite* of the vault's
       theme and check again: the list follows Obsidian, not the desktop.
-- [ ] While a reply streams, the header shows a thinking indicator next to
-      Stop. The header's last slot holds exactly one button: Wrap up when
-      idle, Stop while a turn runs — never a greyed-out Wrap up.
+- [ ] While a reply streams, the header shows a thinking indicator next to the
+      model picker, and Wrap up is **gone** rather than greyed out — wrapping
+      up is a between-turns thing, and stopping lives in the composer now.
+- [ ] **Queue.** With a turn running, type another message and press Enter →
+      it does not reach the model. It appears above the composer behind a
+      dashed rail, under "Waiting for this turn to finish", and stays out of
+      the transcript. Queue a second → they stack in the order you typed them.
+- [ ] When that turn finishes, the first queued message drops into the
+      transcript **below** the turn's cost rule and starts its own turn; the
+      second waits for that one. Each gets its own answer — never merged, never
+      out of order.
+- [ ] Hover a waiting message → an × appears; click it → the message stays on
+      screen, loses its rail and reads *canceled*. Its words are still
+      selectable, so you can copy them back out. The ones around it keep their
+      order and still go out.
+- [ ] Reach that × by keyboard (Tab out of the composer) → it becomes visible
+      on focus and takes a focus ring.
+- [ ] **Resend.** A canceled message carries a ↻, visible without hovering —
+      it is the only live thing on a dead row and must not need to be hunted
+      for. Click it with nothing running → the message goes out at once. Click
+      it mid-turn → it rejoins the queue **in its old place**, so the list
+      still reads top-to-bottom in the order things will be said and the one
+      under it does not overtake it.
+- [ ] Canceled messages stay put: sending something new does not sweep them
+      off screen. Cancel two, resend one → the other is still there, still
+      resendable. (Queue enough of them and the list scrolls rather than
+      growing into the transcript.)
+- [ ] **Stop.** While a turn runs, the composer's button reads "■ Stop" where
+      Send was. Click it mid-tool-call → the turn stops and anything queued
+      behind it flips to *canceled* rather than going out a beat later. Watch
+      the console: no further tool calls land.
+- [ ] Press **Escape** in the composer while a turn runs → same as clicking
+      Stop. Press Escape with nothing running → nothing happens.
+- [ ] Send a fresh message after a stop → it goes out in the same session (the
+      reply still remembers what came before it), and the canceled ones are
+      still sitting there to resend.
+- [ ] Queue two messages, then kill `claude.exe` mid-turn → both flip to
+      *canceled*, and the plugin does not restart the process by itself to
+      spend a turn on them. Then hit ↻ on one → it reconnects and sends, the
+      way a freshly typed message would.
+- [ ] Queue in tab A, switch to tab B → B's composer is its own, with no queue,
+      and A's is still there when you switch back. Close A mid-turn with
+      messages queued → nothing in the console.
+- [ ] Squeeze the sidebar narrow with a long queued message → it wraps inside
+      its rail while the ×, *canceled* and ↻ stay right and never clip. On a
+      message that wraps, they sit against its **first** line rather than
+      floating halfway down it.
 - [ ] Bind a fresh tab to a graph → the empty transcript explains what the
-      interviewer does, sitting where the first message will land.
+      interviewer does, sitting where the first message will land — at the
+      same size and leading, so nothing shifts when the first reply arrives.
 - [ ] The interviewer's replies are set full-width in the vault's reading
       font; your messages sit behind a left rail in the UI font. In Appearance,
       set the text font and the interface font to different families → the two
       voices are visibly different. Set them the same → the rail still tells
       them apart.
+- [ ] One size runs through the conversation: type a sentence, watch it queue,
+      then watch it land in the transcript → it never changes size on the way.
+      The composer matches the interviewer's replies too, so the two halves of
+      the panel read as one column.
+- [ ] The line between the transcript and the composer is the resize handle.
+      Point at it → it thickens into the accent and the cursor becomes a
+      vertical resize arrow. Drag it **up** → the message box grows and the
+      transcript gives up the space and scrolls; drag it **down** → the box
+      shrinks. It stops on its own before the box is too small to type in and
+      before the send button is pushed off the bottom. Double-click the line →
+      back to three lines. Try it in a narrow sidebar and a wide main-area tab.
+- [ ] Tab to that line → it shows the same accent, and ↑/↓ resize by one line
+      a press. There is no native corner grabber on the box any more; the line
+      is the only handle, which is deliberate — two of them would fight.
+- [ ] Resize the box, then let a turn run and stream a long reply → the box
+      keeps the height you gave it. Switch tabs and come back → it is back to
+      three lines, because the height is per-panel live state and is not
+      persisted.
+- [ ] **The bottom of the transcript holds still while you drag.** Scroll to the
+      end, then grow the box → you are still at the end; the history must not
+      slide up under the composer. Now scroll up so some particular line sits
+      just above the composer, and grow the box → *that same line* is still the
+      one just above it, and the history has scrolled up by exactly what the
+      composer took. Shrink it back → you are where you started, with no drift
+      after a long wobbling drag. Watch for a flicker: the transcript must
+      never be painted in the old place and jump.
 - [ ] Notices ("The session ended…", the structure check) read as machinery —
       monospace behind a rail — not as the interviewer talking. An error
       notice's rail is red.
 - [ ] Each turn ends on a hairline rule carrying its cost, not a floating
       grey pill.
 - [ ] Drag the chat tab into the narrow right sidebar → the graph name stays
-      readable, the model picker and Stop are never clipped, and the status
-      text shortens before anything else does.
+      readable, the model picker is never clipped, and the status text shortens
+      before anything else does.
+- [ ] **Links out.** Get the interviewer to name a note it filed to, so the
+      reply carries a `[[wikilink]]`. Click it → the note opens in the main
+      pane you last worked in, the same one the map opens notes into — not in
+      a split over the chat, and not in the sidebar the chat is docked in.
+      Ctrl-click → a new tab instead, ctrl-alt-click → a split. A link to a
+      heading, `[[Note#Section]]`, lands on the heading.
+- [ ] Ask it for a link to a note that does not exist (`[[Nonsense]]`) and
+      click it → a notice says there is no such note. Check the vault
+      afterwards: clicking must not have created `Nonsense.md`.
+- [ ] Ask for a plain web link and click it → still opens in the browser.
 
 ## 2 — Dev vault: mindmap
 
