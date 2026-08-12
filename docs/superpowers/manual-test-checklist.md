@@ -11,7 +11,11 @@ Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
 
 ## 1 — Dev vault: chat
 
-- [ ] Open a chat tab from the ribbon; bind to a test graph; send a message on
+- [ ] Both ribbon icons open their panel in the **right sidebar**. Collapse the
+      sidebar first, then click a ribbon icon → the sidebar reopens onto the
+      new panel rather than creating it out of sight. The chat icon makes a
+      fresh panel each time; the map icon reveals the one map.
+- [ ] Open a chat panel from the ribbon; bind to a test graph; send a message on
       Haiku. Streaming text appears as plain text, then renders as markdown
       when the turn finishes; the tool machinery shows beneath it as activity
       panels, not one row per call.
@@ -73,8 +77,14 @@ Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
 - [ ] Open the mindmap; select a graph; the tree shape matches the folder
       structure (compare against the hub's Shape section).
 - [ ] Collapse and expand nodes; restart Obsidian; collapse state survives.
-- [ ] Alt-click any node opens the note in a split; plain click on a leaf opens
-      it too; plain click on a parent toggles collapse.
+- [ ] Alt-click any node opens the note; plain click on a leaf opens it too;
+      plain click on a parent toggles collapse. Every open lands in the main
+      pane you last worked in — not a split off the map, and never inside the
+      sidebar. Open a note, click a second node → the same main pane switches
+      to it rather than stacking another split. Links in the "not reachable"
+      panel behave the same way.
+- [ ] Close every main-area tab, then click a node → the note opens in a
+      freshly made main pane instead of taking over the sidebar.
 - [ ] Pan and zoom, then edit any note → the map updates after a beat without
       losing your pan/zoom. Switching graphs re-fits the whole new graph.
 - [ ] Open a map on a graph big enough to overrun the pane → it opens showing

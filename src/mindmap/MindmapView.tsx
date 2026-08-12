@@ -358,8 +358,14 @@ export class MindmapView extends ItemView {
       .createEl("pre", { text: lines.length > 0 ? lines.join("\n") : "Nothing is due or owed today." });
   }
 
+  /**
+   * Notes open in the main pane you last worked in, not in a split off the
+   * map. getLeaf(false) hands back an existing navigable leaf — from a sidebar
+   * view that means the main area — and only makes one when there is none,
+   * which is how the built-in search and backlinks panels behave.
+   */
   private openNote(path: string): void {
     const file = this.app.vault.getAbstractFileByPath(path);
-    if (file instanceof TFile) void this.app.workspace.getLeaf("split").openFile(file);
+    if (file instanceof TFile) void this.app.workspace.getLeaf(false).openFile(file);
   }
 }

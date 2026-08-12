@@ -33,10 +33,11 @@ export default class CreativeBuddyPlugin extends Plugin {
     this.addSettingTab(new CreativeBuddySettingTab(this.app, this));
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
-    this.addRibbonIcon("messages-square", "Creative Buddy: new chat tab", () => {
+    this.addRibbonIcon("messages-square", "Creative Buddy: new chat panel", () => {
       void this.openChatTab();
     });
-    this.addCommand({ id: "new-chat-tab", name: "New graph chat tab", callback: () => void this.openChatTab() });
+    // Command ids are keybinding keys — the wording moved to the sidebar, the id must not.
+    this.addCommand({ id: "new-chat-tab", name: "New graph chat panel", callback: () => void this.openChatTab() });
 
     this.registerView(MINDMAP_VIEW_TYPE, (leaf) => new MindmapView(leaf, this));
     this.addRibbonIcon("git-fork", "Creative Buddy: open graph mindmap", () => {
@@ -53,15 +54,26 @@ export default class CreativeBuddyPlugin extends Plugin {
     this.model = null;
   }
 
-  /** A chat tab always opens as a new tab — one tab, one session. */
+  /**
+   * Both surfaces live in the right sidebar, beside the vault rather than in
+   * it — you read and edit notes in the main area while the buddy watches from
+   * the side. getRightLeaf only returns null where there is no right sidebar
+   * at all, so the main area is the fallback rather than the intent.
+   *
+   * revealLeaf on every path, because a sidebar the user has collapsed would
+   * otherwise swallow the panel they just asked for.
+   */
   private async openChatTab(): Promise<void> {
-    await this.app.workspace.getLeaf(true).setViewState({ type: CHAT_VIEW_TYPE, active: true });
+    // A fresh leaf every time — one panel, one session.
+    const leaf = this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf(true);
+    await leaf.setViewState({ type: CHAT_VIEW_TYPE, active: true });
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   /** The mindmap is one shared surface — reveal the open one, or make the first. */
   private async openMindmap(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(MINDMAP_VIEW_TYPE)[0];
-    const leaf = existing ?? this.app.workspace.getLeaf(true);
+    const leaf = existing ?? this.app.workspace.getRightLeaf(false) ?? this.app.workspace.getLeaf(true);
     if (existing === undefined) await leaf.setViewState({ type: MINDMAP_VIEW_TYPE, active: true });
     await this.app.workspace.revealLeaf(leaf);
   }
