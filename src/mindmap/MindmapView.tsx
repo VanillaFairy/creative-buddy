@@ -7,6 +7,7 @@ import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { CollapseStore } from "./collapse-store";
 import { renderDigestForGraph } from "../agent/digest";
+import { tabTitle } from "../view-title";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const NODE_HEIGHT = 28;
@@ -25,7 +26,7 @@ export class MindmapView extends ItemView {
   }
 
   getViewType(): string { return MINDMAP_VIEW_TYPE; }
-  getDisplayText(): string { return "Graph mindmap"; }
+  getDisplayText(): string { return tabTitle("Creative Buddy map", this.graphDir, this.app.vault.getName()); }
   getIcon(): string { return "git-fork"; }
 
   getState(): Record<string, unknown> {

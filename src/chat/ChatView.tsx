@@ -6,7 +6,7 @@ import { AgentService, SessionHandle } from "../agent/agent-service";
 import { renderDigestForGraph } from "../agent/digest";
 import { reduceTranscript, TranscriptItem, TranscriptEvent } from "./transcript";
 import { ChatSurface } from "./components";
-import { baseName } from "../graph/types";
+import { projectName, tabTitle } from "../view-title";
 
 export const CHAT_VIEW_TYPE = "creative-buddy-chat";
 
@@ -33,7 +33,7 @@ export class ChatView extends ItemView {
 
   getViewType(): string { return CHAT_VIEW_TYPE; }
   getDisplayText(): string {
-    return this.state.graphDir === null ? "Graph chat" : `Chat: ${this.state.graphDir === "" ? this.app.vault.getName() : baseName(this.state.graphDir)}`;
+    return tabTitle("Creative buddy chat", this.state.graphDir, this.app.vault.getName());
   }
   getIcon(): string { return "messages-square"; }
 
@@ -260,7 +260,7 @@ export class ChatView extends ItemView {
     }).length > 0;
     this.root.render(
       <ChatSurface
-        graphLabel={this.getDisplayText()}
+        graphLabel={projectName(this.state.graphDir, this.app.vault.getName()) ?? ""}
         model={this.state.model}
         busy={this.busy}
         status={this.statusText}
