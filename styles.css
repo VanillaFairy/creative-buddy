@@ -334,8 +334,12 @@
 .cb-msg-assistant > :first-child { margin-top: 0; }
 .cb-msg-assistant > :last-child { margin-bottom: 0; }
 
-/* Your turn: already in the record, so it is set tighter and rail-attached
-   rather than floated as a bubble. Full text colour — recorded is not faded. */
+/* Your turn: already in the record, so it is rail-attached rather than floated
+   as a bubble. Full text colour — recorded is not faded. Set at the same size
+   as the interviewer's reply and as the composer you typed it into: a sentence
+   must not change size as it moves from the box, through the queue, into the
+   column. What tells the two voices apart is the face and the rail, which is
+   the whole point of having both. */
 .cb-msg-user {
   padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
   border-left: 2px solid var(--cb-rail);
@@ -343,8 +347,8 @@
   border-radius: 0;
   color: var(--cb-ink);
   font-family: var(--cb-hand);
-  font-size: var(--font-ui-small);
-  line-height: 1.55;
+  font-size: var(--font-ui-medium);
+  line-height: 1.65;
   white-space: pre-wrap;
 }
 
@@ -376,15 +380,16 @@
 
 .cb-turn-end-error { color: var(--cb-broken); }
 
-/* Sits where the first message will sit, so nothing jumps when one arrives. */
+/* Sits where the first message will sit, so nothing jumps when one arrives —
+   which means matching its size and leading too, not just its position. */
 .cb-chat-empty {
   margin: var(--size-4-2) 0 0;
   padding-left: var(--size-4-3);
   border-left: 2px solid var(--cb-rail);
   color: var(--cb-quiet);
   font-family: var(--cb-voice);
-  font-size: var(--font-ui-small);
-  line-height: 1.6;
+  font-size: var(--font-ui-medium);
+  line-height: 1.65;
 }
 
 /* Activity panels — a turn's machinery, set as marginalia. The rail ties the
@@ -556,8 +561,8 @@
   max-height: 12lh;
   resize: vertical;
   font-family: var(--cb-hand);
-  font-size: var(--font-ui-small);
-  line-height: 1.55;
+  font-size: var(--font-ui-medium);
+  line-height: 1.65;
 }
 
 /* The stop is the send button's slot, not a second control beside it: while a
