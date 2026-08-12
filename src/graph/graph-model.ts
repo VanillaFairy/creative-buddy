@@ -93,4 +93,14 @@ export class GraphModel {
   notes(graphDir: string): Note[] {
     return loadGraphNotes(this.view(), graphDir);
   }
+
+  /**
+   * A note's raw text, for body-level facts the index does not carry — the
+   * mindmap's open-question count is the one caller. Empty for a path the vault
+   * does not hold, so a note deleted between a redraw and its repaint reads as
+   * asking nothing rather than throwing.
+   */
+  contentOf(path: string): string {
+    return this.view().get(path) ?? "";
+  }
 }
