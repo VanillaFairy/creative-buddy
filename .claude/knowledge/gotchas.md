@@ -42,6 +42,11 @@ width — so a sibling with a large `flex-shrink` never gets to yield and
 whatever sits last in the row is clipped out of the container. Any flex item
 that should be allowed to compress needs an explicit `min-width: 0`.
 
+## A background leaf holds a DeferredView, not your view
+Since Obsidian 1.7.2 a leaf sitting in the background — another sidebar tab in front of it, say — has a `DeferredView` as its `view`, not the registered `ItemView`. So `leaf.view instanceof ChatView` is **false** for a panel that is merely not on top, and any code shaped like `if (leaf.view instanceof ChatView) leaf.view.doThing()` silently does nothing. It looks like a dead command rather than a bug, because revealing the panel by hand then makes everything work.
+
+`await workspace.revealLeaf(leaf)` is not enough on its own. Await `leaf.loadIfDeferred()` before touching `leaf.view` — it is a no-op on an already-loaded leaf, so one call at the end of a reveal-or-create helper covers every path. Related: `sharedGraphs` reads other panels' *serialized* state rather than their views for the same reason.
+
 ## Green vitest does not mean it compiles
 Vitest transpiles TS with esbuild, which strips types without checking them, so a strict-mode violation runs green in the suite and only fails at `tsc --noEmit`. `tsconfig` has `noUncheckedIndexedAccess` on, so `arr[0]` is `T | undefined` — the usual source of a green-tests/red-build split. Run `npm run build` before calling any change done, not just `npx vitest run`.
 

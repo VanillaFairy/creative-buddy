@@ -89,10 +89,22 @@ export default class CreativeBuddyPlugin extends Plugin {
    * ensureSideLeaf rather than getRightLeaf(false): the latter hands back the
    * sidebar's most recent leaf *whatever it is showing*, and setViewState then
    * overwrites it — that is how opening the map used to destroy a chat session.
+   *
+   * Awaits loadIfDeferred before handing the leaf back: since Obsidian 1.7.2 a
+   * background tab holds a DeferredView rather than the real view, so callers
+   * testing `leaf.view instanceof ChatView` would silently do nothing for a
+   * panel sitting in the background.
    */
   private async revealOrCreate(viewType: string): Promise<WorkspaceLeaf> {
     const workspace = this.app.workspace;
     const existing = workspace.getLeavesOfType(viewType)[0];
+    const leaf = await this.leafFor(viewType, existing);
+    await leaf.loadIfDeferred();
+    return leaf;
+  }
+
+  private async leafFor(viewType: string, existing: WorkspaceLeaf | undefined): Promise<WorkspaceLeaf> {
+    const workspace = this.app.workspace;
     if (existing !== undefined) {
       await workspace.revealLeaf(existing);
       return existing;
