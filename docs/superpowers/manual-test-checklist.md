@@ -5,9 +5,11 @@ shells and the live interviewer. Run it top to bottom: dev vault first, then a
 copy of the real vault, then the side-by-side parity items. Check items off as
 they pass; note anything odd inline.
 
-Setup: `npm run build`, copy `main.js` + `manifest.json` + `styles.css` into
-`<vault>/.obsidian/plugins/creative-buddy/`, enable the plugin, open the console
-(Ctrl-Shift-I) to catch stray errors.
+Setup: `npm run build && deploy.bat` (pass a path to target a vault other than
+the default), enable the plugin, open the console (Ctrl-Shift-I) to catch stray
+errors. Obsidian does not hot-reload — after each deploy, toggle Creative Buddy
+off and on, and check the timestamps `deploy.bat` prints if behaviour looks
+older than the code.
 
 ## 1 — Dev vault: chat
 

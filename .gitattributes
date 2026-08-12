@@ -1,3 +1,5 @@
 * text=auto eol=lf
 tests/fixtures/** -text
 *.png binary
+# cmd.exe misparses multi-line if/for blocks in an LF-only batch file.
+*.bat text eol=crlf

@@ -27,6 +27,9 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 
 - `npx vitest run` — full suite (live test excluded). Single file: `npx vitest run tests/<f>.test.ts`
 - `npm run build` — typecheck + esbuild production bundle (`main.js`)
+- `deploy.bat [target]` — copy `main.js` + `manifest.json` + `styles.css` into
+  the vault's plugin folder, overwriting. Prints build timestamps; never
+  touches `data.json`. Build first — it refuses to deploy a missing bundle.
 - `npm run oracle` — regenerate expected JSON (needs `python`, 3.14 with pyyaml)
 - `npm run test:live` — one REAL subscription session, costs a few cents. Run it
   after any change to `src/agent/agent-service.ts` options or `permissions.ts`
