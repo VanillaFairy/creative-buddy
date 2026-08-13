@@ -55,6 +55,16 @@ Until this ships anywhere official, install by hand:
   from settings; switching mid-conversation applies to the next turn. Type while
   a turn is running and your message queues rather than interleaving; it goes
   out when the turn lands, and you can cancel or resend it from the queue.
+- **Presets** — a collapsible row under the message box holding the two things
+  you end up asking for anyway. *Ask me* has the interviewer sweep the graph for
+  open `- [ ]` questions and put the one that matters most to you, weighed by
+  what an answer would unblock; with nothing open it finds the thinnest part of
+  the graph instead and asks about that. *Summarize* gets you a short prose read
+  on where the project stands — what it holds, what is thin, and anything you
+  would not have thought to ask — and writes nothing to the vault. A preset says
+  its text as though you had typed it, so it lands in the transcript verbatim and
+  queues behind a running turn like any other message. Collapse the row and the
+  panel remembers, across restarts.
 
 ## Settings
 

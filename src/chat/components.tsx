@@ -3,6 +3,7 @@ import { TranscriptItem } from "./transcript";
 import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
 import { Queued, hasWaiting } from "./queue";
 import { draggedHeight, heightBounds, pxLength } from "./composer-size";
+import { DIALOG_PRESETS } from "./presets";
 import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
 import { MODEL_CHOICES } from "../settings";
 import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
@@ -15,6 +16,8 @@ export interface ChatCallbacks {
   onInterrupt(): void;
   /** Take one waiting message back, or put a canceled one back in line. */
   onQueuedCanceled(index: number, canceled: boolean): void;
+  /** Show or hide the preset row. The panel remembers the answer. */
+  onPresetsToggle(open: boolean): void;
   renderMarkdown(el: HTMLElement, markdown: string): void;
 }
 
@@ -82,6 +85,7 @@ export function ChatSurface(props: {
   status: string | null;
   items: TranscriptItem[];
   queued: Queued[];
+  presetsOpen: boolean;
   callbacks: ChatCallbacks;
 }): React.JSX.Element {
   const { callbacks } = props;
@@ -288,6 +292,43 @@ export function ChatSurface(props: {
           <button onClick={send} disabled={draft.trim() === ""}>Send</button>
         )}
       </div>
+      <PresetRow open={props.presetsOpen} callbacks={callbacks} />
+    </div>
+  );
+}
+
+/**
+ * The canned openings, under the box you type in.
+ *
+ * A preset says its text as though you had typed it, so it goes out through the
+ * same `onSend` as Enter — which is what gets it queued behind a running turn,
+ * recorded in the transcript when it actually goes, and stoppable. There is no
+ * separate path for it because there is no separate thing happening.
+ *
+ * Collapsed still shows the toggle. A row that vanishes entirely is a feature
+ * you have to remember exists.
+ */
+function PresetRow({ open, callbacks }: { open: boolean; callbacks: ChatCallbacks }): React.JSX.Element {
+  return (
+    <div className={`cb-presets${open ? " cb-presets-open" : ""}`}>
+      <button
+        className="cb-presets-toggle"
+        aria-expanded={open}
+        title={open ? "Hide the presets" : "Show the presets"}
+        onClick={() => callbacks.onPresetsToggle(!open)}
+      >
+        {/* One glyph rotated by CSS, like the activity panels — so it animates
+            rather than swapping characters, and reduced-motion can stop it. */}
+        <span className="cb-presets-chevron" aria-hidden="true">▸</span>
+        <span className="cb-presets-label">Presets</span>
+      </button>
+      {open
+        ? DIALOG_PRESETS.map((preset) => (
+            <button key={preset.id} className="cb-preset" title={preset.title} onClick={() => callbacks.onSend(preset.prompt)}>
+              {preset.label}
+            </button>
+          ))
+        : null}
     </div>
   );
 }

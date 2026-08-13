@@ -220,6 +220,33 @@ older than the code.
       composer took. Shrink it back → you are where you started, with no drift
       after a long wobbling drag. Watch for a flicker: the transcript must
       never be painted in the old place and jump.
+- [ ] **Presets.** Under the message box sits a row reading "Presets" behind a
+      chevron, open, with **Ask me** and **Summarize** beside it. They are
+      quieter than Send — no fill, no border — until you point at one, and the
+      row must not twitch as the border appears. Hover each → a tooltip says
+      what it does. Tab to one → it takes the focus ring.
+- [ ] Click **Ask me** with nothing running → the preset's full text appears in
+      the transcript as *your* message, word for word, and a turn starts on it.
+      What you get back is **one** question with a line on why that one — not a
+      list, not a batch.
+- [ ] Do it on a project with several `- [ ]` boxes across different notes → the
+      question it picks is one of those, and the reason it gives is about what
+      the answer unblocks. Now do it on a project with no open boxes at all →
+      it says so plainly and proposes somewhere to expand instead, rather than
+      inventing a question to look busy.
+- [ ] Click **Summarize** → a few paragraphs of prose. No headings, no tables,
+      no roll-call of every note, and short enough to actually read. **Check the
+      vault afterwards: nothing was written.** If the hub's `## Shape` has gone
+      stale it says so in a line and offers to redraw it — and waits for you.
+- [ ] Click a preset **while a turn is running** → it queues behind the turn
+      exactly like a typed message, with the same × to take it back, and goes
+      out when the turn lands.
+- [ ] Collapse the row → the buttons go, the chevron and the word "Presets"
+      stay, so it is still findable. Restart Obsidian → still collapsed. Expand
+      it, restart again → still open.
+- [ ] Open a second chat panel → its row has its own answer; collapsing one must
+      not collapse the other. Switch between tabs inside one panel → the row is
+      the panel's, so it does not change.
 - [ ] Notices ("The session ended…") read as machinery — monospace behind a
       rail — not as the interviewer talking. An error notice's rail is red.
 - [ ] Each turn ends on a hairline rule carrying its cost, not a floating

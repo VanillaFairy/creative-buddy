@@ -20,6 +20,7 @@ import {
   sharedGraphs,
 } from "./sessions";
 import { Queued, advance, cancelAll, setCanceled } from "./queue";
+import { restorePresetsOpen } from "./presets";
 import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
 import { bootstrapHint, projectRows } from "../project-list";
@@ -49,6 +50,8 @@ export class ChatView extends ItemView {
   private list: SessionList;
   private service = new AgentService();
   private runtimes = new Map<string, Runtime>();
+  /** Panel-wide, not per-tab: the row is part of the composer, and there is one. */
+  private presetsShown = true;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
@@ -71,10 +74,12 @@ export class ChatView extends ItemView {
         items: s.items,
       })),
       active: this.list.active,
+      presetsOpen: this.presetsShown,
     };
   }
 
   async setState(state: unknown, result: unknown): Promise<void> {
+    this.presetsShown = restorePresetsOpen(state);
     const restored = restoreSessions(state, this.plugin.settings.defaultModel);
     // Drop anything live whose conversation this state does not contain, or
     // which was rebound to another graph — a handle outliving its graph would
@@ -437,6 +442,11 @@ export class ChatView extends ItemView {
       if (canceled) this.render();
       else this.pump(key);
     },
+    onPresetsToggle: (open: boolean): void => {
+      this.presetsShown = open;
+      this.app.workspace.requestSaveLayout();
+      this.render();
+    },
     renderMarkdown: (el: HTMLElement, markdown: string): void => {
       void MarkdownRenderer.render(this.app, markdown, el, this.sourcePath(), this);
     },
@@ -519,6 +529,7 @@ export class ChatView extends ItemView {
             status={runtime.status}
             items={session.items}
             queued={runtime.queue}
+            presetsOpen={this.presetsShown}
             callbacks={this.callbacks}
           />
         )}
