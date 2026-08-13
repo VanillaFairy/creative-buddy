@@ -64,9 +64,11 @@ describe("visiblePresets", () => {
   });
 
   it("gives the note preset a label, a tooltip and something to say", () => {
+    // Label and tooltip are pinned, not merely checked for emptiness: the row
+    // draws both, and a reworded button is a change to what the user reads.
     const preset = visiblePresets(1).at(-1)!;
     expect(preset.label).toBe("Current note questions");
-    expect(preset.title.trim()).not.toBe("");
+    expect(preset.title).toBe("Work through this note's open questions, one at a time");
     expect(preset.prompt.trim()).not.toBe("");
   });
 

@@ -5,6 +5,15 @@ import consult from "../assets/prompts/consult.md";
 import askMe from "../assets/prompts/presets/ask-me.md";
 import summarize from "../assets/prompts/presets/summarize.md";
 import { buildSystemPrompt, buildSessionPreamble } from "../src/agent/prompts";
+import { noteAnnouncement } from "../src/chat/note-context";
+
+/**
+ * A prompt is prose, so it is soft-wrapped, and a phrase worth asserting on
+ * lands wherever the wrap puts it. Comparing against flattened whitespace is
+ * what stops a reflow — an edit that changes nothing the model reads — from
+ * turning the suite red. This has now caught two people out.
+ */
+const flat = (markdown: string): string => markdown.replace(/\s+/g, " ");
 
 describe("shipped prompt assets", () => {
   it("no asset references the python scripts or Bash", () => {
@@ -39,8 +48,22 @@ describe("shipped prompt assets", () => {
    */
   it("system prompt says what an open-note line means", () => {
     expect(systemPrompt).toContain("**The note the user is reading comes first.**");
-    expect(systemPrompt).toContain("The user is looking at");
-    expect(systemPrompt).toContain("context for you, never content");
+    expect(flat(systemPrompt)).toContain("context for you, never content");
+  });
+
+  /**
+   * The rule quotes a line whose words live in `note-context.ts`. Reword one end
+   * and the prompt goes on describing a line that no longer arrives — with every
+   * test still green, because each end is fine on its own. This is the assertion
+   * that fails instead.
+   */
+  it("the rule quotes the line the panel actually sends", () => {
+    const sent = noteAnnouncement("Fiction/Solaris/The contact.md", undefined)!;
+    // Either side of the backticked path: what the line opens with, and the
+    // footing it puts the path on.
+    const [opening, footing] = sent.split(/`[^`]*`\./);
+    expect(flat(systemPrompt)).toContain(opening!.trim());
+    expect(flat(systemPrompt)).toContain(footing!.trim().replace(/\.$/, ""));
   });
 });
 
