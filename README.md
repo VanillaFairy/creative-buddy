@@ -31,16 +31,28 @@ Until this ships anywhere official, install by hand:
 
 ## Using it
 
-- **Chat** — the speech-bubble ribbon icon (or *New graph chat tab*) opens a
-  tab. Bind it to a graph, pick a model, talk. The interviewer grills you about
-  your project, files what you say into notes, and announces each filing in one
-  line. Say *wrap up* to close a session with a log entry and a structure check.
-- **Mindmap** — the fork ribbon icon (or *Open graph mindmap*) shows the graph
-  as a tree: problem outlines and a tray for notes that fell off the hub.
-  It updates live as notes change,
-  whoever changes them — you, the interviewer, or a sync.
-- Each chat tab is one session on one graph. The model picker seeds from
-  settings; switching mid-conversation applies to the next turn.
+- **Chat** — the speech-bubble ribbon icon opens a conversation already bound to
+  the project you are standing in, worked out from whichever note is open. If
+  that note belongs to no project, a picker asks which one you meant. The
+  interviewer grills you about your project, files what you say into notes, and
+  announces each filing in one line. Say *wrap up* to close a session with a log
+  entry and a structure check.
+- **Mindmap** — the fork ribbon icon shows the graph as a tree: problem outlines
+  and a tray for notes that fell off the hub. It updates live as notes change,
+  whoever changes them — you, the interviewer, or a sync. The **Heat** switch in
+  its header colours each node by how many questions it still owes an answer —
+  green for none through red for ten or more — so you can see at a glance where
+  the graph is worth an interview. A folded node splits in two: its own heat
+  beside the heat of everything hidden under it.
+- Right-clicking a note gives you both, on that note's project: *Open in Creative
+  Buddy chat* and *Show in Creative Buddy map*. From the command palette,
+  *Open chat panel* and *Open graph mindmap* behave like the icons, while
+  *New conversation* always gets you a fresh unbound one.
+- Each chat tab is one session on one graph — its own transcript, model, cost
+  and session — and "+" on the tab strip adds another. The model picker seeds
+  from settings; switching mid-conversation applies to the next turn. Type while
+  a turn is running and your message queues rather than interleaving; it goes
+  out when the turn lands, and you can cancel or resend it from the queue.
 
 ## Settings
 

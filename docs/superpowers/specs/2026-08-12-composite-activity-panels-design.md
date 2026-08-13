@@ -1,7 +1,10 @@
 # Composite Activity Panels — Chat Tool Display
 
 **Date:** 2026-08-12
-**Status:** Approved for planning
+**Status:** Shipped. The decision logic lives in `src/chat/activity-groups.ts`
+(tested in `tests/activity-groups.test.ts`), the panels are drawn by
+`src/chat/components.tsx`, and the manual checks are in the "Dev vault: chat"
+section of `docs/superpowers/manual-test-checklist.md`.
 
 ## Context
 

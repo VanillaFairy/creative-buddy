@@ -217,6 +217,21 @@ or `references/…` mention back into it rather than out to a file the session
 cannot read. The prompt never grew enough for on-demand loading to earn its
 complexity.
 
+**Q.** Does the graph keep an obligations register — graded OWED / GAP / LOOK UP
+/ PARKED questions, handed to the interviewer as a digest at session start and
+shown as a panel on the map?
+
+**A.** No. It was built (Tasks 11–13), shipped, and then removed whole in
+`fde6f27` — the scanner, the grading, the digest, the map panel and its orange
+dots, plus `oracle/obligations.py` and its fixtures. The removal was verified
+rather than assumed: the oracle regenerates byte-identical for everything else,
+so only the obligations expectations went. So wherever this spec or the
+implementation plan mentions obligations, it is describing code that no longer
+exists. What answers "where does this graph still owe me thinking?" today is the
+map's Heat switch, which colours each node by the count of unanswered `- [ ]`
+questions in its own body — the same population the register graded, read off
+the notes directly instead of kept in a second structure beside them.
+
 ## Appendix — parked: making it available to others
 
 Findings from the exploration that preceded this pivot, kept so they aren't re-derived later:

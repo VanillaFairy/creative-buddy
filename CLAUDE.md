@@ -11,8 +11,17 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 - `src/agent/` — Claude Agent SDK boundary: permission table (`permissions.ts`),
   prompt stitching, `AgentService`. Fail-closed by design.
 - `src/chat/`, `src/mindmap/` — thin `ItemView` shells + React. **Manual-test only,
-  by design** — decision logic must live in pure TDD'd modules (`transcript.ts`,
-  `layout.ts`), never in the shells.
+  by design** — every decision belongs in a pure TDD'd module beside the shell,
+  never in the shell. Chat has `transcript.ts`, `sessions.ts`, `queue.ts`,
+  `activity-groups.ts`, `links.ts`, `composer-size.ts`, `scroll-anchor.ts`; the
+  map has `layout.ts`, `geometry.ts`, `heat.ts`. When a view grows a new rule,
+  the rule gets its own module and its own test — that is the pattern, not a
+  historical accident.
+- `assets/prompts/` — the interviewer's behaviour: `system.md` + `grill.md` +
+  `consult.md`, stitched into one document by `src/agent/prompts.ts`. This is
+  where conversational conventions are defined (the `- [ ]` open-question rule
+  that `src/mindmap/heat.ts` counts, for one), so read it before changing
+  anything about how the interviewer is meant to behave.
 - `src/main.ts` — plugin wiring, vault-event → GraphModel feed.
 
 ## The oracle discipline (load-bearing)
@@ -43,13 +52,32 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
   bundled SDK throws at require-time without it); same for the `NODE_ENV` define
   (React prod build). Do not remove either.
 - `tests/expected/*.json` are LF in git; a full-file diff usually means line endings.
-- Commit format: `type: subject` (feat/test/chore/fix/docs) + trailer
-  `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`. Never commit red tests.
+- `src/mindmap/layout.ts` holds two literal NUL bytes (a separator inside the
+  cross-link dedup key), so **git treats it as binary** — commits touching it
+  show `Bin 4656 -> 5913 bytes` and no line diff. Nothing is broken; just don't
+  expect to review that file's history from the diff.
+- Docs are tested. `tests/docs-questions.test.ts` walks every `.md` under `docs/`:
+  an answered question moves down to a `## Closed questions` section as a
+  `**Q.**` / `**A.**` pair rather than being struck through in place, and a
+  `Closed questions` section must alternate Q, A all the way down. Editing docs
+  can turn the suite red, so run the tests after a docs change too.
+- Commit format: `type: subject` (feat/test/chore/fix/docs) + a
+  `Co-Authored-By:` trailer naming **the model that actually wrote it**
+  (`Claude Opus 5 <noreply@anthropic.com>`, `Claude Fable 5 …`). Never commit
+  red tests.
 
 ## Deeper context
 
 - `.claude/knowledge/` — project KB (commands, conventions, gotchas).
-- `docs/TODO.md` — feature backlog: wanted but not yet planned.
-- `docs/superpowers/plans/2026-08-11-graph-buddy-plugin.md` + `plans/progress/…checkpoint.md`
-  — full build history, locked porting decisions, open items.
+- `docs/TODO.md` — feature backlog: wanted but not yet planned. Empty right now.
+- `plans/progress/…checkpoint.md` — **the living status doc.** Task ledger, what
+  has shipped since the plan finished, and the defects still open. Start here.
+- `docs/superpowers/plans/2026-08-11-graph-buddy-plugin.md` — the original plan:
+  build history and locked porting decisions, but **not** a description of the
+  app today. Same for the specs beside it.
+- Beware one trap in those: they specify an **obligations register** (a graded
+  OWED/GAP/LOOK UP/PARKED scanner, a session-start digest, a map panel) that was
+  built and then removed whole in `fde6f27`. It is not missing, it is deliberately
+  gone — do not restore it from the plan. The map's Heat switch is what answers
+  "where does this graph still owe me thinking?" now.
 - `docs/superpowers/manual-test-checklist.md` — the user's manual verification pass.

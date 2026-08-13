@@ -1,5 +1,15 @@
 # Graph-Buddy Obsidian Plugin Implementation Plan
 
+> **Status: done and superseded — read this as build history.** Every task here
+> was executed and merged to `main`; the ledger is in
+> `plans/progress/2026-08-11-graph-buddy-plugin-checkpoint.md`, which also lists
+> what has changed since. Two things in particular have moved on: the plugin is
+> called **Creative Buddy** now (renamed 2026-08-12; these filenames keep the old
+> name so the history stays searchable), and **Tasks 11–13 built an obligations
+> register that has since been removed whole** (`fde6f27`) — those three tasks
+> describe code that no longer exists. Check the current source before treating
+> any part of this document as a description of the app.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** An Obsidian desktop plugin embedding the knowledge-graph interviewer (Claude Agent SDK on the user's Claude Code subscription) with chat tabs, a deterministic TypeScript GraphModel ported from the two Python oracle scripts, and a live mindmap view.

@@ -9,6 +9,20 @@ Every `git commit` prints `ERROR: Failed to parse repository information` twice.
 ## NODE_ENV define picks the React build
 Obsidian leaves `process.env.NODE_ENV` unset, so React would run its development build at runtime. The esbuild `define` pins it (`"production"` for prod builds) — dropping it costs ~1MB of bundle and dev-mode React.
 
+## src/mindmap/layout.ts is a binary file to git
+It contains two literal NUL bytes — a separator inside the cross-link dedup key,
+written as a raw `\x00` character in the template literal rather than an escape:
+```
+const key = note.path < resolved.path ? `${note.path}\x00${resolved.path}` : …
+```
+One NUL anywhere makes git classify the whole file as binary, so every commit
+touching it shows `Bin 4656 -> 5913 bytes` with no line diff, `git log -p` tells
+you nothing, and a review of that file's history is impossible. The code is
+correct and the runtime key is fine; it is the file's reviewability that is
+lost. Writing the separator as `\u0000` would produce the identical string and
+make the file text again. Until then, read `layout.ts` at the two revisions
+rather than expecting a diff.
+
 ## tests/expected line endings
 `tests/expected/*.json` are written by Python with `newline="\n"` and stored LF in git via attributes. If a regeneration shows a full-file diff, suspect line endings before suspecting the port.
 

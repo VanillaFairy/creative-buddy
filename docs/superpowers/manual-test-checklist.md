@@ -252,9 +252,17 @@ older than the code.
       the whole tree, not its top-left corner. Maximise the window on a small
       graph → the tree grows to use the pane instead of sitting marooned in
       the middle, and stops before the labels look like a mockup.
+- [ ] The header reads: project selector, then a plain **"N notes"**, then the
+      Heat switch. Nothing else — no "· N off the hub", and no amber warning on
+      a flat graph. That number is the whole graph's note count; check it against
+      the hub's Shape section.
 - [ ] On a graph with many wikilinks, the dashed cross-links read as a faint
       mesh rather than a scribble over the tree; hover or focus a node and its
       own cross-links light up at both ends.
+- [ ] The solid parent edges and the dashed cross-links are drawn at the **same
+      weight** — they differ by dash and colour, not by thickness, so the tree
+      does not shout over the links. Depth still shows: an edge leaving the hub
+      is darker than one four levels down.
 - [ ] Two notes that link **each other** get one dashed arc between them, not
       two stacked on the same pair. Same for a note that names the same target
       twice, or reaches it once by name and once by alias.

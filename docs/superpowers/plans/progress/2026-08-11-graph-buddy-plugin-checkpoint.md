@@ -1,7 +1,13 @@
 # Graph-Buddy execution checkpoint
 
 Plan: `docs/superpowers/plans/2026-08-11-graph-buddy-plugin.md`
-Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktrees branch from it as `task/t<N>-<slug>` and merge back after review.
+
+Branch, while the plan was running: `feature/graph-buddy` (worktree
+`.worktrees/graph-buddy`), with task worktrees branching off it as
+`task/t<N>-<slug>` and merging back after review. **All of that is gone now** —
+the work merged to `main` at task 24 and the branches and worktrees were cleaned
+up. `main` is the only branch, there is no remote, and work since has been
+committed straight to it.
 
 ## Status ledger
 
@@ -47,19 +53,63 @@ Branch: `feature/graph-buddy` (worktree `.worktrees/graph-buddy`). Task worktree
 - `knowledge/run-tests.md`, `regen-oracle.md`, `typecheck-build.md`, `commit.md` (Task 1).
 - Machine facts: interpreter is `python` (C:\Python314, pyyaml present); `npm ci` per worktree before tests; a user-global git hook prints `ERROR: Failed to parse repository information` on every commit — harmless noise, commits land fine; `tests/expected/*.json` are CRLF on disk via Python write_text but LF in git (autocrlf attribute) — do not "fix"; `__pycache__/` gitignored (a1bda1f).
 
-## Suite state at last merge
+## After the plan
 
-192/192 tests green on feature/graph-buddy (e2b4efa); `tsc --noEmit` clean; build clean at ~2.4MB; live smoke green (3 paid verification runs this pass, ≤ $0.02 each).
+The ledger above stops where the plan did. Work carried on directly on `main`,
+so the code has moved past what the plan describes — enough that the plan should
+be read as build history, not as a picture of the current app. What landed
+since, in order:
 
-## Open items (for M3/M4 review triage or the finish notes)
+- **The obligations register was removed** (`fde6f27`). Tasks 11, 12 and 13 built
+  a graded OWED/GAP/LOOK UP/PARKED scanner, a per-graph digest handed to the
+  interviewer at session start, and an "Obligations · all graphs" panel on the
+  map. All of it is gone, along with `oracle/obligations.py` and its fixtures.
+  Anything in the plan or the design spec about obligations describes code that
+  no longer exists.
+- **One ribbon icon per panel, and panels reveal instead of stacking**
+  (`c42e8fd`), **conversations became tabs inside one chat panel** (`04c1c62`).
+- **Chat and map open on the note you are standing in** (`2493019`, `fd0c51a`),
+  with a picker that lists projects rather than folder paths (`f39fdf7`).
+- **Composer work**: a message typed mid-turn queues and waits its turn
+  (`6ddee71`), one reading size across the column (`26fe27c`), and the line above
+  the composer is a resize handle (`30244e6`).
+- **Clicking a name in a reply opens the note** (`db8ca41`).
+- **The map heatmap** — a Heat switch colours nodes by the questions they still
+  owe, and a folded node splits at a divider into its own heat beside the heat of
+  what it hides (`16ef30c`, `319a281`, `a8a864d`). This closed out the only item
+  the feature backlog held.
 
-1. getState() persists full tool inputs (whole note bodies) into workspace.json on every delta — trim on persist.
-2. duplicateTab badge only recomputes on the tab's own render.
-3. setState with different graphDir doesn't dispose the live session (unreachable today; trap).
-4. interrupt() ignores the SDK receipt (still_queued); Stop clears busy optimistically.
-5. Mindmap obligations panel shows every graph, not the selected one (plan-intended).
-6. Symlink/junction escape stays lexical in permissions.ts (M2 review I3): a realpath check in AgentService was deferred — needs fs plumbing and a design sentence about mounted folders; noted for the finish report.
-7. d3-flextree's prebuilt CJS bundle inlines d3-hierarchy v1 next to our v3 (dead weight, harmless).
+## Suite state
+
+364/364 tests green on `main` (`a8a864d`, checked 2026-08-13); `tsc --noEmit`
+clean. At the plan's last merge (`e2b4efa`) it was 192/192 with the build clean
+at ~2.4MB and live smoke green over 3 paid runs, ≤ $0.02 each.
+
+## Open items
+
+Re-checked against the code on 2026-08-13. Still open:
+
+4. `interrupt()` ignores the SDK receipt (`still_queued`); Stop clears busy
+   optimistically. The composer work built cancellation semantics on top of this
+   (a stopped turn flips anything queued behind it to *canceled*) without
+   changing the underlying receipt handling — `ChatView.tsx:440` still drops it.
+6. Symlink/junction escape stays lexical in `permissions.ts` (M2 review I3): a
+   realpath check in AgentService was deferred — needs fs plumbing and a design
+   sentence about mounted folders. No `realpath` anywhere in the agent layer yet;
+   the README documents the limitation as a caution to users.
+7. d3-flextree's prebuilt CJS bundle inlines d3-hierarchy v1 next to our v3
+   (dead weight, harmless).
+
+Closed since:
+
+1. **Tool inputs are no longer persisted.** `transcript.ts:118` drops the input
+   deliberately — it carries whole note bodies — and `restoreItem` strips the
+   blob off any item written before that, so old workspaces heal on load.
+2. **The duplicate-tab badge recomputes on layout change.** `ChatView.tsx:102`.
+3. **A rebound conversation disposes its live session.** `ChatView.tsx:87` drops
+   any runtime whose `graphDir` changed under it, so a handle cannot outlive the
+   graph it was writing into.
+5. **The obligations panel is gone with the rest of the register** (`fde6f27`).
 
 ## Out-of-band
 
