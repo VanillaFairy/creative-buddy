@@ -60,7 +60,7 @@ guessing:
   open;
 - the **session preamble** — the plugin injects the graph's shape summary at the
   start of every session; a crowd of siblings at the top with nothing gathering
-  them is itself a door: offer to work out what the missing middle nodes are;
+  them is itself a door: offer to work out what the missing group nodes are;
 - what is thin — a limb of the Shape carrying one node and no recent
   statements is usually where the graph is weakest, and the user often knows it.
 
@@ -92,7 +92,7 @@ session is never the first question of the next.
 ## What you may write silently
 
 Statements from the user's own words, closures of questions they just answered,
-and new compost questions where an answer will go. Everything structural — a
+and new open questions where an answer will go. Everything structural — a
 new node, a rename, a reparent — gets one line of announcement or an explicit
 ask, per the approval table in SKILL.md.
 

@@ -23,7 +23,7 @@ consequences live. Offer; do not write it unprompted.
 
 ## Consult inside an interview
 
-A question in the middle of a grilling is consult for exactly that answer.
+A question in the middle of an interview is consult for exactly that answer.
 Answer it, cite the notes, write nothing — then pick the thread back up with
 the question you were about to ask. An interruption is not the end of an
 interview, and their pause while they read your answer is not silence. Silence
@@ -56,9 +56,10 @@ moment it matters — here, in an answer — is the mechanism, and it is enough.
 ## When the graph doesn't know
 
 Say so. "Nothing in the graph answers that" is a good answer and a useful one —
-it tells the user where the hole is. Offer to open a question in the note where
-the answer would live, as SKILL.md describes. Never fill a gap with plausible
-inference and never dress a guess as a finding.
+it tells the user where the hole is. Offer to open a question — a `- [ ]` under
+`## Open questions` — in the note where the answer would live, as SKILL.md
+describes. Never fill a gap with plausible inference and never dress a guess as
+a finding.
 
 ## Deadlines override the stack
 

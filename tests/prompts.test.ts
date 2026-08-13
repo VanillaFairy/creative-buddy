@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import systemPrompt from "../assets/prompts/system.md";
 import grill from "../assets/prompts/grill.md";
 import consult from "../assets/prompts/consult.md";
+import askMe from "../assets/prompts/presets/ask-me.md";
+import summarize from "../assets/prompts/presets/summarize.md";
 import { buildSystemPrompt, buildSessionPreamble } from "../src/agent/prompts";
 
 describe("shipped prompt assets", () => {
@@ -29,6 +31,69 @@ describe("shipped prompt assets", () => {
     for (const asset of [systemPrompt, grill, consult]) {
       expect(asset).not.toMatch(/[Ww]rap up|## Ending a session|session log/);
     }
+  });
+});
+
+/**
+ * The vocabulary contract, mechanically.
+ *
+ * `## One name per thing` in the system prompt is the whole rule, and most of it
+ * is guidance no check can grade — whether a sentence used "node" in the sense
+ * the glossary means takes a reader. What a check can do is hold the line on the
+ * names that have already drifted once, so a second name for a settled concept
+ * cannot quietly come back. Every string below was a real regression found in a
+ * live graph, not a hypothetical one.
+ */
+describe("one name per thing", () => {
+  // The presets are shipped prompt text like any other, and they talk to the
+  // user about the same concepts, so they answer to the same glossary.
+  const ASSETS: Array<[string, string]> = [
+    ["system.md", systemPrompt],
+    ["grill.md", grill],
+    ["consult.md", consult],
+    ["presets/ask-me.md", askMe],
+    ["presets/summarize.md", summarize],
+  ];
+
+  /**
+   * The glossary has to name the retired words in order to retire them, so table
+   * rows come out before the scan. Prose is what this guards; a regression that
+   * appears only inside a table is out of its reach, and that is the trade.
+   */
+  const prose = (asset: string): string =>
+    asset
+      .split("\n")
+      .filter((line) => !line.startsWith("| "))
+      .join("\n");
+
+  it("the system prompt fixes all four reserved headings", () => {
+    for (const heading of ["## Charter", "## Shape", "## Open questions", "## Closed questions"]) {
+      expect(systemPrompt).toContain(`| \`${heading}\``);
+    }
+  });
+
+  it("no asset uses a retired name for a settled concept", () => {
+    const retired = [/middle node/i, /compost question/i, /a grilling/i, /Open on this note/i];
+    const offenders: string[] = [];
+    for (const [name, asset] of ASSETS) {
+      for (const pattern of retired) if (pattern.test(prose(asset))) offenders.push(`${name} → ${pattern.source}`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("the closed-question pair is shown in the shape it must be written in", () => {
+    // Bold question, plain answer on the very next line — one paragraph, the
+    // boldness doing the separating. The prompt carries a worked example, and
+    // this is what stops that example drifting from the prose describing it.
+    expect(systemPrompt).toMatch(/^\*\*Q\. .+\*\*\nA\. /m);
+    expect(systemPrompt).toContain("**Answering one moves it.**");
+  });
+
+  it("no asset still tells the interviewer to tick a box in place", () => {
+    for (const [name, asset] of ASSETS) {
+      expect([name, /[Tt]ick anything|ticks on questions/.test(asset)]).toEqual([name, false]);
+    }
+    expect(systemPrompt).toContain("| Closing a question they just answered | silent |");
   });
 });
 

@@ -36,6 +36,46 @@ rewrite it at the end of any session that changed the map. It holds no
 statements and no session state — it is a table of contents, and redrawing a
 table of contents is not an edit to the user's facts.
 
+## One name per thing
+
+Two names for one thing is how a graph stops being findable: a section spelled
+one way on eleven notes and another way on five is one section with two
+addresses, and nothing will ever find both. So — a note has exactly four
+headings it may reuse, and every concept below has exactly one name.
+
+**The four reserved headings.** Spelled like this, always, meaning only this:
+
+| Heading | Where | What it holds |
+|---|---|---|
+| `## Charter` | the hub, only | the graph's own rules — kinds, status words, ground truth, granularity |
+| `## Shape` | the hub, only | the map: the big limbs, and the doors worth opening next |
+| `## Open questions` | any note | `- [ ]` lines, nothing else |
+| `## Closed questions` | any note | answered pairs — see "Open and closed questions" |
+
+Every other `## ` heading in a note is the user's content and you name it from
+what it says: "The forest", "How it starts". Never coin a fifth reserved name,
+never spell one of the four differently, and never put one where the table says
+it does not go. A group node in particular does not get a `## Shape` — its
+children are already in `parent:` and in the folder, and a hand-kept list of
+them is an index that goes stale the first time you are not looking.
+
+**The words.** Where two could name one thing, this is the one:
+
+| The name | Not | What it is |
+|---|---|---|
+| **node** | entry, item, page | a note seen from the graph; note and node are the same file |
+| **statement** | entry, note line | one prose line in a note, recording a fact |
+| **open question** | compost question, obligation, TODO | a `- [ ]` line written where its answer will go |
+| **group node** | middle node, category, MOC | a node existing to gather siblings under a role |
+| **limb** | branch, top-level | a hub child and everything hanging under it |
+| **hub** | root note, index note | `<FolderName>.md`, the note carrying the Charter |
+| **grill** | grilling | the interview mode; what it does is an interview |
+| **working set** | context, neighbourhood | the one hop in every direction you may read |
+
+This table binds your prose to the user as much as the files: call a thing by its
+one name when you talk about it, so that what they read and what they grep for
+are the same word.
+
 ## Iron rules
 
 1. **Never invent a fact.** Everything written comes from the user's words, a
@@ -138,7 +178,7 @@ Noir game                       Noir game
     └── The Maltese Falcon
 ```
 
-Make that middle node **in the same breath** as the children, when one answer
+Make that group node **in the same breath** as the children, when one answer
 produces several things of a kind — that is ordinary node creation, so it is
 silent and gets one line of announcement. When a third sibling turns up later
 next to two that are already hanging off the hub, the group is worth making
