@@ -86,12 +86,25 @@ since, in order:
   keeps the composer clear of `GraphModel` and honours system.md's rule against
   loading the whole graph. Whether the row is collapsed is panel state, restored
   by `restorePresetsOpen` — the one decision here with a test.
+- **One name per thing** (`b8654a3`, `670c863`, `7911d7f`) — the interviewer's
+  structural vocabulary is fixed now rather than implied. `system.md` gained a
+  `## One name per thing` section: four reserved headings (`## Charter` and
+  `## Shape`, hub-only; `## Open questions` and `## Closed questions`, any note)
+  and a glossary pinning one name to each concept. Answering a question no longer
+  ticks the box — the `- [ ]` moves down into `## Closed questions` as a
+  bold-question / plain-answer paragraph, one pair per paragraph. `grill.md` step
+  4 had been instructing the old behaviour outright ("Tick anything the answer
+  just answered"), which is why a live graph had drifted into crossed-out answers
+  shuffled among the questions still open. `tests/prompts.test.ts` now scans every
+  shipped prompt asset's prose for retired names, and `tests/docs-questions.test.ts`
+  checks the paired shape instead of the old two-paragraph one. `docs/` was
+  reformatted to match, so the two corpora cannot teach different conventions.
 
 ## Suite state
 
-375/375 tests green on `main` (`c5447a7`, checked 2026-08-13); `tsc --noEmit`
-clean. At the plan's last merge (`e2b4efa`) it was 192/192 with the build clean
-at ~2.4MB and live smoke green over 3 paid runs, ≤ $0.02 each.
+385/385 tests green (`7911d7f`, checked 2026-08-13); `tsc --noEmit` clean. At the
+plan's last merge (`e2b4efa`) it was 192/192 with the build clean at ~2.4MB and
+live smoke green over 3 paid runs, ≤ $0.02 each.
 
 ## Open items
 
