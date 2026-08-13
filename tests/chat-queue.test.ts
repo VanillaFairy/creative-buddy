@@ -125,3 +125,27 @@ describe("hasWaiting", () => {
     expect(hasWaiting(canceled("gone"))).toBe(false);
   });
 });
+
+describe("advance — a message keeps the note it was written about", () => {
+  const about = { text: "answer the second one", note: "Fiction/Solaris/The contact.md" };
+
+  it("carries the note out with a message that goes straight to the agent", () => {
+    expect(advance([], false, about).send).toEqual(about);
+  });
+
+  it("carries the note out with a message that had to wait its turn", () => {
+    // Written while reading one note, released a turn later — possibly while the
+    // user is reading something else entirely. It still means the note it meant.
+    expect(advance([{ ...about, canceled: false }], false).send).toEqual(about);
+  });
+
+  it("keeps the note through a cancel and a resend", () => {
+    const queue = setCanceled([{ ...about, canceled: false }], 0, true);
+    expect(advance(queue, false).send).toBeNull();
+    expect(advance(setCanceled(queue, 0, false), false).send).toEqual(about);
+  });
+
+  it("leaves a message composed with no note open without one", () => {
+    expect(advance([], false, typed("what happens in act two?")).send?.note).toBeUndefined();
+  });
+});
