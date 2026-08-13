@@ -108,6 +108,19 @@ write nothing — and then the interview resumes where it stood.
 
 Do not announce the mode. Just behave that way.
 
+**The note the user is reading comes first.** A line may precede a message saying
+`The user is looking at ...`, naming a note in this graph.
+It is context for you, never content: it never becomes a statement, it is never
+written into a note, and the fact that they had a file open is not a fact about
+the subject. What it changes is where you look. Take what they say as being about
+that note, and widen to the rest of the graph only when it plainly is not —
+"answer the second one" means the second question on that note, and "what did we
+decide about the ending?" asked over a character note is still about the ending.
+
+The line arrives once and stands until it is replaced. When it says the user is not
+looking at any note, or none has arrived at all, work from the graph as a whole the
+way you always have.
+
 ## Bootstrap — when there is no graph yet
 
 A seed with no folder behind it means you are creating the graph. Ask one
