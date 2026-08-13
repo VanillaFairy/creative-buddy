@@ -19,7 +19,7 @@ import {
   restoreSessions,
   sharedGraphs,
 } from "./sessions";
-import { Queued, advance, cancelAll, setCanceled } from "./queue";
+import { Outgoing, Queued, advance, cancelAll, setCanceled } from "./queue";
 import { restorePresetsOpen } from "./presets";
 import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
@@ -378,13 +378,13 @@ export class ChatView extends ItemView {
    * keeps saying what was actually said: a queued message is recorded at the
    * moment it goes out, not at the moment you committed to it.
    */
-  private pump(key: string, text = ""): void {
+  private pump(key: string, message?: Outgoing): void {
     // Ahead of runtime(), which would otherwise mint live state for a tab that
     // closed while its turn was still running.
     const session = this.list.sessions.find((s) => s.key === key);
     if (session === undefined) return;
     const runtime = this.runtime(key);
-    const step = advance(runtime.queue, runtime.busy, text);
+    const step = advance(runtime.queue, runtime.busy, message);
     runtime.queue = step.queue;
     if (step.send === null) {
       this.render();
@@ -394,20 +394,21 @@ export class ChatView extends ItemView {
     if (handle === null) {
       // Nothing to send it down — ensureSession has already said why in a
       // Notice. The message goes back on screen as canceled rather than
-      // disappearing between the queue and the transcript.
-      runtime.queue = [{ text: step.send, canceled: true }, ...runtime.queue];
+      // disappearing between the queue and the transcript, keeping its name so
+      // a preset does not turn back into its paragraph on the way.
+      runtime.queue = [{ ...step.send, canceled: true }, ...runtime.queue];
       this.render();
       return;
     }
     runtime.busy = true;
-    this.dispatch(key, { type: "user-sent", text: step.send });
-    handle.sendUserMessage(step.send);
+    this.dispatch(key, { type: "user-sent", text: step.send.text, label: step.send.label });
+    handle.sendUserMessage(step.send.text);
   }
 
   /** Every control belongs to the conversation on screen. */
   private readonly callbacks: ChatCallbacks = {
-    onSend: (text: string): void => {
-      this.pump(activeSession(this.list).key, text);
+    onSend: (message: Outgoing): void => {
+      this.pump(activeSession(this.list).key, message);
     },
     onModelChange: (model: string): void => {
       const session = activeSession(this.list);

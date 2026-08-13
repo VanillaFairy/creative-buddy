@@ -1,7 +1,13 @@
 import { baseName } from "../graph/types";
 
 export type TranscriptItem =
-  | { kind: "user"; text: string }
+  /**
+   * Your turn. `label` is set when a preset said it for you, and is what the
+   * panel draws in place of the text — the paragraph behind a preset is
+   * machinery, and re-reading it every time you scroll past is not a record,
+   * it is noise. The text stays, so the record is still exact.
+   */
+  | { kind: "user"; text: string; label?: string }
   | { kind: "assistant"; markdown: string; streaming: boolean }
   | {
       kind: "tool";
@@ -28,7 +34,7 @@ export type TranscriptItem =
   | { kind: "result"; costUsd: number; isError: boolean };
 
 export type TranscriptEvent =
-  | { type: "user-sent"; text: string }
+  | { type: "user-sent"; text: string; label?: string }
   | { type: "text-delta"; text: string }
   | { type: "assistant-final"; text: string }
   | {
@@ -94,7 +100,7 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
 
   switch (event.type) {
     case "user-sent":
-      next.push({ kind: "user", text: event.text });
+      next.push({ kind: "user", text: event.text, label: event.label });
       return next;
 
     case "text-delta":

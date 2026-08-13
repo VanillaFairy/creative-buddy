@@ -16,8 +16,24 @@
  * top-to-bottom in the order things will be said.
  */
 
-export interface Queued {
+/**
+ * A message on its way to the model: what it says, and what it is called.
+ *
+ * The two differ only for presets, where the text is a paragraph of standing
+ * instructions and the name is the two words on the button that sent it. The
+ * name travels with the message rather than being worked out from the text
+ * afterwards — the prompts are prose files meant to be reworded, and rewording
+ * one must not reach back into conversations that already happened.
+ */
+export interface Outgoing {
+  /** What the model receives. */
   text: string;
+  /** What the panel shows in its place. Absent on anything you typed yourself. */
+  label?: string;
+}
+
+/** An Outgoing that has not gone out yet. */
+export interface Queued extends Outgoing {
   /** Taken back before it went out. Never sent, but kept to read, copy or send again. */
   canceled: boolean;
 }
@@ -26,14 +42,16 @@ export interface QueueStep {
   /** What is on screen above the composer, waiting and canceled alike. */
   queue: Queued[];
   /** The message to hand the agent now — null when nothing goes out yet. */
-  send: string | null;
+  send: Outgoing | null;
 }
 
-export function advance(queue: readonly Queued[], busy: boolean, text = ""): QueueStep {
-  const waiting = text.trim() === "" ? [...queue] : [...queue, { text, canceled: false }];
-  const next = waiting.findIndex((message) => !message.canceled);
+export function advance(queue: readonly Queued[], busy: boolean, message?: Outgoing): QueueStep {
+  const blank = message === undefined || message.text.trim() === "";
+  const waiting = blank ? [...queue] : [...queue, { ...message, canceled: false }];
+  const next = waiting.findIndex((m) => !m.canceled);
   if (busy || next === -1) return { queue: waiting, send: null };
-  return { queue: waiting.filter((_, i) => i !== next), send: waiting[next]!.text };
+  const front = waiting[next]!;
+  return { queue: waiting.filter((_, i) => i !== next), send: { text: front.text, label: front.label } };
 }
 
 /**

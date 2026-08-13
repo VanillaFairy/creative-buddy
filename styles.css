@@ -375,6 +375,32 @@
   white-space: pre-wrap;
 }
 
+/* A preset you pressed, standing where the words it sent would have gone.
+   Still your turn, so it keeps the column, the tint and the squared corner that
+   gives the bubble its direction.
+
+   What changes is that it is drawn as the button you pressed — the same face,
+   size and quiet ink as the row under the composer — rather than as the
+   paragraph it stands for. Seeing the button take its place in the column is
+   what says where the turn came from, and it needs no mark of its own to say
+   it. The paragraph behind it is standing instructions: exact in the record,
+   and noise to re-read on every scroll past.
+
+   No max-width, unlike .cb-msg-user. A label is two words, so the box is the
+   words — a ceiling would never be reached and a floor would pad a token out
+   into something pretending to be a sentence. */
+.cb-msg-preset {
+  align-self: flex-end;
+  padding: var(--size-2-2) var(--size-4-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-l) var(--radius-l) var(--radius-s) var(--radius-l);
+  background-color: var(--cb-bubble);
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+}
+
 .cb-streaming {
   color: var(--cb-quiet);
   white-space: pre-wrap;
@@ -675,6 +701,12 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--size-4-1);
+  /* The handle needs side padding to have a hit area, and that padding would
+     otherwise indent the chevron a few pixels past the left edge of the message
+     box above it. Pulling the row back by exactly that padding sets the glyph on
+     the box's own edge, so the row reads as part of the composer rather than as
+     something floating under it. */
+  margin-inline-start: calc(-1 * var(--size-2-2));
 }
 
 /* The whole row belongs to the quiet-control family the model picker started:
@@ -709,24 +741,43 @@
   outline-offset: 1px;
 }
 
+/* The handle carries no word: "Presets" is its accessible name and its tooltip,
+   and two buttons reading "Ask me" and "Summarize" do not need a heading
+   telling you they are presets.
+
+   That leaves it to say only which way the row moves — and to say it without a
+   resting border, because a bordered box in this panel means "this needs you"
+   and a drawer handle does not. So it earns its legibility with ink and size
+   instead: set at the buttons' own optical size rather than as a speck, and
+   square enough to stay a target under a finger. */
 .cb-presets-toggle {
   display: flex;
   align-items: center;
-  gap: var(--size-2-2);
+  justify-content: center;
+  /* Square-ish, so that collapsed — when it is the only thing in the row — it
+     still reads as something with a hit area rather than a stray mark. */
+  min-width: 2em;
+  padding-inline: var(--size-2-2);
 }
 
-/* One glyph rotated, like the activity panels — see .cb-activity-chevron. */
+/* Points where the row is going: right, into the space the buttons are about
+   to fill; left, to fold them back into the handle. Rotated rather than
+   swapped, like .cb-activity-chevron, so the turn is the animation.
+
+   Set larger than the labels beside it on purpose. A word carries by being
+   read and a symbol has to carry at a glance, so at the labels' own size this
+   one read as grit on the screen — which is the whole risk of dropping the
+   word. */
 .cb-presets-chevron {
   flex: none;
   display: inline-block;
-  width: 0.8em;
-  font-size: 0.9em;
-  opacity: 0.75;
-  transition: transform 120ms ease;
+  font-size: var(--font-ui-medium);
+  line-height: 1;
+  transition: transform 140ms ease;
 }
 
 .cb-presets-open .cb-presets-chevron {
-  transform: rotate(90deg);
+  transform: rotate(180deg);
 }
 
 /* ────────────────────────────────────────────────── waiting to be said ──── */
@@ -777,6 +828,15 @@
   font-family: var(--cb-hand);
   font-size: var(--font-ui-medium);
   line-height: 1.65;
+}
+
+/* A preset waiting its turn is already the badge it is about to become, so it
+   does not change size on the way into the column — the same rule that keeps a
+   typed sentence one size from the box onward. */
+.cb-queued-preset {
+  padding: var(--size-2-2) var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
 }
 
 .cb-queued-text {

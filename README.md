@@ -62,9 +62,12 @@ Until this ships anywhere official, install by hand:
   the graph instead and asks about that. *Summarize* gets you a short prose read
   on where the project stands — what it holds, what is thin, and anything you
   would not have thought to ask — and writes nothing to the vault. A preset says
-  its text as though you had typed it, so it lands in the transcript verbatim and
-  queues behind a running turn like any other message. Collapse the row and the
-  panel remembers, across restarts.
+  its text as though you had typed it, so it queues behind a running turn like
+  any other message — but it stands in the conversation as a small badge naming
+  the button you pressed, not as the paragraph of instructions behind it. The
+  full text is still what the interviewer receives; it is just not what you have
+  to read on every scroll past. Collapse the row and the panel remembers, across
+  restarts.
 
 ## Settings
 

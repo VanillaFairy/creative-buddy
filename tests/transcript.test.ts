@@ -7,6 +7,21 @@ const apply = (events: TranscriptEvent[], clock?: number[]): TranscriptItem[] =>
 
 const read = (path: string): Record<string, unknown> => ({ file_path: path });
 
+describe("preset messages", () => {
+  it("records what a preset is called alongside the text the model was given", () => {
+    // The label is stored rather than worked out later from the text: the
+    // prompts are prose files meant to be reworded, and a rewording must not
+    // reach back into conversations that already happened.
+    const items = apply([{ type: "user-sent", text: "Ask me the one question…", label: "Ask me" }]);
+    expect(items).toEqual([{ kind: "user", text: "Ask me the one question…", label: "Ask me" }]);
+  });
+
+  it("leaves a typed message unlabelled, so it still renders as the words themselves", () => {
+    const [item] = apply([{ type: "user-sent", text: "hi" }]);
+    expect((item as { label?: string }).label).toBeUndefined();
+  });
+});
+
 describe("reduceTranscript", () => {
   it("accumulates streaming deltas into one assistant item and finalizes it", () => {
     const items = apply([

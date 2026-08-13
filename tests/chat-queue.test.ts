@@ -3,30 +3,52 @@ import { Queued, advance, cancelAll, hasWaiting, setCanceled } from "../src/chat
 
 const waiting = (...texts: string[]): Queued[] => texts.map((text) => ({ text, canceled: false }));
 const canceled = (...texts: string[]): Queued[] => texts.map((text) => ({ text, canceled: true }));
+/** What you typed: a message with no name on it. */
+const typed = (text: string): { text: string } => ({ text });
+
+describe("advance — a preset keeps its name", () => {
+  const preset = { text: "Ask me the one question…", label: "Ask me" };
+
+  it("hands the name over with the text when a waiting preset is released", () => {
+    expect(advance([{ ...preset, canceled: false }], false).send).toEqual(preset);
+  });
+
+  it("hands the name over on a preset that goes straight out", () => {
+    expect(advance([], false, preset)).toEqual({ queue: [], send: preset });
+  });
+
+  it("keeps the name on a preset that has to wait its turn", () => {
+    expect(advance([], true, preset).queue).toEqual([{ ...preset, canceled: false }]);
+  });
+
+  it("sends what you typed with no name on it", () => {
+    expect(advance([], false, { text: "what happens in act two?" }).send).toEqual({ text: "what happens in act two?" });
+  });
+});
 
 describe("advance", () => {
   it("hands the message straight to the agent when nothing is running", () => {
-    expect(advance([], false, "what happens in act two?")).toEqual({ queue: [], send: "what happens in act two?" });
+    expect(advance([], false, typed("what happens in act two?"))).toEqual({ queue: [], send: typed("what happens in act two?") });
   });
 
   it("holds the message while a turn is in flight", () => {
-    expect(advance([], true, "also, rename Nadia")).toEqual({ queue: waiting("also, rename Nadia"), send: null });
+    expect(advance([], true, typed("also, rename Nadia"))).toEqual({ queue: waiting("also, rename Nadia"), send: null });
   });
 
   it("keeps messages in the order they were typed", () => {
-    expect(advance(waiting("first"), true, "second").queue).toEqual(waiting("first", "second"));
+    expect(advance(waiting("first"), true, typed("second")).queue).toEqual(waiting("first", "second"));
   });
 
   it("releases the front of the queue when the turn ends", () => {
-    expect(advance(waiting("first", "second"), false)).toEqual({ queue: waiting("second"), send: "first" });
+    expect(advance(waiting("first", "second"), false)).toEqual({ queue: waiting("second"), send: typed("first") });
   });
 
   it("releases one per turn, so each message gets its own answer", () => {
     const afterFirst = advance(waiting("first", "second"), false);
-    expect(afterFirst.send).toBe("first");
+    expect(afterFirst.send).toEqual(typed("first"));
     // The next release only happens once that turn reports back.
     expect(advance(afterFirst.queue, true).send).toBeNull();
-    expect(advance(afterFirst.queue, false)).toEqual({ queue: [], send: "second" });
+    expect(advance(afterFirst.queue, false)).toEqual({ queue: [], send: typed("second") });
   });
 
   it("has nothing to release when the queue is empty", () => {
@@ -35,16 +57,16 @@ describe("advance", () => {
 
   it("does not let a late message jump the line", () => {
     // The session died and came back: what was already waiting still goes first.
-    expect(advance(waiting("earlier"), false, "later")).toEqual({ queue: waiting("later"), send: "earlier" });
+    expect(advance(waiting("earlier"), false, typed("later"))).toEqual({ queue: waiting("later"), send: typed("earlier") });
   });
 
   it("ignores blank input rather than queueing an empty turn", () => {
-    expect(advance([], true, "   ")).toEqual({ queue: [], send: null });
+    expect(advance([], true, typed("   "))).toEqual({ queue: [], send: null });
   });
 
   it("skips over a message you took back", () => {
     const queue = [...canceled("taken back"), ...waiting("still due")];
-    expect(advance(queue, false).send).toBe("still due");
+    expect(advance(queue, false).send).toEqual(typed("still due"));
   });
 
   it("leaves the canceled ones on screen when something goes out — they are still resendable", () => {
@@ -59,7 +81,7 @@ describe("advance", () => {
 
   it("leaves the queue it was given alone", () => {
     const queue = waiting("first");
-    advance(queue, true, "second");
+    advance(queue, true, typed("second"));
     advance(queue, false);
     expect(queue).toEqual(waiting("first"));
   });

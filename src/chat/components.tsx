@@ -1,7 +1,7 @@
 import * as React from "react";
 import { TranscriptItem } from "./transcript";
 import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
-import { Queued, hasWaiting } from "./queue";
+import { Outgoing, Queued, hasWaiting } from "./queue";
 import { draggedHeight, heightBounds, pxLength } from "./composer-size";
 import { DIALOG_PRESETS } from "./presets";
 import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
@@ -9,7 +9,8 @@ import { MODEL_CHOICES } from "../settings";
 import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
 
 export interface ChatCallbacks {
-  onSend(text: string): void;
+  /** What you typed, or a preset carrying the name it should be shown under. */
+  onSend(message: Outgoing): void;
   onModelChange(model: string): void;
   onApprove(id: string, allow: boolean, message?: string): void;
   /** Stop the turn in flight and take back everything still waiting behind it. */
@@ -128,7 +129,7 @@ export function ChatSurface(props: {
     const text = draft.trim();
     if (text === "") return;
     setDraft("");
-    callbacks.onSend(text);
+    callbacks.onSend({ text });
   };
 
   /** How far the box may be dragged, straight off the CSS that drew it. */
@@ -212,8 +213,11 @@ export function ChatSurface(props: {
       {props.queued.length > 0 ? (
         <ul className="cb-queued">
           {props.queued.map((message, i) => (
-            <li key={i} className={`cb-queued-item${message.canceled ? " cb-queued-canceled" : ""}`}>
-              <span className="cb-queued-text">{message.text}</span>
+            <li
+              key={i}
+              className={`cb-queued-item${message.canceled ? " cb-queued-canceled" : ""}${message.label === undefined ? "" : " cb-queued-preset"}`}
+            >
+              <span className="cb-queued-text">{message.label ?? message.text}</span>
               {message.canceled ? (
                 <>
                   <em className="cb-queued-state">canceled</em>
@@ -307,24 +311,35 @@ export function ChatSurface(props: {
  *
  * Collapsed still shows the toggle. A row that vanishes entirely is a feature
  * you have to remember exists.
+ *
+ * The toggle carries no visible word. "Presets" is its accessible name and its
+ * tooltip, which is where a hint belongs — asked for, rather than sitting on
+ * screen forever explaining two buttons that already say what they do.
  */
 function PresetRow({ open, callbacks }: { open: boolean; callbacks: ChatCallbacks }): React.JSX.Element {
   return (
     <div className={`cb-presets${open ? " cb-presets-open" : ""}`}>
       <button
         className="cb-presets-toggle"
+        aria-label="Presets"
         aria-expanded={open}
         title={open ? "Hide the presets" : "Show the presets"}
         onClick={() => callbacks.onPresetsToggle(!open)}
       >
-        {/* One glyph rotated by CSS, like the activity panels — so it animates
-            rather than swapping characters, and reduced-motion can stop it. */}
+        {/* Points the way the row moves: right, into the space the buttons are
+            about to fill, and back to the left to fold them away again. One
+            glyph turned by CSS, like the activity panels, so it animates rather
+            than swapping characters and reduced-motion can stop it. */}
         <span className="cb-presets-chevron" aria-hidden="true">▸</span>
-        <span className="cb-presets-label">Presets</span>
       </button>
       {open
         ? DIALOG_PRESETS.map((preset) => (
-            <button key={preset.id} className="cb-preset" title={preset.title} onClick={() => callbacks.onSend(preset.prompt)}>
+            <button
+              key={preset.id}
+              className="cb-preset"
+              title={preset.title}
+              onClick={() => callbacks.onSend({ text: preset.prompt, label: preset.label })}
+            >
               {preset.label}
             </button>
           ))
@@ -382,7 +397,14 @@ export function GraphPicker(props: {
 function TranscriptRow({ item, callbacks }: { item: ActivityItem; callbacks: ChatCallbacks }): React.JSX.Element {
   switch (item.kind) {
     case "user":
-      return <div className="cb-msg cb-msg-user">{item.text}</div>;
+      // A preset stands in the column as the button that sent it, not as the
+      // paragraph of standing instructions behind it. The text is still on the
+      // item, so the record is exact — it is just not what you read.
+      return item.label === undefined ? (
+        <div className="cb-msg cb-msg-user">{item.text}</div>
+      ) : (
+        <div className="cb-msg cb-msg-preset">{item.label}</div>
+      );
     case "assistant":
       return <MarkdownBlock markdown={item.markdown} streaming={item.streaming} render={callbacks.renderMarkdown} />;
     case "approval":

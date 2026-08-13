@@ -220,15 +220,27 @@ older than the code.
       composer took. Shrink it back → you are where you started, with no drift
       after a long wobbling drag. Watch for a flicker: the transcript must
       never be painted in the old place and jump.
-- [ ] **Presets.** Under the message box sits a row reading "Presets" behind a
-      chevron, open, with **Ask me** and **Summarize** beside it. They are
-      quieter than Send — no fill, no border — until you point at one, and the
-      row must not twitch as the border appears. Hover each → a tooltip says
-      what it does. Tab to one → it takes the focus ring.
-- [ ] Click **Ask me** with nothing running → the preset's full text appears in
-      the transcript as *your* message, word for word, and a turn starts on it.
+- [ ] **Presets.** Under the message box sits a row: a chevron, then **Ask me**
+      and **Summarize**. There is no heading word — the two labels say what they
+      are. They are quieter than Send — no fill, no border — until you point at
+      one, and the row must not twitch as the border appears. Hover each → a
+      tooltip says what it does. Tab to one → it takes the focus ring.
+- [ ] The chevron sits on the message box's own left edge, not indented past it,
+      so the row reads as part of the composer. Check at a narrow sidebar width
+      too: the row must not wrap.
+- [ ] The chevron points the way the row moves — right while collapsed, into the
+      space the buttons will fill; left once they are out, to fold them back. It
+      turns rather than swapping glyphs.
+- [ ] Click **Ask me** with nothing running → a small **Ask me** badge appears in
+      your side of the column, not the paragraph behind it, and a turn starts.
+      The badge is a compact tinted pill: quieter and smaller than a message you
+      typed, same squared corner, and set at the size of the button you pressed.
       What you get back is **one** question with a line on why that one — not a
       list, not a batch.
+- [ ] The badge must not read as something you typed. Put a one-word typed reply
+      ("Not yet.") next to one in the same conversation and check the two are
+      told apart at a glance, in **both** themes — the tint is translucent, so
+      check it against the sidebar's grey as well as a main tab's white.
 - [ ] Do it on a project with several `- [ ]` boxes across different notes → the
       question it picks is one of those, and the reason it gives is about what
       the answer unblocks. Now do it on a project with no open boxes at all →
@@ -240,10 +252,15 @@ older than the code.
       stale it says so in a line and offers to redraw it — and waits for you.
 - [ ] Click a preset **while a turn is running** → it queues behind the turn
       exactly like a typed message, with the same × to take it back, and goes
-      out when the turn lands.
-- [ ] Collapse the row → the buttons go, the chevron and the word "Presets"
-      stay, so it is still findable. Restart Obsidian → still collapsed. Expand
-      it, restart again → still open.
+      out when the turn lands. It waits as a badge too, not as the paragraph,
+      and it must not change size crossing from the queue into the column.
+- [ ] Collapse the row → the buttons go and the chevron stays. On its own it
+      must still read as a control you can press rather than a stray mark:
+      point at it and it takes a border and brightens. Restart Obsidian → still
+      collapsed. Expand it, restart again → still open.
+- [ ] With the row collapsed, reach the chevron by keyboard and check a screen
+      reader calls it "Presets, collapsed" — the word survives as the
+      accessible name even though nothing on screen says it.
 - [ ] Open a second chat panel → its row has its own answer; collapsing one must
       not collapse the other. Switch between tabs inside one panel → the row is
       the panel's, so it does not change.
