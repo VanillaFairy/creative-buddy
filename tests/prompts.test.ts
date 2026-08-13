@@ -32,6 +32,16 @@ describe("shipped prompt assets", () => {
       expect(asset).not.toMatch(/[Ww]rap up|## Ending a session|session log/);
     }
   });
+
+  /**
+   * The panel says which note is open (src/chat/note-context.ts). This is the
+   * other end of that wire: without the rule, the line arrives as an odd remark.
+   */
+  it("system prompt says what an open-note line means", () => {
+    expect(systemPrompt).toContain("**The note the user is reading comes first.**");
+    expect(systemPrompt).toContain("The user is looking at");
+    expect(systemPrompt).toContain("context for you, never content");
+  });
 });
 
 /**
