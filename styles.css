@@ -661,6 +661,74 @@
   border-radius: 1px;
 }
 
+/* ───────────────────────────────────────────────────────────── presets ──── */
+
+/* Canned openings, under the box rather than over it. The composer is what you
+   came here for; a row of shortcuts above it would sit between you and the
+   words you were already typing.
+
+   flex: none for the same reason the composer has it — a shrinkable row lets
+   the column's flex pass undo the height a grip drag has just set. */
+.cb-presets {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+}
+
+/* The whole row belongs to the quiet-control family the model picker started:
+   transparent, with a border that is already there and only takes on colour
+   under the pointer. A border that appeared on hover would move the button by
+   its own width and make the row twitch. */
+.cb-presets button {
+  height: auto;
+  margin: 0;
+  padding: var(--size-2-1) var(--size-4-1);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.cb-presets button:hover,
+.cb-presets button:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--cb-rail);
+  color: var(--cb-ink);
+}
+
+.cb-presets button:focus-visible {
+  outline: 1px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+
+.cb-presets-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+}
+
+/* One glyph rotated, like the activity panels — see .cb-activity-chevron. */
+.cb-presets-chevron {
+  flex: none;
+  display: inline-block;
+  width: 0.8em;
+  font-size: 0.9em;
+  opacity: 0.75;
+  transition: transform 120ms ease;
+}
+
+.cb-presets-open .cb-presets-chevron {
+  transform: rotate(90deg);
+}
+
 /* ────────────────────────────────────────────────── waiting to be said ──── */
 
 /* Said but not yet delivered. The same bubble as your turn in the transcript
@@ -1282,6 +1350,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cb-activity-chevron,
+  .cb-presets-chevron,
   .cb-tabs .cb-tab-close,
   .cb-queued .cb-queued-cancel,
   .cb-composer-grip::before,
