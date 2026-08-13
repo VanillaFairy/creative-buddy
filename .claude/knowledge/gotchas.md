@@ -30,22 +30,56 @@ rather than expecting a diff.
 Obsidian's app.css styles `button:not(.clickable-icon)`, which is specificity (0,1,1) — a lone `.my-button {}` reset is (0,1,0) and silently loses, so the element keeps Obsidian's background, radius, padding and shadow. The CSS reads correctly in the file and does nothing in the app. Scope any button reset to a parent (`.cb-activity > .cb-activity-head`) and cover `:hover`/`:active` too, since those carry the same qualifier. `c:/tmp/cb-panel-harness.html` reproduces the rule for testing CSS outside Obsidian.
 
 ## Seeing the CSS without launching Obsidian
+Two separate things refuse `file:`, so a harness opened straight off disk never
+shows the real CSS: Playwright blocks the protocol outright, and the in-app
+preview pane renders the page as a `data:` snapshot whose `<link
+rel="stylesheet" href="file://…">` silently never arrives — the page loads
+*unstyled* rather than erroring, which reads as "my CSS is broken".
+
+Inlining the stylesheet beats copying it, because a copy goes stale the moment
+you edit and the harness gives no sign that it has:
 ```bash
-cp styles.css c:/tmp/styles.css
-cd c:/tmp && (python -m http.server 8899 --bind 127.0.0.1 >/dev/null 2>&1 &)
-# then browse http://127.0.0.1:8899/cb-design-harness.html
+node -e "const f=require('fs'),c=f.readFileSync('styles.css','utf8');
+  f.writeFileSync('c:/tmp/cb-standalone.html',
+    f.readFileSync('c:/tmp/cb-chat-harness.html','utf8')
+     .replace(/<link rel=\"stylesheet\"[^>]*>/, '<style>'+c+'</style>'))"
+python -m http.server 8732 --bind 127.0.0.1 -d /c/tmp   # -d beats cd'ing
 ```
-Playwright refuses the `file:` protocol, so a harness opened straight off disk
-never loads — it has to be served, which also means `styles.css` must be copied
-into the served directory and re-copied after every edit (the harness links it
-relatively). The harness must declare Obsidian's variables *and* re-state its
-aggressive bare-element rules (`button:not(.clickable-icon)`, `select`,
-`textarea`) or specificity bugs stay invisible until the plugin is installed.
+Then drive it with the Playwright MCP over `http://127.0.0.1:8732/…`. Note
+Playwright writes its screenshots and a `.playwright-mcp/` directory into the
+**project root**, not the served directory — clear them before committing.
+
+The harness must declare Obsidian's variables *and* re-state its aggressive
+bare-element rules (`button:not(.clickable-icon)`, `select`, `textarea`) or
+specificity bugs stay invisible until the plugin is installed. Variables the
+chat needs beyond the obvious: `--color-accent-hsl` (three bare components, not
+a colour), the `--radius-*` and `--size-*` scales, and `--font-text` vs
+`--font-interface` set to visibly different families, or the two voices look
+identical when they are not.
+
 `c:/tmp/cb-design-harness.html` covers the chat and map surfaces;
 `cb-states-harness.html` covers the empty, picker and no-hub states;
 `cb-composer-harness.html` covers the composer, the send/stop swap and the
-queued-message rail in both themes. Screenshot at ~330px pane width too —
-sidebar docking is where the layouts break first.
+queued-message bubble in both themes; `cb-chat-harness.html` covers the
+transcript across all four surfaces it can land on — sidebar vs main tab ×
+dark vs light. Screenshot at ~330px pane width too — sidebar docking is where
+the layouts break first.
+
+## The chat panel sits on two different backgrounds
+`main.ts` opens both surfaces in the **right sidebar**, which Obsidian paints in
+`--background-secondary` — but the `openInMainTab` setting, and any drag,
+put the same panel on `--background-primary`. So any opaque fill picked to
+stand out against one of them disappears against the other, and the default
+position is the sidebar, which is the easy one to forget to check. Tint with a
+translucent value instead (`--background-modifier-hover`, or
+`hsla(var(--color-accent-hsl), <alpha>)` for something accent-coloured): a wash
+reads against whatever is underneath it. `.cb-msg-user`'s bubble is the live
+example.
+
+Note that a `var()` naming a **missing** custom property fails at computed-value
+time and resolves to `unset`, which does *not* fall back to an earlier
+declaration of the same property — the two-declaration fallback trick only
+rescues parse-time errors. Put the fallback inside the `var()` or don't bother.
 
 ## `--text-faint` is not one step quieter than a border colour
 In a dark theme `--text-faint` (~#6e6e6e) is **lighter** than

@@ -5,6 +5,7 @@
  * identity there is comes from structure and face instead of hue, under one
  * rule that runs through both views:
  *
+ *   a bubble means "you said this"
  *   a rail means "this hangs off the conversation"
  *   a bordered box means "this needs you"
  *   nothing else gets a container
@@ -31,6 +32,14 @@
   --cb-quiet: var(--text-muted);
   --cb-faint: var(--text-faint);
   --cb-rail: var(--background-modifier-border);
+  /* Your own voice, as a surface rather than a signal. Translucent on purpose:
+     the panel normally opens in the right sidebar, which Obsidian already
+     paints in --background-secondary, so an opaque fill would go invisible in
+     exactly the place this plugin usually lives — while a wash tints whatever
+     is under it, sidebar or main tab alike. The hue is the accent's, but a
+     fourteen-percent fill behind a sentence reads as a surface, not as the
+     "this is happening" the accent means everywhere else. */
+  --cb-bubble: hsla(var(--color-accent-hsl), 0.14);
   --cb-live: var(--text-accent);
   --cb-owed: var(--color-orange);
   --cb-broken: var(--color-red);
@@ -313,17 +322,20 @@
   padding-right: var(--size-4-1);
 }
 
-/* Every row shares one left edge; nothing in the transcript is centred or
-   right-aligned, so the column scans as a single document. */
+/* Two voices, two sides. The interviewer keeps the column's left edge and the
+   full measure; your turn is a bubble held off the right, which is how every
+   chat anyone has used draws the person doing the talking. The machinery
+   between them — activity, notices, turn rules — stays on the left with the
+   interviewer, because none of it is anybody speaking. */
 .cb-msg {
-  align-self: stretch;
-  max-width: none;
   overflow-wrap: anywhere;
 }
 
 /* The interviewer's turn: the live thing, set full-bleed in the vault's
    reading face with prose leading. No container — it is not an object. */
 .cb-msg-assistant {
+  align-self: stretch;
+  max-width: none;
   padding: 0;
   color: var(--cb-ink);
   font-family: var(--cb-voice);
@@ -334,17 +346,28 @@
 .cb-msg-assistant > :first-child { margin-top: 0; }
 .cb-msg-assistant > :last-child { margin-bottom: 0; }
 
-/* Your turn: already in the record, so it is rail-attached rather than floated
-   as a bubble. Full text colour — recorded is not faded. Set at the same size
-   as the interviewer's reply and as the composer you typed it into: a sentence
+/* Your turn. Full text colour — recorded is not faded. Set at the same size as
+   the interviewer's reply and as the composer you typed it into: a sentence
    must not change size as it moves from the box, through the queue, into the
-   column. What tells the two voices apart is the face and the rail, which is
-   the whole point of having both. */
+   column. The face still differs from the interviewer's, so the two voices stay
+   apart even under a theme that flattens the fill away.
+
+   max-width rather than a left margin, so the gap on the left is whatever the
+   width leaves over — a two-word message is a two-word bubble instead of a wide
+   box with the words parked in one corner. The bottom-right corner is squared
+   while the other three stay round: a tail's worth of direction, without a tail.
+
+   The transparent border is not decoration. The queued copy of this bubble
+   below is drawn as a dashed outline, and a border only one of the two carries
+   would make a message a pixel wider as it left the queue — the one thing this
+   rule's sizing exists to prevent. */
 .cb-msg-user {
-  padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
-  border-left: 2px solid var(--cb-rail);
-  background: none;
-  border-radius: 0;
+  align-self: flex-end;
+  max-width: 85%;
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-l) var(--radius-l) var(--radius-s) var(--radius-l);
+  background-color: var(--cb-bubble);
   color: var(--cb-ink);
   font-family: var(--cb-hand);
   font-size: var(--font-ui-medium);
@@ -640,13 +663,18 @@
 
 /* ────────────────────────────────────────────────── waiting to be said ──── */
 
-/* Said but not yet delivered. Same rail-attached shape as your turn in the
-   transcript above, drawn dashed: the rail means "this hangs off the
-   conversation", the dash means "not part of it yet". They sit between the
-   transcript and the composer because that is the order they happened in. */
+/* Said but not yet delivered. The same bubble as your turn in the transcript
+   above, drawn as a dashed outline with nothing in it: the shape says whose
+   words these are, the empty dash says they are not in the conversation yet.
+   They sit between the transcript and the composer because that is the order
+   they happened in.
+
+   The note is set to the right with the bubbles it captions — a left-aligned
+   label over a right-aligned stack belongs to neither. */
 .cb-queued-note {
   flex: none;
   margin: 0;
+  text-align: right;
   color: var(--cb-faint);
   font-family: var(--cb-hand);
   font-size: var(--font-ui-smaller);
@@ -669,11 +697,14 @@
    larger than the message, and only a shared baseline keeps all three sitting
    on its first line as the sizes move around. */
 .cb-queued-item {
+  align-self: flex-end;
+  max-width: 85%;
   display: flex;
   align-items: baseline;
   gap: var(--size-4-2);
-  padding: var(--size-2-1) 0 var(--size-2-1) var(--size-4-3);
-  border-left: 2px dashed var(--cb-rail);
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px dashed var(--cb-rail);
+  border-radius: var(--radius-l) var(--radius-l) var(--radius-s) var(--radius-l);
   color: var(--cb-quiet);
   font-family: var(--cb-hand);
   font-size: var(--font-ui-medium);
@@ -690,13 +721,13 @@
   user-select: text;
 }
 
-/* Canceled. The rail goes rather than the words: a rail means "this hangs off
-   the conversation" and a canceled message no longer does, while the words
-   themselves are the reason it is still on screen — fading them below
-   --text-muted would put the thing you are meant to copy under the contrast
-   floor. It keeps its indent so the column does not jump. */
+/* Canceled. The outline goes rather than the words: the dash means "waiting to
+   be said" and a canceled message no longer is, while the words themselves are
+   the reason it is still on screen — fading them below --text-muted would put
+   the thing you are meant to copy under the contrast floor. Transparent rather
+   than removed, so the row keeps its box and the column does not jump. */
 .cb-queued-canceled {
-  border-left-color: transparent;
+  border-color: transparent;
 }
 
 /* Italic because it is the panel talking about the message rather than any
