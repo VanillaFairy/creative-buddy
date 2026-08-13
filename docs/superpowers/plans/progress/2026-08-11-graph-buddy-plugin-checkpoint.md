@@ -78,10 +78,18 @@ since, in order:
   owe, and a folded node splits at a divider into its own heat beside the heat of
   what it hides (`16ef30c`, `319a281`, `a8a864d`). This closed out the only item
   the feature backlog held.
+- **Dialog presets under the composer** (`c5447a7`) — a collapsible row holding
+  two canned openings, *Ask me* and *Summarize*. A preset goes out through the
+  same `onSend` as Enter, so it queues, records and stops like anything you
+  typed; the texts live in `assets/prompts/presets/`. Neither preset reads the
+  graph on the plugin side: the interviewer sweeps for `- [ ]` itself, which
+  keeps the composer clear of `GraphModel` and honours system.md's rule against
+  loading the whole graph. Whether the row is collapsed is panel state, restored
+  by `restorePresetsOpen` — the one decision here with a test.
 
 ## Suite state
 
-364/364 tests green on `main` (`a8a864d`, checked 2026-08-13); `tsc --noEmit`
+375/375 tests green on `main` (`c5447a7`, checked 2026-08-13); `tsc --noEmit`
 clean. At the plan's last merge (`e2b4efa`) it was 192/192 with the build clean
 at ~2.4MB and live smoke green over 3 paid runs, ≤ $0.02 each.
 
