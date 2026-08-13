@@ -13,6 +13,7 @@
 
 import askMeMd from "../../assets/prompts/presets/ask-me.md";
 import summarizeMd from "../../assets/prompts/presets/summarize.md";
+import currentNoteQuestionsMd from "../../assets/prompts/presets/current-note-questions.md";
 
 export interface DialogPreset {
   /** The React key for its button. Two rows under one key is a row that never updates. */
@@ -49,4 +50,31 @@ export const DIALOG_PRESETS: readonly DialogPreset[] = [
  */
 export function restorePresetsOpen(state: unknown): boolean {
   return (state as { presetsOpen?: unknown } | null | undefined)?.presetsOpen !== false;
+}
+
+/**
+ * The one preset that is not always there: it needs a note in front of you with
+ * something still open on it.
+ *
+ * It is kept out of `DIALOG_PRESETS` rather than filtered out of it, because that
+ * array is the row you can always count on — and everything downstream, from the
+ * React keys to the panel's saved state, reads better when "always" means always.
+ */
+const NOTE_QUESTIONS: DialogPreset = {
+  id: "note-questions",
+  label: "Current note questions",
+  title: "Work through this note's open questions, one at a time",
+  prompt: currentNoteQuestionsMd,
+};
+
+/**
+ * The row as it stands right now, given what the note in front of you still owes.
+ *
+ * The count decides whether a *button* exists and goes no further — it is never
+ * sent, never quoted, never handed to the interviewer, which reads the note itself
+ * and is therefore never working from a staler number than the file. That is the
+ * promise at the top of this file kept rather than bent.
+ */
+export function visiblePresets(openQuestions: number): readonly DialogPreset[] {
+  return openQuestions > 0 ? [...DIALOG_PRESETS, NOTE_QUESTIONS] : DIALOG_PRESETS;
 }
