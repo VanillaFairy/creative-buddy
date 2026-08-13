@@ -97,3 +97,52 @@ deviate from it.
   has measured what a normal interview costs yet; the per-turn cost line is the
   place that answer will come from, once it is known to be reporting the right
   number.
+
+## Resources — images, PDFs, everything that is not a note
+
+The graph is markdown-only from end to end. The vault feed drops anything whose
+extension is not `md` (`src/main.ts:61`), discovery only counts `.md` when
+deciding what a graph even is (`src/graph/discovery.ts:71`), and the composer
+has no way to take an attachment at all. So a reference image, a scanned brief, a
+screenshot of a whiteboard — the raw material a lot of creative work actually
+starts from — has nowhere to go. You can describe it to the interviewer, but you
+cannot show it.
+
+Two halves, and they come apart cleanly:
+
+**Reading a resource.** Point the interviewer at a picture or a PDF and let it
+work from what it sees, filing what it learns into notes exactly as it does with
+anything said out loud. For a file already sitting in the vault this may be
+close to free — Claude Code's `Read` handles images and PDFs, and the permission
+table already allows `Read` anywhere in the vault outside hidden folders
+(`src/agent/permissions.ts:133`), so the missing piece is a way to name the file
+in a message rather than any new plumbing. A file from *outside* the vault is
+the harder half: it has to land somewhere first, and that is a write.
+
+**Keeping a resource.** A note that embeds an image (`![[cover.png]]`) is
+ordinary Obsidian and costs nothing — the note stays the node, the picture is
+just part of it. Whether a resource ever becomes a node in its own right, with
+an identity on the map and links of its own, is a separate and much less obvious
+question.
+
+### Still open
+
+- **Where an incoming file lands.** Obsidian has an attachment-folder setting,
+  which is where a user expects things to go, but honouring it scatters a
+  graph's material outside the graph's own folder — and writes outside the bound
+  graph currently stop for approval (`src/agent/permissions.ts:151`). Keeping
+  attachments inside the graph folder is tidier for us and stranger for the user.
+- **Whether the map shows them.** Heat counts open questions (`- [ ]`) per note;
+  an image has none to count and would sit permanently cold, which reads as
+  "nothing owed here" when the truth is "not that kind of thing". Either
+  resources stay off the map, or the map learns a second kind of node.
+- **Whether the graph core has to change at all.** `src/graph/` is a
+  line-faithful port of `oracle/*.py`, which knows only markdown. If non-`.md`
+  files become part of the model, the Python moves first and the expected JSON
+  regenerates — otherwise parity breaks. Embedding-only support avoids this
+  entirely, which is a strong argument for starting there.
+- **What it costs.** Images and PDFs are heavy in tokens, and the transcript is
+  re-sent every turn (see the cost section above), so a PDF read once in the
+  first minute keeps being paid for all conversation. That may argue for reading
+  a resource, writing down what it said, and not carrying the resource itself
+  any further.
