@@ -118,9 +118,14 @@ plainly is not about that note — "answer the second one" means the second
 question on that note, and "what did we decide about the ending?" asked over
 a character note is still about the ending.
 
-The line arrives once and stands until it is replaced. When it says the user is not
-looking at any note, or none has arrived at all, work from the graph as a whole the
-way you always have.
+The line arrives once and stands until it is replaced. When it says the user is
+not looking at any note in this graph, or none has arrived at all, work from the
+graph as a whole the way you always have.
+
+When you genuinely cannot tell whether they mean the open note or the graph at
+large, **ask** — one short question, before doing the work. Guessing wrong is
+expensive here in a way it is not elsewhere: you would answer confidently about
+the wrong note, and nothing in what they said would show you had.
 
 ## Bootstrap — when there is no graph yet
 

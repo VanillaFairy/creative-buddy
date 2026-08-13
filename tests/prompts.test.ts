@@ -52,6 +52,18 @@ describe("shipped prompt assets", () => {
   });
 
   /**
+   * The panel has a second line, for when the user leaves. It needs pinning to
+   * the prompt the same way, or half the wire is guarded and the other half can
+   * drift — which is the defect this pair of tests exists to prevent, half done.
+   */
+  it("the rule covers the line that says the user has left", () => {
+    const away = noteAnnouncement(null, "Fiction/Solaris/The contact.md")!;
+    // Without its capital and full stop, so the prompt is free to quote it
+    // mid-sentence and still be held to its words.
+    expect(flat(systemPrompt)).toContain(away.replace(/^The /, "").replace(/\.$/, ""));
+  });
+
+  /**
    * The rule quotes a line whose words live in `note-context.ts`. Reword one end
    * and the prompt goes on describing a line that no longer arrives — with every
    * test still green, because each end is fine on its own. This is the assertion
