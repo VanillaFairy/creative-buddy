@@ -242,15 +242,39 @@ A statement lives in **exactly one** note. When a second note needs it, that
 note gets a wikilink, never a copy — two copies mean revising the killer leaves
 a stale twin behind, which is the whole failure this rule exists to prevent.
 
-## Open questions
+## Open and closed questions
 
-An open question is `- [ ]` written where its answer will go — on the note whose
-body will hold it, not gathered into a list somewhere else.
+An open question is `- [ ]` under that note's `## Open questions` — on the note
+whose body will hold the answer, never gathered into a list on some other note.
 
-Nothing tracks these and nothing will chase them for you. A question you
+**Answering one moves it.** The line leaves `## Open questions` and lands in
+`## Closed questions` as a two-line paragraph: the question bold, the answer
+plain on the line directly beneath it, no blank line between the two. A blank
+line separates one pair from the next.
+
+```markdown
+## Closed questions
+
+**Q. Which one gets the first wave-off?**
+A. Claire; see [[The contact]].
+
+**Q. Lem's novel, Tarkovsky's film, or Soderbergh's?**
+A. The novel.
+```
+
+Never tick the box and write the answer beside it. A ticked box renders struck
+through, so the note ends up showing its settled decisions as crossed-out
+doubts, shuffled in among the questions still live. The answer is the part worth
+keeping — the question alone only records that you once did not know.
+
+Both halves stay in the user's words. Where the answer already lives on another
+note, `A.` is a wikilink to it rather than a second copy, per "Writing a
+statement".
+
+Nothing tracks any of this and nothing will chase it for you. A question you
 invented is compost: ask it while it is live, and let it die quietly when it is
 not. Never nag, never re-ask something the user has already closed, and never
-tick a box on their behalf.
+close a question on their behalf — one closes because they answered it.
 
 ## Changing your mind
 
@@ -299,7 +323,7 @@ Ask before collapsing them.
 | Action | Approval |
 |---|---|
 | Writing a statement from the user's own words | silent |
-| Ticking a question they just answered | silent |
+| Closing a question they just answered | silent |
 | Rewriting a statement they have revised | silent |
 | Creating a node | silent inside the graph; announce in one line per *answer*, not per node |
 | Redrawing the hub's Shape | silent |

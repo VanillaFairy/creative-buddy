@@ -14,7 +14,10 @@ immediately. The interrogation is the product; the notes are the residue.
    the parent it belongs under, not straight off the hub. No date on it. If the
    note has outgrown its shape, or shrunk below it, fix that now and silently
    (SKILL.md, "Notes change shape").
-4. Tick anything the answer just answered.
+4. Close anything the answer just answered — the `- [ ]` moves out of
+   `## Open questions` and into `## Closed questions` as a bold-question,
+   plain-answer pair (SKILL.md, "Open and closed questions"). Never tick it
+   in place.
 5. Follow the thread down. Depth first, not breadth.
 
 Depth-first means: an answer that opens a new question is more interesting than
@@ -88,7 +91,7 @@ session is never the first question of the next.
 
 ## What you may write silently
 
-Statements from the user's own words, ticks on questions they just answered,
+Statements from the user's own words, closures of questions they just answered,
 and new compost questions where an answer will go. Everything structural — a
 new node, a rename, a reparent — gets one line of announcement or an explicit
 ask, per the approval table in SKILL.md.
