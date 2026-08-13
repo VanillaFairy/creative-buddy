@@ -4,6 +4,7 @@ import { CreativeBuddySettings, DEFAULT_SETTINGS, CreativeBuddySettingTab } from
 import { findClaudeExecutable } from "./claude-locator";
 import { ChatView, CHAT_VIEW_TYPE } from "./chat/ChatView";
 import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
+import { countOpenQuestions } from "./open-questions";
 import { existsSync } from "node:fs";
 
 export default class CreativeBuddyPlugin extends Plugin {
@@ -102,6 +103,27 @@ export default class CreativeBuddyPlugin extends Plugin {
     const file = this.app.workspace.getActiveFile();
     if (file === null) return null;
     return this.model?.graphOf(file.path) ?? null;
+  }
+
+  /**
+   * The note the user is reading, when it belongs to this graph — its path and
+   * what it still owes.
+   *
+   * Null when nothing is open, when the index is not built yet, and — the case
+   * worth naming — when the open note belongs to a *different* project. A chat tab
+   * is bound to one graph, and pointing it at another one's note is the thing the
+   * approval table exists to refuse. So a tab bound elsewhere sees no note at all,
+   * which is also why the preset simply is not there rather than being there and
+   * failing.
+   *
+   * `contentOf` answers "" for a path the vault no longer holds, so a note deleted
+   * between an event and the render reads as owing nothing rather than throwing.
+   */
+  activeNoteIn(graphDir: string): { path: string; openQuestions: number } | null {
+    const file = this.app.workspace.getActiveFile();
+    if (file === null || this.model === null) return null;
+    if (this.model.graphOf(file.path) !== graphDir) return null;
+    return { path: file.path, openQuestions: countOpenQuestions(this.model.contentOf(file.path)) };
   }
 
   /**
