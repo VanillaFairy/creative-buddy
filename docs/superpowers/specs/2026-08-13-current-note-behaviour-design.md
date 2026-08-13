@@ -1,7 +1,19 @@
 # Note-Specific Behaviour in the Chat
 
 **Date:** 2026-08-13
-**Status:** Designed, not built.
+**Status:** Built and merged onto `feat/current-note-behaviour`, 2026-08-13.
+
+Three things on the branch are not described below, each of them a review finding
+rather than a change of mind: `activeNoteIn` also requires a `.md` file, so a picture
+in a project folder is not "the note you are reading"; `announced` is cleared when
+`claude.exe` dies as well as on a reload, since both start a fresh process; and the
+preset *offers* to close a question it finds already answered rather than closing it,
+because `system.md` reserves closing to the user. The `render()`-time diff guard
+below applies only to `model.onChange` — `file-open` and `active-leaf-change` are
+user-driven and repaint unconditionally.
+
+`docs/superpowers/plans/progress/2026-08-13-current-note-behaviour-checkpoint.md` is
+the current picture. Read that before trusting this.
 
 ## Context
 

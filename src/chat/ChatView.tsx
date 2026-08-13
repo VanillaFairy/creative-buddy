@@ -21,6 +21,7 @@ import {
 } from "./sessions";
 import { Outgoing, Queued, advance, cancelAll, setCanceled } from "./queue";
 import { restorePresetsOpen } from "./presets";
+import { noteAnnouncement } from "./note-context";
 import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
 import { bootstrapHint, projectRows } from "../project-list";
@@ -37,6 +38,18 @@ interface Runtime {
   responders: Map<string, (allow: boolean, msg?: string) => void>;
   /** Typed during a turn and not yet said, plus whatever was taken back. */
   queue: Queued[];
+  /**
+   * The note this conversation has been told about, or undefined while nothing
+   * has been said yet.
+   *
+   * The rule is that **a fresh process is told again**. A reload drops this whole
+   * object, and a crash clears this field on the way past, so either way the next
+   * message re-announces — even though both resume the same conversation and the
+   * old line is still somewhere in its transcript. One line is cheaper than an
+   * answer about the wrong note, and a session that has been resumed is exactly
+   * the one whose context may have been compacted since.
+   */
+  announced: string | null | undefined;
 }
 
 /**
@@ -52,6 +65,9 @@ export class ChatView extends ItemView {
   private runtimes = new Map<string, Runtime>();
   /** Panel-wide, not per-tab: the row is part of the composer, and there is one. */
   private presetsShown = true;
+  /** What the active tab's project has open, as of the last refresh. Drives the preset row. */
+  private noteInView: { path: string; openQuestions: number } | null = null;
+  private offModelChange: (() => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
@@ -102,8 +118,24 @@ export class ChatView extends ItemView {
     this.root = createRoot(this.contentEl);
     // Wake the graph picker when indexing finishes, and recompute the shared
     // badges whenever the workspace layout shifts.
-    this.register(this.plugin.onModelReady(() => this.render()));
+    this.register(
+      this.plugin.onModelReady(() => {
+        // A vault edit anywhere. Worth a repaint only when it moved the number the
+        // preset row is drawn from — you answering a question in the editor, or the
+        // interviewer closing one.
+        this.offModelChange =
+          this.plugin.model?.onChange(() => {
+            if (this.refreshNoteContext()) this.render();
+          }) ?? null;
+        this.render();
+      }),
+    );
     this.registerEvent(this.app.workspace.on("layout-change", () => this.render()));
+    // Which note you are reading, from both directions: another note in the same
+    // pane, and another pane. Clicking into this panel does not change the active
+    // *file*, so the note holds while you type about it.
+    this.registerEvent(this.app.workspace.on("file-open", () => this.render()));
+    this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.render()));
     // One listener for the whole panel rather than per message: the transcript
     // re-renders constantly, and a listener attached to the container outlives
     // every block React swaps underneath it.
@@ -112,6 +144,7 @@ export class ChatView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    this.offModelChange?.();
     for (const key of [...this.runtimes.keys()]) this.disposeRuntime(key);
     this.root?.unmount();
   }
@@ -134,6 +167,7 @@ export class ChatView extends ItemView {
       approvalSeq: 0,
       responders: new Map(),
       queue: [],
+      announced: undefined,
     };
     this.runtimes.set(key, fresh);
     return fresh;
@@ -157,6 +191,24 @@ export class ChatView extends ItemView {
     this.list = replaceSession(this.list, key, { ...session, ...changes });
     this.app.workspace.requestSaveLayout();
     this.render();
+  }
+
+  /**
+   * Recompute the note the active tab is looking at. Returns whether the answer
+   * moved, which is what keeps a vault edit in some unrelated project from
+   * repainting a conversation that has not changed.
+   *
+   * Called at the top of every render, so a tab switch, a restored panel and a
+   * freshly picked project are all correct without any of them having to
+   * remember to ask.
+   */
+  private refreshNoteContext(): boolean {
+    const dir = activeSession(this.list).graphDir;
+    const next = dir === null ? null : this.plugin.activeNoteIn(dir);
+    const moved =
+      next?.path !== this.noteInView?.path || next?.openQuestions !== this.noteInView?.openQuestions;
+    this.noteInView = next;
+    return moved;
   }
 
   // ── the tab strip ─────────────────────────────────────────────────────────
@@ -347,6 +399,9 @@ export class ChatView extends ItemView {
             // taken back rather than quietly restarting claude.exe to spend on
             // messages you queued against a session that no longer exists.
             runtime.queue = cancelAll(runtime.queue);
+            // The next send is a fresh process, so it gets told which note you are
+            // on again — the same rule a reload follows, for the same reason.
+            runtime.announced = undefined;
             // The SDK side was told "deny" for anything still pending; the cards
             // must agree, or a click on a stale Allow would record a lie.
             const current = this.list.sessions.find((s) => s.key === key);
@@ -402,13 +457,24 @@ export class ChatView extends ItemView {
     }
     runtime.busy = true;
     this.dispatch(key, { type: "user-sent", text: step.send.text, label: step.send.label });
-    handle.sendUserMessage(step.send.text);
+    // The transcript keeps what was said; the note line is plumbing that rides
+    // along with it, like the session preamble, and is not part of the record.
+    const note = step.send.note ?? null;
+    const line = noteAnnouncement(note, runtime.announced);
+    if (line !== null) runtime.announced = note;
+    handle.sendUserMessage(line === null ? step.send.text : `${line}\n\n${step.send.text}`);
   }
 
   /** Every control belongs to the conversation on screen. */
   private readonly callbacks: ChatCallbacks = {
     onSend: (message: Outgoing): void => {
-      this.pump(activeSession(this.list).key, message);
+      // Stamped here rather than at the point it goes out, so a message queued
+      // behind a running turn still means the note you wrote it about — one place
+      // for it, so a preset and something you typed cannot come to mean different
+      // things.
+      this.refreshNoteContext();
+      const note = this.noteInView?.path;
+      this.pump(activeSession(this.list).key, note === undefined ? message : { ...message, note });
     },
     onModelChange: (model: string): void => {
       const session = activeSession(this.list);
@@ -495,6 +561,7 @@ export class ChatView extends ItemView {
 
   private render(): void {
     if (this.root === null) return;
+    this.refreshNoteContext();
     const shared = this.sharedSet();
     const vaultName = this.app.vault.getName();
     const tabs: ChatTab[] = this.list.sessions.map((session) => ({
@@ -531,6 +598,7 @@ export class ChatView extends ItemView {
             items={session.items}
             queued={runtime.queue}
             presetsOpen={this.presetsShown}
+            openQuestions={this.noteInView?.openQuestions ?? 0}
             callbacks={this.callbacks}
           />
         )}

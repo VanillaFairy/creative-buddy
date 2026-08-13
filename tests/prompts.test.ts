@@ -5,6 +5,15 @@ import consult from "../assets/prompts/consult.md";
 import askMe from "../assets/prompts/presets/ask-me.md";
 import summarize from "../assets/prompts/presets/summarize.md";
 import { buildSystemPrompt, buildSessionPreamble } from "../src/agent/prompts";
+import { noteAnnouncement } from "../src/chat/note-context";
+
+/**
+ * A prompt is prose, so it is soft-wrapped, and a phrase worth asserting on
+ * lands wherever the wrap puts it. Comparing against flattened whitespace is
+ * what stops a reflow — an edit that changes nothing the model reads — from
+ * turning the suite red. This has now caught two people out.
+ */
+const flat = (markdown: string): string => markdown.replace(/\s+/g, " ");
 
 describe("shipped prompt assets", () => {
   it("no asset references the python scripts or Bash", () => {
@@ -31,6 +40,42 @@ describe("shipped prompt assets", () => {
     for (const asset of [systemPrompt, grill, consult]) {
       expect(asset).not.toMatch(/[Ww]rap up|## Ending a session|session log/);
     }
+  });
+
+  /**
+   * The panel says which note is open (src/chat/note-context.ts). This is the
+   * other end of that wire: without the rule, the line arrives as an odd remark.
+   */
+  it("system prompt says what an open-note line means", () => {
+    expect(systemPrompt).toContain("**The note the user is reading comes first.**");
+    expect(flat(systemPrompt)).toContain("context for you, never content");
+  });
+
+  /**
+   * The panel has a second line, for when the user leaves. It needs pinning to
+   * the prompt the same way, or half the wire is guarded and the other half can
+   * drift — which is the defect this pair of tests exists to prevent, half done.
+   */
+  it("the rule covers the line that says the user has left", () => {
+    const away = noteAnnouncement(null, "Fiction/Solaris/The contact.md")!;
+    // Without its capital and full stop, so the prompt is free to quote it
+    // mid-sentence and still be held to its words.
+    expect(flat(systemPrompt)).toContain(away.replace(/^The /, "").replace(/\.$/, ""));
+  });
+
+  /**
+   * The rule quotes a line whose words live in `note-context.ts`. Reword one end
+   * and the prompt goes on describing a line that no longer arrives — with every
+   * test still green, because each end is fine on its own. This is the assertion
+   * that fails instead.
+   */
+  it("the rule quotes the line the panel actually sends", () => {
+    const sent = noteAnnouncement("Fiction/Solaris/The contact.md", undefined)!;
+    // Either side of the backticked path: what the line opens with, and the
+    // footing it puts the path on.
+    const [opening, footing] = sent.split(/`[^`]*`\./);
+    expect(flat(systemPrompt)).toContain(opening!.trim());
+    expect(flat(systemPrompt)).toContain(footing!.trim().replace(/\.$/, ""));
   });
 });
 

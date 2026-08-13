@@ -97,9 +97,15 @@ When I answer, close that question the way closing works, and ask me the next on
 Keep going until the section is empty or I stop you.
 
 Do not invent questions to fill the section out, and do not wander off into another
-note's. If the note's questions turn out to be answered already in its own body, say
-so and close them rather than asking me again.
+note's. If a question turns out to be answered already in the note's own body, say
+so and offer to close it rather than asking me again; leave it alone unless I say yes.
 ```
+
+That last sentence must stay an **offer**. `system.md` is absolute — "never close a
+question on their behalf — one closes because they answered it" — and a sweep that
+closes several and tells the user afterwards is exactly what that forbids. The house
+idiom for this shape is already in `summarize.md`: "say so in one line and offer to
+redraw it; leave it alone unless I say yes."
 
 - [ ] **Step 4: Add the preset and the function**
 

@@ -30,6 +30,15 @@ export interface Outgoing {
   text: string;
   /** What the panel shows in its place. Absent on anything you typed yourself. */
   label?: string;
+  /**
+   * The note this was composed against — what it is *about*, when the user wrote
+   * it while reading something. Absent when no note of this project was open.
+   *
+   * Captured when the message is written rather than when it goes out, so a
+   * message queued behind a turn still means the note it meant, however far the
+   * user has wandered by the time it is said.
+   */
+  note?: string;
 }
 
 /** An Outgoing that has not gone out yet. */
@@ -51,7 +60,11 @@ export function advance(queue: readonly Queued[], busy: boolean, message?: Outgo
   const next = waiting.findIndex((m) => !m.canceled);
   if (busy || next === -1) return { queue: waiting, send: null };
   const front = waiting[next]!;
-  return { queue: waiting.filter((_, i) => i !== next), send: { text: front.text, label: front.label } };
+  // Everything the message carries, minus the one field that is the queue's own
+  // bookkeeping. Naming the fields to keep instead is how `note` came to be
+  // silently dropped once already, and the next field added would go the same way.
+  const { canceled: _waiting, ...send } = front;
+  return { queue: waiting.filter((_, i) => i !== next), send };
 }
 
 /**
