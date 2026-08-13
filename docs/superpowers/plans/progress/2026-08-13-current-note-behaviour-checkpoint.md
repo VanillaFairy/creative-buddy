@@ -48,15 +48,48 @@ supervisor hit it again immediately afterwards while tidying the same paragraph.
 assertions now compare against flattened whitespace, which removes the trap rather than
 documenting it.
 
-## Wave 2 — in progress
+## Wave 2 — done, reviewed, merged
 
-- T06 — `plugin.activeNoteIn(graphDir)`, in `C:\tmp\cb-T06`.
+T06, `plugin.activeNoteIn(graphDir)`, commit `5e500a3`. **APPROVED.**
 
-## Remaining
+Its reviewer found a wart the spec had not considered: graph ownership is decided on
+the path alone, so a picture sitting in a project folder counts as belonging to the
+graph. The method would have answered `{path: "graph/cover.png", openQuestions: 0}` —
+the preset stays hidden, but the announcement would have told the interviewer it was
+looking at a note and handed it a path it cannot read. Closed in `061a104` with the
+same `.md` test `buildModel` indexes by.
 
-- T07 — chat wiring (`ChatView.tsx`, `components.tsx`). No unit tests by design; the
-  gates are `tsc --noEmit`, the suite, `npm run build`, and a look at the dev vault.
-- T08 — manual checklist and the project's status doc.
+## Wave 3 — done, reviewed, merged
+
+T07, the chat wiring, commit `b5484c9`. **APPROVED**, on the longest review of the run —
+it re-derived the queued-message trace from the code, walked the four `announced`
+transitions by hand, and tried to break the `model.onChange` guard from both directions
+without success. Two of its three minor items were acted on in `dde07b7`:
+
+- **`onEnd` and reload disagreed about re-announcing.** A crash kept `announced` while a
+  reload dropped it, on a rationale — a resumed session may have been compacted — that
+  does not distinguish the two. The rule is now stated once and followed by both: a
+  fresh process is told again.
+- **`refreshNoteContext` had landed under the `── links out of the transcript ──`
+  header**, where it is derived view state filed under link resolution. Moved up beside
+  the state it derives from. No behaviour.
+
+Its third item was for the human, not the code: deep into a long session the interviewer
+may ask which note is meant, because the note is announced on change rather than on
+every message and a compacted context can lose it. That is the design, and the manual
+checklist now says so, so it gets recognised rather than filed as a bug.
+
+T08 — the manual checklist and the project's status doc — was written by the supervisor
+rather than dispatched, since its content is what the reviews changed and only this
+session knew that.
+
+## State at the end
+
+- 8/8 tasks done, all reviewed, all merged into `feat/current-note-behaviour`.
+- **403 tests green**, `tsc --noEmit` clean, `npm run build` writing 2.52MB,
+  `npm run oracle` showing no drift in `tests/expected`.
+- **The manual pass has not been run and nothing has been deployed to a vault.**
+  That is the one thing still owed, and it needs a human.
 
 ## Protocol adaptations (recorded deviations)
 
