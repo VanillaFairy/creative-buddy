@@ -196,32 +196,35 @@ here. A decision reads better as a decision than as a crossed-out doubt, and
 the answer is the part worth keeping — the question on its own only records
 that we once did not know.
 
+A closed pair is one paragraph: the question bold, the answer plain on the line
+directly beneath it, blank line between pairs. Boldness is the delimiter. This
+is the same shape graph notes use, and `assets/prompts/system.md` is where the
+interviewer is told it — the two are deliberately one format, so a convention
+learned in either place transfers.
+
 - Community release later — architecture keeps it possible; no v1 work.
 
 ## Closed questions
 
-**Q.** What is the plugin finally called?
-
-**A.** Creative Buddy (`creative-buddy` in `manifest.json`). The working name
+**Q. What is the plugin finally called?**
+A. Creative Buddy (`creative-buddy` in `manifest.json`). The working name
 graph-buddy lasted until 2026-08-12, and `docs/superpowers/` deliberately keeps
 it in historical filenames and prose — including this file's own path — so the
 build history stays searchable under the name it was written with.
 
-**Q.** Do the grill and consult references inline into the system prompt, or
-load on demand?
-
-**A.** Inline, decided in M2 on the prompt-size measurement as planned.
+**Q. Do the grill and consult references inline into the system prompt, or
+load on demand?**
+A. Inline, decided in M2 on the prompt-size measurement as planned.
 `buildSystemPrompt` in `src/agent/prompts.ts` joins `system.md`, `grill.md` and
 `consult.md` into one document, with a stitch note redirecting any `SKILL.md`
 or `references/…` mention back into it rather than out to a file the session
 cannot read. The prompt never grew enough for on-demand loading to earn its
 complexity.
 
-**Q.** Does the graph keep an obligations register — graded OWED / GAP / LOOK UP
+**Q. Does the graph keep an obligations register — graded OWED / GAP / LOOK UP
 / PARKED questions, handed to the interviewer as a digest at session start and
-shown as a panel on the map?
-
-**A.** No. It was built (Tasks 11–13), shipped, and then removed whole in
+shown as a panel on the map?**
+A. No. It was built (Tasks 11–13), shipped, and then removed whole in
 `fde6f27` — the scanner, the grading, the digest, the map panel and its orange
 dots, plus `oracle/obligations.py` and its fixtures. The removal was verified
 rather than assumed: the oracle regenerates byte-identical for everything else,

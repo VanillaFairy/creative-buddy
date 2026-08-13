@@ -62,15 +62,27 @@ describe("questions sections", () => {
     expect(offenders.map(relative)).toEqual([]);
   });
 
-  it("every closed question is followed by its answer", () => {
+  it("each closed pair is one paragraph — bold question, answer on the next line", () => {
     const offenders: string[] = [];
     for (const file of FILES) {
       const closed = section(fs.readFileSync(file, "utf8"), "Closed questions");
       if (closed === null) continue;
-      const marks = [...closed.matchAll(/^\*\*([QA])\.\*\*/gm)].map((match) => match[1]).join("");
-      // Q then A, all the way down. Also rejects an empty Closed section, which
-      // is a heading nobody has filled in rather than a convention being kept.
-      if (!/^(QA)+$/.test(marks)) offenders.push(`${relative(file)} → ${marks === "" ? "(nothing)" : marks}`);
+      const pairs = closed
+        .split(/\n\s*\n/)
+        .map((block) => block.trim())
+        .filter(Boolean);
+      // An empty Closed section is a heading nobody filled in rather than a
+      // convention being kept.
+      if (pairs.length === 0) offenders.push(`${relative(file)} → (nothing)`);
+      for (const pair of pairs) {
+        const first = (pair.split("\n")[0] ?? "").slice(0, 60);
+        // Boldness is the delimiter, so the answer sits on the line directly
+        // under the question — a blank line between them would split one pair
+        // into two paragraphs and lose which answer belongs to which question.
+        if (!/^\*\*Q\. [\s\S]+\*\*\nA\. [\s\S]+$/.test(pair)) offenders.push(`${relative(file)} → ${first}`);
+        // A blank line between pairs, so one block never holds two questions.
+        if ((pair.match(/\*\*Q\./g) ?? []).length !== 1) offenders.push(`${relative(file)} → runs on: ${first}`);
+      }
     }
     expect(offenders).toEqual([]);
   });
