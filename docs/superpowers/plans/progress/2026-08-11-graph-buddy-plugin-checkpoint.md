@@ -99,12 +99,42 @@ since, in order:
   shipped prompt asset's prose for retired names, and `tests/docs-questions.test.ts`
   checks the paired shape instead of the old two-paragraph one. `docs/` was
   reformatted to match, so the two corpora cannot teach different conventions.
+- **The chat follows the note you are reading** (`061a104`…`dde07b7`, planned in
+  `docs/superpowers/plans/2026-08-13-current-note-behaviour/`, spec in
+  `docs/superpowers/specs/2026-08-13-current-note-behaviour-design.md`). One
+  channel carries it: every outgoing message is stamped with the note it was
+  *composed* against, and `pump` prepends a line naming that note only when the
+  conversation has not already been told — so a message queued behind a turn
+  still means the note you wrote it about, however far you have wandered by the
+  time it goes. `system.md` gained the rule that what the user says resolves
+  against that note first. A third preset, **Current note questions**, appears
+  when the open note belongs to this tab's project and still owes an answer, and
+  walks its `## Open questions` one at a time; the count decides only whether the
+  button exists and never reaches the model. `countOpenQuestions` moved out of
+  `src/mindmap/heat.ts` to `src/open-questions.ts`, since the map and the
+  composer now both count and must not disagree. The decisions are in
+  `note-context.ts`, `presets.ts`, `queue.ts` and `open-questions.ts`, all
+  tested; `ChatView` and `components.tsx` only pass things along.
+
+  Executed as eight tasks across three waves of subagents, each reviewed in two
+  stages. Every implementation was approved unchanged — all four defects the
+  reviews caught were in the plan, not the code: a preset that told the
+  interviewer to close questions on the user's behalf against `system.md`'s
+  absolute rule, two assertions that guarded each end of a contract but not the
+  contract, a test that could not fail on the bug beside it, and an image in a
+  project folder counting as the note you are reading. Wave-by-wave detail is in
+  `docs/superpowers/plans/progress/2026-08-13-current-note-behaviour-checkpoint.md`.
 
 ## Suite state
 
-385/385 tests green (`7911d7f`, checked 2026-08-13); `tsc --noEmit` clean. At the
-plan's last merge (`e2b4efa`) it was 192/192 with the build clean at ~2.4MB and
-live smoke green over 3 paid runs, ≤ $0.02 each.
+403/403 tests green (`dde07b7`, checked 2026-08-13); `tsc --noEmit` clean and
+`npm run build` writing a 2.52MB bundle. At the plan's last merge (`e2b4efa`) it
+was 192/192 with the build clean at ~2.4MB and live smoke green over 3 paid runs,
+≤ $0.02 each.
+
+The current-note work is verified by tests and by review only — the manual pass
+in `docs/superpowers/manual-test-checklist.md` has **not** been run against it,
+and nothing has been deployed to a vault.
 
 ## Open items
 
