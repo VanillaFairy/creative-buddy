@@ -60,10 +60,11 @@ export function advance(queue: readonly Queued[], busy: boolean, message?: Outgo
   const next = waiting.findIndex((m) => !m.canceled);
   if (busy || next === -1) return { queue: waiting, send: null };
   const front = waiting[next]!;
-  return {
-    queue: waiting.filter((_, i) => i !== next),
-    send: { text: front.text, label: front.label, note: front.note },
-  };
+  // Everything the message carries, minus the one field that is the queue's own
+  // bookkeeping. Naming the fields to keep instead is how `note` came to be
+  // silently dropped once already, and the next field added would go the same way.
+  const { canceled: _waiting, ...send } = front;
+  return { queue: waiting.filter((_, i) => i !== next), send };
 }
 
 /**
