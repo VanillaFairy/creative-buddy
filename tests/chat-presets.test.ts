@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DIALOG_PRESETS, restorePresetsOpen } from "../src/chat/presets";
+import { DIALOG_PRESETS, restorePresetsOpen, visiblePresets } from "../src/chat/presets";
 
 describe("restorePresetsOpen", () => {
   it("opens a panel that has never been saved", () => {
@@ -44,5 +44,33 @@ describe("DIALOG_PRESETS", () => {
   it("issues each preset its own id", () => {
     // They are React keys, and two rows under one key is a row that never updates.
     expect(new Set(DIALOG_PRESETS.map((p) => p.id)).size).toBe(DIALOG_PRESETS.length);
+  });
+});
+
+describe("visiblePresets", () => {
+  it("offers only the two standing presets when the note asks nothing", () => {
+    expect(visiblePresets(0).map((p) => p.id)).toEqual(["ask-me", "summarize"]);
+  });
+
+  it("offers the note's questions as soon as it owes one", () => {
+    expect(visiblePresets(1).map((p) => p.id)).toEqual(["ask-me", "summarize", "note-questions"]);
+  });
+
+  it("puts the note preset last, so the two standing ones never move under the cursor", () => {
+    // The row grows and shrinks as you walk around the vault. Whatever is always
+    // there has to stay where it was.
+    expect(visiblePresets(7).at(-1)?.id).toBe("note-questions");
+    expect(visiblePresets(7).slice(0, 2)).toEqual(visiblePresets(0));
+  });
+
+  it("gives the note preset a label, a tooltip and something to say", () => {
+    const preset = visiblePresets(1).at(-1)!;
+    expect(preset.label).toBe("Current note questions");
+    expect(preset.title.trim()).not.toBe("");
+    expect(preset.prompt.trim()).not.toBe("");
+  });
+
+  it("issues the note preset its own id, so the row redraws when it appears", () => {
+    expect(new Set(visiblePresets(3).map((p) => p.id)).size).toBe(3);
   });
 });
