@@ -3,7 +3,7 @@ import { TranscriptItem } from "./transcript";
 import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
 import { Outgoing, Queued, hasWaiting } from "./queue";
 import { draggedHeight, heightBounds, pxLength } from "./composer-size";
-import { DIALOG_PRESETS } from "./presets";
+import { visiblePresets } from "./presets";
 import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
 import { MODEL_CHOICES } from "../settings";
 import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
@@ -87,6 +87,8 @@ export function ChatSurface(props: {
   items: TranscriptItem[];
   queued: Queued[];
   presetsOpen: boolean;
+  /** What the note in front of you still owes. Zero hides the note preset. */
+  openQuestions: number;
   callbacks: ChatCallbacks;
 }): React.JSX.Element {
   const { callbacks } = props;
@@ -296,7 +298,7 @@ export function ChatSurface(props: {
           <button onClick={send} disabled={draft.trim() === ""}>Send</button>
         )}
       </div>
-      <PresetRow open={props.presetsOpen} callbacks={callbacks} />
+      <PresetRow open={props.presetsOpen} openQuestions={props.openQuestions} callbacks={callbacks} />
     </div>
   );
 }
@@ -316,7 +318,15 @@ export function ChatSurface(props: {
  * tooltip, which is where a hint belongs — asked for, rather than sitting on
  * screen forever explaining two buttons that already say what they do.
  */
-function PresetRow({ open, callbacks }: { open: boolean; callbacks: ChatCallbacks }): React.JSX.Element {
+function PresetRow({
+  open,
+  openQuestions,
+  callbacks,
+}: {
+  open: boolean;
+  openQuestions: number;
+  callbacks: ChatCallbacks;
+}): React.JSX.Element {
   return (
     <div className={`cb-presets${open ? " cb-presets-open" : ""}`}>
       <button
@@ -333,7 +343,7 @@ function PresetRow({ open, callbacks }: { open: boolean; callbacks: ChatCallback
         <span className="cb-presets-chevron" aria-hidden="true">▸</span>
       </button>
       {open
-        ? DIALOG_PRESETS.map((preset) => (
+        ? visiblePresets(openQuestions).map((preset) => (
             <button
               key={preset.id}
               className="cb-preset"
