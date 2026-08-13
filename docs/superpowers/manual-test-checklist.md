@@ -185,11 +185,15 @@ older than the code.
 - [ ] Bind a fresh tab to a graph → the empty transcript explains what the
       interviewer does, sitting where the first message will land — at the
       same size and leading, so nothing shifts when the first reply arrives.
-- [ ] The interviewer's replies are set full-width in the vault's reading
-      font; your messages sit behind a left rail in the UI font. In Appearance,
-      set the text font and the interface font to different families → the two
-      voices are visibly different. Set them the same → the rail still tells
-      them apart.
+- [ ] The interviewer's replies are set full-width in the vault's reading font;
+      your messages sit in a tinted bubble held off the right edge, in the UI
+      font, with the bottom-right corner squared. In Appearance, set the text
+      font and the interface font to different families → the two voices are
+      visibly different. Set them the same → the bubble still tells them apart.
+- [ ] Read that bubble **in the right sidebar**, which is where the panel
+      normally lives and which Obsidian already paints in its secondary colour →
+      the tint is still visible against it rather than melting into the
+      background. Check it in a main-area tab too; it has to read in both.
 - [ ] One size runs through the conversation: type a sentence, watch it queue,
       then watch it land in the transcript → it never changes size on the way.
       The composer matches the interviewer's replies too, so the two halves of

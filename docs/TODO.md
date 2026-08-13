@@ -9,18 +9,91 @@ For deferred *defects* and known traps from the original build, see
 
 ---
 
-## Nothing queued
+## Say when a conversation has got expensive
 
-The list is empty as of 2026-08-13. The one item it held — the map heatmap —
-was built and merged the same day (`16ef30c`, `319a281`, `a8a864d`), so it left
-the backlog rather than being dropped.
+Watch what a conversation has cost so far, and when it crosses a threshold, tell
+the user it is probably time to start a fresh one.
 
-Where its record lives now, if you need it: the behaviour is described in the
-"Heat" section of `docs/superpowers/manual-test-checklist.md`, the counting rule
-in `src/mindmap/heat.ts`, and the two-region box in `src/mindmap/geometry.ts`.
-The three questions this file left open all got answered by the build — a broken
-note keeps its red dashed border and shows heat in the fill, the hub takes heat
-like any other node, and the divider is permanent while only the colours are
-conditional on the switch.
+The reason this is worth doing — and the reason it is cheap — is that starting
+over costs the user nothing here. Everything said has already been filed into
+notes; the transcript is a record of the interview, not the knowledge. A new
+conversation on the same graph picks up with the same shape and the same facts,
+just without dragging the whole back-and-forth along. That is the files-are-the-
+state principle paying out, and most chat tools cannot offer it.
 
-Add the next thing here when it turns up.
+What makes a long conversation expensive is that every turn re-sends a
+transcript that only grows. So cost per turn climbs even when the questions stay
+the same size, and past some point the user is paying to re-read an interview
+rather than to continue it.
+
+**The number is already in hand.** `total_cost_usd` arrives on every result
+message and `AgentService` already surfaces it (`agent-service.ts:314` →
+`onResult`), `ChatView` already dispatches it (`ChatView.tsx:324`), and the
+transcript already carries it as a `result` item. Nothing new has to be
+measured. The work is the threshold, the notice, and the wording.
+
+**Read the cumulative caveat first.** Per the SDK reference
+(`docs/superpowers/research/2026-08-11-agent-sdk-reference.md`, "Cost/token
+accounting"), `total_cost_usd` is **cumulative across turns** in a
+streaming-input session — which is the mode this plugin runs in — so the
+conversation total is the latest result's value, and summing the turn rules
+would over-count badly. This also means the per-turn cost line may be showing
+the running total labelled as the turn's own cost; that is logged as a suspected
+defect in the checkpoint's open items and wants confirming before this feature
+is built on top of it.
+
+### Where it plugs in
+
+- A pure module beside the chat — `src/chat/cost-alert.ts` or similar — deciding
+  from the running total and the threshold whether to warn, and warning only
+  once per conversation rather than on every turn past the line. House pattern:
+  the decision gets its own module and its own test, never the shell.
+- `src/chat/transcript.ts` — the nudge is a notice item, the same shape "The
+  session ended…" already uses, so it renders as machinery behind a rail rather
+  than as the interviewer talking.
+- `src/chat/ChatView.tsx` — dispatch only, no decision.
+
+### Still open
+
+- **What the threshold is measured in.** Dollars is the obvious unit and the one
+  already on screen, but on a subscription no dollars are actually spent — the
+  figure is what it would have cost on API billing. The real signal might be
+  context size (the SDK's `modelUsage` carries `inputTokens` and `contextWindow`,
+  so "you are at 70% of the window" is available and is arguably the more honest
+  warning). Dollars are easier to explain; tokens are closer to the truth.
+- **Whether the SDK will do this for us.** There is an `error_max_budget_usd`
+  result subtype in the SDK types, which implies a budget option exists
+  somewhere. Worth checking before writing our own accounting — though note a
+  hard cap that *ends* the session is a different thing from a nudge that
+  suggests starting a new one.
+- **What the notice offers.** Telling someone a conversation is expensive
+  without giving them the next step is a scold. It probably wants to be an
+  offer — a "start a fresh conversation on this graph" affordance, which is the
+  "+" on the tab strip plus the current graph.
+- **Whether it can be dismissed for the rest of a conversation**, and whether a
+  second warning ever fires after that.
+
+## Plugin settings for the cost threshold
+
+The settings tab already exists — `CreativeBuddySettingTab` in `src/settings.ts`,
+carrying the Claude Code path, the panel location, the default model, the API key
+override and the health check. This adds the threshold to it: one more field on
+`CreativeBuddySettings` with a default in `DEFAULT_SETTINGS`, read by whatever
+decides to warn.
+
+Keeping it here rather than per-conversation matches how the default model
+already works: settings seed behaviour, and the conversation is where you
+deviate from it.
+
+### Still open
+
+- **What switches it off.** Empty or zero reading as "never warn" is the usual
+  shape and needs no extra toggle.
+- **Whether a conversation can override it.** Probably not worth it — the map's
+  Heat switch is per-view state because it is a way of *looking*; a spend
+  threshold is a preference, and preferences live in settings.
+- **What the default is.** It should be high enough that a normal interview
+  never trips it, or the warning becomes noise people learn to ignore. Nobody
+  has measured what a normal interview costs yet; the per-turn cost line is the
+  place that answer will come from, once it is known to be reporting the right
+  number.

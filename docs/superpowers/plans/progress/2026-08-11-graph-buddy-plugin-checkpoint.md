@@ -99,6 +99,21 @@ Re-checked against the code on 2026-08-13. Still open:
    the README documents the limitation as a caution to users.
 7. d3-flextree's prebuilt CJS bundle inlines d3-hierarchy v1 next to our v3
    (dead weight, harmless).
+8. **The per-turn cost line may be showing the running session total.** Suspected
+   2026-08-13, not yet confirmed against a live session. The SDK reference
+   (`research/2026-08-11-agent-sdk-reference.md`, "Cost/token accounting") states
+   that `total_cost_usd` is cumulative across turns in a streaming-input session
+   — which is the mode `AgentService` runs in (`agent-service.ts:210` passes a
+   message channel as the prompt). That value goes straight through
+   `agent-service.ts:314` → `ChatView.tsx:324` → the transcript's `result` item,
+   and `components.tsx:356` renders it as `turn done · $X.XX`, which reads as
+   what *this turn* cost. If the reference is right, every rule after the first
+   overstates the turn and the last one is really the conversation's total.
+   Two turns on Haiku settle it: a second rule showing roughly double the first,
+   on a similar-sized question, means cumulative. The fix would be to keep the
+   previous total per conversation and render the difference — leaving the
+   cumulative figure available, which is exactly what the cost-threshold item in
+   `docs/TODO.md` needs. Confirm this before building that feature on top of it.
 
 Closed since:
 

@@ -69,7 +69,7 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 ## Deeper context
 
 - `.claude/knowledge/` — project KB (commands, conventions, gotchas).
-- `docs/TODO.md` — feature backlog: wanted but not yet planned. Empty right now.
+- `docs/TODO.md` — feature backlog: wanted but not yet planned.
 - `plans/progress/…checkpoint.md` — **the living status doc.** Task ledger, what
   has shipped since the plan finished, and the defects still open. Start here.
 - `docs/superpowers/plans/2026-08-11-graph-buddy-plugin.md` — the original plan:
