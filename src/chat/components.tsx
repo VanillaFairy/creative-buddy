@@ -11,7 +11,6 @@ export interface ChatCallbacks {
   onSend(text: string): void;
   onModelChange(model: string): void;
   onApprove(id: string, allow: boolean, message?: string): void;
-  onWrapUp(): void;
   /** Stop the turn in flight and take back everything still waiting behind it. */
   onInterrupt(): void;
   /** Take one waiting message back, or put a canceled one back in line. */
@@ -190,10 +189,6 @@ export function ChatSurface(props: {
               <option key={id} value={id}>{label}</option>
             ))}
           </select>
-          {/* Wrapping up is something you do between turns, so during one it is
-              gone rather than sitting there disabled. Stopping lives in the
-              composer instead — next to the words it stops you spending. */}
-          {props.busy ? null : <button className="cb-quiet-control" onClick={() => callbacks.onWrapUp()}>Wrap up</button>}
         </div>
       </header>
       <div className="cb-chat-list" ref={listRef}>

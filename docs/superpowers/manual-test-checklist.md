@@ -95,8 +95,10 @@ older than the code.
 - [ ] Ask for a title with a colon ("create a note titled `Who: me?`") → no
       card; the model is corrected mechanically and retries with a sane title,
       keeping the exact wording as an alias.
-- [ ] Wrap up → a `Log/` file appears, the hub's Shape section refreshes, and
-      the structure-check notice lands in the transcript.
+- [ ] Break a graph on purpose (rename a note whose name another note's
+      `parent:` points at), then open a **new** conversation on it → the
+      interviewer knows about the unresolved parent without being told, and
+      repairs it as ordinary work rather than announcing a check.
 - [ ] Bind two tabs to the same graph → the ⚠ badge appears on **both**
       without clicking around. Same across two panels, if you drag one out.
 - [ ] Restart Obsidian → every tab comes back, with the one you were on still
@@ -134,8 +136,8 @@ older than the code.
       map's project selector. Then set the OS to the *opposite* of the vault's
       theme and check again: the list follows Obsidian, not the desktop.
 - [ ] While a reply streams, the header shows a thinking indicator next to the
-      model picker, and Wrap up is **gone** rather than greyed out — wrapping
-      up is a between-turns thing, and stopping lives in the composer now.
+      model picker — and the header holds nothing else, since stopping lives in
+      the composer now.
 - [ ] **Queue.** With a turn running, type another message and press Enter →
       it does not reach the model. It appears above the composer behind a
       dashed rail, under "Waiting for this turn to finish", and stays out of
@@ -214,9 +216,8 @@ older than the code.
       composer took. Shrink it back → you are where you started, with no drift
       after a long wobbling drag. Watch for a flicker: the transcript must
       never be painted in the old place and jump.
-- [ ] Notices ("The session ended…", the structure check) read as machinery —
-      monospace behind a rail — not as the interviewer talking. An error
-      notice's rail is red.
+- [ ] Notices ("The session ended…") read as machinery — monospace behind a
+      rail — not as the interviewer talking. An error notice's rail is red.
 - [ ] Each turn ends on a hairline rule carrying its cost, not a floating
       grey pill.
 - [ ] Drag the chat tab into the narrow right sidebar → the graph name stays

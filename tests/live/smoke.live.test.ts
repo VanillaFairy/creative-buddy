@@ -44,6 +44,7 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
         claudePath: claudePath!,
         todayIso: new Date().toISOString().slice(0, 10),
         stats: { nodes: 1, hubChildren: 1 },
+        problems: [],
       },
       {
         onInit: (i) => void inits.push(i),

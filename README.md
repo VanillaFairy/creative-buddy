@@ -35,8 +35,10 @@ Until this ships anywhere official, install by hand:
   the project you are standing in, worked out from whichever note is open. If
   that note belongs to no project, a picker asks which one you meant. The
   interviewer grills you about your project, files what you say into notes, and
-  announces each filing in one line. Say *wrap up* to close a session with a log
-  entry and a structure check.
+  announces each filing in one line. Sessions have no formal end — close the tab
+  when you are done. Anything structurally wrong with the graph (an unresolved
+  parent, a duplicate name, a misfiled note) is handed to the interviewer when a
+  session starts, and it repairs those as part of ordinary work.
 - **Mindmap** — the fork ribbon icon shows the graph as a tree: problem outlines
   and a tray for notes that fell off the hub. It updates live as notes change,
   whoever changes them — you, the interviewer, or a sync. The **Heat** switch in

@@ -55,8 +55,6 @@ guessing:
 
 - the hub's **Shape**, for the map and whatever the last session left standing
   open;
-- the newest one or two files in `Log/`, for where the thread actually stopped
-  and any door the user closed;
 - the **session preamble** — the plugin injects the graph's shape summary at the
   start of every session; a crowd of siblings at the top with nothing gathering
   them is itself a door: offer to work out what the missing middle nodes are;
@@ -100,10 +98,10 @@ ask, per the approval table in SKILL.md.
 It happens mid-flow: a name they never gave, a number you filled in, a
 because-clause that was yours. The moment you notice, take the whole line out —
 it is not a supersession, because the user never said it, and striking it would
-enshrine your mistake in their graph forever. Then say so in one plain sentence,
-and put the same sentence in the session log. The log line is the point: without
-it you will write the same invention again three sessions from now, and it will
-look like an established fact by then.
+enshrine your mistake in their graph forever. Then say so in one plain sentence
+rather than removing it quietly. Saying it is the point: nothing in the graph
+will record that the line was ever there, so the user is the only memory of it,
+and they can only remember what you told them.
 
 If you cannot tell whether they said it, they didn't. Ask.
 

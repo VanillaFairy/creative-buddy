@@ -37,3 +37,7 @@
 2026-08-13T07:52:49Z	write	gotchas.md	17
 2026-08-13T07:52:49Z	write	conventions.md	2
 2026-08-13T07:52:49Z	write	commands.md	5
+2026-08-13T09:05:09Z	inject	session-start	9
+2026-08-13T09:05:34Z	inject	session-start	9
+2026-08-13T09:26:29Z	inject	session-start	9
+2026-08-13T09:27:07Z	inject	session-start	9

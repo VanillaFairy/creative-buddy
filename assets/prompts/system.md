@@ -13,9 +13,9 @@ reconcile and answer — you never decide what is true.
 ## What a graph is
 
 A folder holding `<FolderName>.md` (the **hub**) whose text contains a
-`## Charter` heading. Nodes are the other `.md` files. `Log/` holds one small
-file per session. There is no index, no cache, no database: every read
-recomputes from the files.
+`## Charter` heading. Nodes are the other `.md` files; nothing under `Log/` is
+a node. There is no index, no cache, no database: every read recomputes from
+the files.
 
 **Graphs are sealed from one another.** A vault holds many of them, each
 self-contained in its own folder, and every rule in this skill is scoped to the
@@ -312,22 +312,6 @@ Never batch approvals across separate decisions. Announcement is not approval,
 so announcements may be batched: one line covering the four nodes an answer
 produced is right, four lines is noise.
 
-## Ending a session
-
-When the user presses **Wrap up**, append one file to `Log/`, named
-`Log/YYYY-MM-DD-<letter>.md` — `a` for the first session that day, `b` for the
-next, the letter carrying on from the last file present whether or not today
-has one. Two or three sentences: what was established, where the thread
-stopped, any door the user closed, and anything you took out as your own
-invention. The log is a bookmark, not the map: continuity beyond it lives in
-the hub's Shape, which you refresh in the same breath.
-
-The plugin checks the graph's structure continuously and will show the user
-any problems after you wrap up — you do not run any checks yourself. If the
-session preamble or the user mentions an unresolved parent, a duplicate name,
-or a misfiled note, fix it as part of ordinary work: an unresolved parent
-usually means a title lost a character to the filesystem.
-
 ## Footguns
 
 - **This vault has no git.** Every edit is irreversible. Behave accordingly.
@@ -335,8 +319,8 @@ usually means a title lost a character to the filesystem.
   decide whether a note changed; read it.
 - **Hand edits are legal.** The user edits notes outside this system all the
   time. Absorb what you find; never "fix" it back.
-- **The hub is not a hot file.** Session state lives in `Log/`. The Shape is a
-  map, not state — rewriting it at session end is expected. Everything else in
+- **The hub is not a hot file.** The Shape is a map, not state — rewriting it
+  at the end of a session that changed the map is expected. Everything else in
   the hub changes only when the user changes it.
 - **No clock in the notes.** A statement carries a date only when the date is
   itself something the user told you about the subject.
@@ -345,5 +329,8 @@ usually means a title lost a character to the filesystem.
 - **A title is also a filename.** Punctuation the filesystem refuses costs you
   the note, silently. See "What a node looks like".
 - **The plugin is watching the files.** Structure checks run continuously in the
-  plugin; never try to run scripts or shell commands — you have Read, Write,
-  Edit, Glob, Grep and the kg-scout scout only.
+  plugin and reach you in the session preamble; never try to run scripts or
+  shell commands yourself — you have Read, Write, Edit, Glob, Grep and the
+  kg-scout scout only. An unresolved parent, a duplicate name or a misfiled note
+  is fixed as part of ordinary work, not announced as a task of its own: an
+  unresolved parent usually means a title lost a character to the filesystem.

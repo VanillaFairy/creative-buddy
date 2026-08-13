@@ -15,12 +15,20 @@ describe("shipped prompt assets", () => {
     expect(systemPrompt).toContain("**Your inventions come out.**");
     expect(systemPrompt).toContain("**The user is the final authority.**");
   });
-  it("system prompt keeps the approval table and the wrap-up trigger", () => {
+  it("system prompt keeps the approval table", () => {
     expect(systemPrompt).toContain("| Anything outside the graph folder | the plugin will pause and ask the user |");
-    expect(systemPrompt).toContain("Wrap up");
   });
   it("system prompt drops the mechanical session-end section", () => {
     expect(systemPrompt).not.toContain("## Session end, mechanically");
+  });
+  /**
+   * Wrap-up is gone whole — button, canned message and ritual. The plan under
+   * docs/ still describes it, so this guards against it being read back in.
+   */
+  it("no asset asks for a session log or a wrap-up", () => {
+    for (const asset of [systemPrompt, grill, consult]) {
+      expect(asset).not.toMatch(/[Ww]rap up|## Ending a session|session log/);
+    }
   });
 });
 
@@ -37,13 +45,39 @@ describe("buildSystemPrompt", () => {
 });
 
 describe("buildSessionPreamble", () => {
-  const base = { hubPath: "Noir game/Noir game.md", todayIso: "2026-08-11", stats: { nodes: 4, hubChildren: 2 } };
+  const base = {
+    hubPath: "Noir game/Noir game.md",
+    todayIso: "2026-08-11",
+    stats: { nodes: 4, hubChildren: 2 },
+    problems: [],
+  };
 
   it("names the hub, the date and the shape", () => {
     const preamble = buildSessionPreamble(base);
     expect(preamble).toContain("Noir game/Noir game.md");
     expect(preamble).toContain("2026-08-11");
     expect(preamble).toContain("4 nodes, 2 of them hanging directly off the hub");
+  });
+
+  /**
+   * The structure check used to be a notice printed to the user after wrap-up.
+   * It rides in the preamble now, so the model is the one who acts on it.
+   */
+  it("says so plainly when the graph is clean", () => {
+    expect(buildSessionPreamble(base)).toContain("Structure check: clean.");
+  });
+
+  it("lists each problem as kind, note and detail", () => {
+    const preamble = buildSessionPreamble({
+      ...base,
+      problems: [
+        { kind: "unresolved-parent", note: "Heavy Rain.md", detail: "parent 'References' names no note in this graph" },
+        { kind: "duplicate-name", note: "Observer.md", detail: "name is shared by References/Observer.md" },
+      ],
+    });
+    expect(preamble).toContain("[unresolved-parent] Heavy Rain.md — parent 'References' names no note in this graph");
+    expect(preamble).toContain("[duplicate-name] Observer.md — name is shared by References/Observer.md");
+    expect(preamble).not.toContain("Structure check: clean.");
   });
 
   /** The register is gone: no vault-authored text rides inside the system prompt any more. */

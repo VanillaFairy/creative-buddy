@@ -1,4 +1,5 @@
 import { GraphStats } from "../graph/validation";
+import { Problem } from "../graph/types";
 import { buildSystemPrompt, buildSessionPreamble } from "./prompts";
 import { decideToolUse, targetPathOf, zeroByteWriteMessage, PermissionContext } from "./permissions";
 import { KG_SCOUT } from "./kg-scout";
@@ -12,6 +13,7 @@ export interface SessionConfig {
   claudePath: string;
   todayIso: string;
   stats: GraphStats;
+  problems: Problem[];
   apiKeyOverride?: string;
   resumeSessionId?: string;
 }
@@ -175,6 +177,7 @@ export class AgentService {
         hubPath: config.hubPath,
         todayIso: config.todayIso,
         stats: config.stats,
+        problems: config.problems,
       });
 
     const options: Record<string, unknown> = {

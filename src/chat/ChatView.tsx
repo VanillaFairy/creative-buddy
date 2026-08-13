@@ -32,7 +32,6 @@ interface Runtime {
   handle: SessionHandle | null;
   busy: boolean;
   status: string | null;
-  wrapUpPending: boolean;
   approvalSeq: number;
   responders: Map<string, (allow: boolean, msg?: string) => void>;
   /** Typed during a turn and not yet said, plus whatever was taken back. */
@@ -127,7 +126,6 @@ export class ChatView extends ItemView {
       handle: null,
       busy: false,
       status: null,
-      wrapUpPending: false,
       approvalSeq: 0,
       responders: new Map(),
       queue: [],
@@ -291,6 +289,7 @@ export class ChatView extends ItemView {
           claudePath,
           todayIso,
           stats,
+          problems: model.problemsOf(graphDir),
           apiKeyOverride: this.plugin.settings.apiKeyOverride === "" ? undefined : this.plugin.settings.apiKeyOverride,
           resumeSessionId: session.sessionId ?? undefined,
         },
@@ -323,10 +322,6 @@ export class ChatView extends ItemView {
           onResult: (result) => {
             runtime.busy = false;
             this.dispatch(key, { type: "result", costUsd: result.totalCostUsd, isError: result.isError });
-            if (runtime.wrapUpPending) {
-              runtime.wrapUpPending = false;
-              this.dispatch(key, { type: "notice", text: this.structureCheckText(graphDir) });
-            }
             // Last, so the next message lands under this turn's rule rather
             // than ahead of it.
             this.pump(key);
@@ -423,17 +418,6 @@ export class ChatView extends ItemView {
       runtime.responders.delete(id);
       this.dispatch(session.key, { type: "approval-resolved", id, allowed: allow });
     },
-    onWrapUp: (): void => {
-      const session = activeSession(this.list);
-      const handle = this.ensureSession(session);
-      if (handle === null) return;
-      const runtime = this.runtime(session.key);
-      runtime.busy = true;
-      // The structure-check summary is appended once the turn's result lands.
-      runtime.wrapUpPending = true;
-      this.dispatch(session.key, { type: "user-sent", text: "(wrap up)" });
-      handle.sendUserMessage(WRAP_UP_MESSAGE);
-    },
     onInterrupt: (): void => {
       const session = activeSession(this.list);
       const runtime = this.runtime(session.key);
@@ -498,13 +482,6 @@ export class ChatView extends ItemView {
     void this.app.workspace.openLinkText(linktext, source, Keymap.isModEvent(event));
   }
 
-  private structureCheckText(graphDir: string): string {
-    const graphReport = this.plugin.model?.validation().graphs.find((g) => g.path === (graphDir === "" ? "." : graphDir));
-    return graphReport === undefined || graphReport.problems.length === 0
-      ? "Structure check: clean."
-      : "Structure check:\n" + graphReport.problems.map((p) => `[${p.kind}] ${p.note} — ${p.detail}`).join("\n");
-  }
-
   private render(): void {
     if (this.root === null) return;
     const shared = this.sharedSet();
@@ -549,10 +526,3 @@ export class ChatView extends ItemView {
     );
   }
 }
-
-export const WRAP_UP_MESSAGE = [
-  "Wrap up this session now.",
-  "Append one file to Log/, named Log/YYYY-MM-DD-<letter>.md — the letter carrying on from the last file present.",
-  "Two or three sentences: what was established, where the thread stopped, any door I closed, anything you took out as your own invention.",
-  "Then refresh the hub's ## Shape in the same breath. Do not ask a new question after wrapping up.",
-].join(" ");

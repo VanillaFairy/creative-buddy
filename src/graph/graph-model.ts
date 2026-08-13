@@ -1,4 +1,4 @@
-import { Vault, VaultView } from "./types";
+import { Problem, Vault, VaultView } from "./types";
 import { buildValidationReport, ValidationReport, graphStats, GraphStats, loadGraphNotes } from "./validation";
 import { findGraphs, hubPath } from "./discovery";
 import { graphOfNote } from "./ownership";
@@ -88,6 +88,17 @@ export class GraphModel {
 
   stats(graphDir: string): GraphStats | null {
     return graphStats(this.view(), graphDir);
+  }
+
+  /**
+   * One graph's structural problems, read off the cached whole-vault report.
+   * The root graph is filed under "." there, so the empty graph dir has to be
+   * translated rather than looked up as itself. Empty for a dir the report
+   * does not cover — an unknown graph has no problems, it has no notes.
+   */
+  problemsOf(graphDir: string): Problem[] {
+    const wanted = graphDir === "" ? "." : graphDir;
+    return this.validation().graphs.find((g) => g.path === wanted)?.problems ?? [];
   }
 
   notes(graphDir: string): Note[] {
