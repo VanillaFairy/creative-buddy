@@ -40,9 +40,14 @@ interface Runtime {
   queue: Queued[];
   /**
    * The note this conversation has been told about, or undefined while nothing
-   * has been said yet. Live state on purpose: after a reload the first message of
-   * a resumed conversation says it again, which is right — a resumed session may
-   * have had its context compacted since.
+   * has been said yet.
+   *
+   * The rule is that **a fresh process is told again**. A reload drops this whole
+   * object, and a crash clears this field on the way past, so either way the next
+   * message re-announces — even though both resume the same conversation and the
+   * old line is still somewhere in its transcript. One line is cheaper than an
+   * answer about the wrong note, and a session that has been resumed is exactly
+   * the one whose context may have been compacted since.
    */
   announced: string | null | undefined;
 }
@@ -186,6 +191,24 @@ export class ChatView extends ItemView {
     this.list = replaceSession(this.list, key, { ...session, ...changes });
     this.app.workspace.requestSaveLayout();
     this.render();
+  }
+
+  /**
+   * Recompute the note the active tab is looking at. Returns whether the answer
+   * moved, which is what keeps a vault edit in some unrelated project from
+   * repainting a conversation that has not changed.
+   *
+   * Called at the top of every render, so a tab switch, a restored panel and a
+   * freshly picked project are all correct without any of them having to
+   * remember to ask.
+   */
+  private refreshNoteContext(): boolean {
+    const dir = activeSession(this.list).graphDir;
+    const next = dir === null ? null : this.plugin.activeNoteIn(dir);
+    const moved =
+      next?.path !== this.noteInView?.path || next?.openQuestions !== this.noteInView?.openQuestions;
+    this.noteInView = next;
+    return moved;
   }
 
   // ── the tab strip ─────────────────────────────────────────────────────────
@@ -376,6 +399,9 @@ export class ChatView extends ItemView {
             // taken back rather than quietly restarting claude.exe to spend on
             // messages you queued against a session that no longer exists.
             runtime.queue = cancelAll(runtime.queue);
+            // The next send is a fresh process, so it gets told which note you are
+            // on again — the same rule a reload follows, for the same reason.
+            runtime.announced = undefined;
             // The SDK side was told "deny" for anything still pending; the cards
             // must agree, or a click on a stale Allow would record a lie.
             const current = this.list.sessions.find((s) => s.key === key);
@@ -504,24 +530,6 @@ export class ChatView extends ItemView {
   private sourcePath(): string {
     const dir = activeSession(this.list).graphDir;
     return dir !== null ? this.plugin.model?.hubPathOf(dir) ?? dir : "/";
-  }
-
-  /**
-   * Recompute the note the active tab is looking at. Returns whether the answer
-   * moved, which is what keeps a vault edit in some unrelated project from
-   * repainting a conversation that has not changed.
-   *
-   * Called at the top of every render, so a tab switch, a restored panel and a
-   * freshly picked project are all correct without any of them having to
-   * remember to ask.
-   */
-  private refreshNoteContext(): boolean {
-    const dir = activeSession(this.list).graphDir;
-    const next = dir === null ? null : this.plugin.activeNoteIn(dir);
-    const moved =
-      next?.path !== this.noteInView?.path || next?.openQuestions !== this.noteInView?.openQuestions;
-    this.noteInView = next;
-    return moved;
   }
 
   /**
