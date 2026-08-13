@@ -285,8 +285,7 @@ older than the code.
       one `- [ ]` → a third preset, **Current note questions**, appears at the
       end of the row. Open a note with none → it goes. Answer one in the editor
       and save → the preset survives while any remain and vanishes with the
-      last. Open a picture that lives in the project folder → no preset, because
-      an image is not a note you can be asked about.
+      last.
 - [ ] With a chat bound to project A, open a note in project B → the preset is
       **not** offered, even though that note has open questions. A tab is bound
       to one project and never aims at another's notes.
@@ -296,14 +295,25 @@ older than the code.
       without closing anything else.
 - [ ] Point it at a question the note's own body already answers → it says so
       and **offers** to close it. It must not close anything until you agree.
+- [ ] **Set up first, or the next two checks cannot fail:** two notes in the same
+      project, each with open questions you can tell apart. With only one such
+      note, a project-wide sweep lands on it anyway and proves nothing.
 - [ ] Ask something vague — "answer the second one", "what's still open here?" —
       with a note open → it works on that note rather than sweeping the project.
       Switch notes, ask again → the answer follows you.
 - [ ] Type a message while reading note A, send it during a running turn so it
       queues, then move to note B before the turn ends → when it goes out it is
       still about note A. This is the case the whole design turns on.
+- [ ] Open two chat tabs on different projects and walk between notes → the
+      preset follows the **active** tab only, and never appears on the tab whose
+      project you are not reading.
 - [ ] Close every note in the project and ask something → it works from the graph
-      as a whole rather than still answering about the note you closed.
+      as a whole rather than still answering about the note you closed. Do the
+      project-B check above first: it exercises the same branch and is reliable,
+      whereas `getActiveFile()` falls back to "the most recently active file"
+      when the active tab is not a file view, so closing your last note may leave
+      the plugin still naming it. If those two disagree, read the API before
+      filing a bug.
 - [ ] Look at the transcript throughout → your messages read exactly as you typed
       them. The note line is plumbing and never appears.
 - [ ] **Recognise this one rather than filing it.** Deep into a long session, the

@@ -107,7 +107,8 @@ export class GraphModel {
 
   /**
    * A note's raw text, for body-level facts the index does not carry — the
-   * mindmap's open-question count is the one caller. Empty for a path the vault
+   * open-question count is what wants it, for the map's heat and for the
+   * composer's current-note preset alike. Empty for a path the vault
    * does not hold, so a note deleted between a redraw and its repaint reads as
    * asking nothing rather than throwing.
    */
