@@ -171,5 +171,42 @@ node -e 'const f=require("fs"),
 ## Green vitest does not mean it compiles
 Vitest transpiles TS with esbuild, which strips types without checking them, so a strict-mode violation runs green in the suite and only fails at `tsc --noEmit`. `tsconfig` has `noUncheckedIndexedAccess` on, so `arr[0]` is `T | undefined` — the usual source of a green-tests/red-build split. Run `npm run build` before calling any change done, not just `npx vitest run`.
 
+## A prompt assertion breaks on a line wrap the model never sees
+`tests/prompts.test.ts` asserts on `assets/prompts/*.md` with literal
+`toContain`, but those files are prose and therefore soft-wrapped at ~76
+columns. A phrase worth asserting on lands wherever the wrap puts it, so
+`toContain("context for you, never content")` fails the moment someone reflows
+the paragraph — even though markdown collapses soft wraps and the model reads
+exactly the same document. It presents as "my prompt edit broke the tests" when
+nothing about the prompt changed.
+
+It has caught two people in one afternoon: once transcribing a plan whose own
+markdown split the phrase, and once again immediately after, tidying the same
+paragraph. Compare against flattened whitespace instead of documenting the
+trap:
+```ts
+const flat = (markdown: string): string => markdown.replace(/\s+/g, " ");
+expect(flat(systemPrompt)).toContain("context for you, never content");
+```
+
+Related: when a prompt *quotes* a string that also exists in code — `system.md`
+describes the `The user is looking at …` line that `src/chat/note-context.ts`
+actually sends — guard the two against each other by deriving the assertion
+from the function. Guarded separately, rewording either end leaves the prompt
+describing a line that never arrives, with every test still green.
+
+## A worktree cannot run the suite until node_modules is junctioned
+`git worktree add` checks out tracked files only, and `node_modules` is
+gitignored — so `npx vitest run` in a fresh worktree fails before it starts.
+`npm ci` per worktree costs minutes each; a directory junction is instant and
+the suite does not notice:
+```powershell
+New-Item -ItemType Junction -Path C:\tmp\cb-T01\node_modules -Target C:\work\creative-buddy\node_modules
+```
+Five parallel agents sharing one `node_modules` this way ran the full suite,
+`tsc --noEmit` and `npm run build` concurrently with no cache contention.
+Remove the junction with `Remove-Item` **before** `git worktree remove`, or the
+removal walks into the real `node_modules`.
+
 ## Windows worktree removal can hit file locks
 `git worktree remove` may fail with "Device or resource busy" while a node/claude child process lingers. `git worktree prune` clears the registration; the directory becomes deletable once the process exits. Never kill node.exe indiscriminately to free it — other sessions run on node too.
