@@ -118,10 +118,17 @@ export default class CreativeBuddyPlugin extends Plugin {
    *
    * `contentOf` answers "" for a path the vault no longer holds, so a note deleted
    * between an event and the render reads as owing nothing rather than throwing.
+   *
+   * The `.md` test is the same one `buildModel` indexes by, and it is here because
+   * graph ownership is decided on the path alone: an image sitting in the project
+   * folder belongs to the graph as surely as a note does. Without it, opening a
+   * cover picture would tell the interviewer it is looking at a note and hand it a
+   * path it cannot read.
    */
   activeNoteIn(graphDir: string): { path: string; openQuestions: number } | null {
     const file = this.app.workspace.getActiveFile();
     if (file === null || this.model === null) return null;
+    if (!file.path.toLowerCase().endsWith(".md")) return null;
     if (this.model.graphOf(file.path) !== graphDir) return null;
     return { path: file.path, openQuestions: countOpenQuestions(this.model.contentOf(file.path)) };
   }
