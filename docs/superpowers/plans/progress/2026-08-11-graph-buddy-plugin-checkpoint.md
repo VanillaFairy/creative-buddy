@@ -99,6 +99,22 @@ since, in order:
   shipped prompt asset's prose for retired names, and `tests/docs-questions.test.ts`
   checks the paired shape instead of the old two-paragraph one. `docs/` was
   reformatted to match, so the two corpora cannot teach different conventions.
+  A later pass added the disappearing rule: a questions heading exists only while
+  it has lines under it, so closing the last `- [ ]` takes `## Open questions`
+  with it in the same edit. The check is style-aware — graph notes write open
+  questions as `- [ ]` boxes because the map counts them, `docs/` as plain
+  bullets, so it asks for a bullet of either kind rather than a checkbox.
+
+  **`## Closed questions` did not survive the day.** It was built, applied across
+  a live graph, and then retired the same afternoon in favour of the rule already
+  written a few sections up: an answered question's answer becomes an ordinary
+  statement in the note, and the question simply goes. Keeping the pair as well
+  was the "record of every wobble" that "Changing your mind" exists to forbid.
+  The fourth reserved heading is `## Ideas to explore` now — plain bullets,
+  nothing counting them, nothing owed. `docs/` still keeps a Closed questions
+  section of its own, and `tests/docs-questions.test.ts` still guards its shape:
+  a decisions record is a different artifact from a graph note, and this is the
+  one place the two corpora are deliberately allowed to differ.
 - **The chat follows the note you are reading** (`061a104`…`dde07b7`, planned in
   `docs/superpowers/plans/2026-08-13-current-note-behaviour/`, spec in
   `docs/superpowers/specs/2026-08-13-current-note-behaviour-design.md`). One
@@ -127,7 +143,8 @@ since, in order:
 
 ## Suite state
 
-403/403 tests green (`dde07b7`, checked 2026-08-13); `tsc --noEmit` clean and
+406/406 tests green (checked 2026-08-13, including the uncommitted
+disappearing-section work above); `tsc --noEmit` clean and
 `npm run build` writing a 2.52MB bundle. At the plan's last merge (`e2b4efa`) it
 was 192/192 with the build clean at ~2.4MB and live smoke green over 3 paid runs,
 ≤ $0.02 each.
