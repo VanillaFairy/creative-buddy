@@ -171,6 +171,22 @@ node -e 'const f=require("fs"),
 ## Green vitest does not mean it compiles
 Vitest transpiles TS with esbuild, which strips types without checking them, so a strict-mode violation runs green in the suite and only fails at `tsc --noEmit`. `tsconfig` has `noUncheckedIndexedAccess` on, so `arr[0]` is `T | undefined` — the usual source of a green-tests/red-build split. Run `npm run build` before calling any change done, not just `npx vitest run`.
 
+## A cold `npx vitest run` fails every file at import
+```
+ Test Files  34 failed (34)
+      Tests  no tests
+TypeError: Cannot read properties of undefined (reading 'config')
+```
+Twice in one session, the first suite run after an idle gap failed **every** test
+file at its first import line and reported `no tests`; an immediate rerun with no
+changes passed 408/408. It presents as "my edit broke all 34 files" — the stack
+points at line 4/8/14 of each test, which is the import block, so it reads like a
+broken module rather than a runner problem.
+
+Two cheap tells, before diagnosing anything: a single file
+(`npx vitest run tests/prompts.test.ts`) passes while the whole suite fails, and
+the duration shows `import 0ms`. Just rerun.
+
 ## A prompt assertion breaks on a line wrap the model never sees
 `tests/prompts.test.ts` asserts on `assets/prompts/*.md` with literal
 `toContain`, but those files are prose and therefore soft-wrapped at ~76
