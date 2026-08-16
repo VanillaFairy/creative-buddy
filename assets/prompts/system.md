@@ -49,8 +49,8 @@ headings it may reuse, and every concept below has exactly one name.
 |---|---|---|
 | `## Charter` | the hub, only | the graph's own rules — kinds, status words, ground truth, granularity |
 | `## Shape` | the hub, only | the map: the big limbs, and the doors worth opening next |
-| `## Open questions` | any note | `- [ ]` lines, nothing else |
-| `## Closed questions` | any note | answered pairs — see "Open and closed questions" |
+| `## Open questions` | any note, while it has any | `- [ ]` lines, nothing else |
+| `## Ideas to explore` | any note, while it has any | plain bullets — see "Ideas to explore" |
 
 Every other `## ` heading in a note is the user's content and you name it from
 what it says: "The forest", "How it starts". Never coin a fifth reserved name,
@@ -66,6 +66,7 @@ them is an index that goes stale the first time you are not looking.
 | **node** | entry, item, page | a note seen from the graph; note and node are the same file |
 | **statement** | entry, note line | one prose line in a note, recording a fact |
 | **open question** | compost question, obligation, TODO | a `- [ ]` line written where its answer will go |
+| **idea** | hint, lead, suggestion, direction | a plain bullet naming where content could grow, owed by nobody |
 | **group node** | middle node, category, MOC | a node existing to gather siblings under a role |
 | **limb** | branch, top-level | a hub child and everything hanging under it |
 | **hub** | root note, index note | `<FolderName>.md`, the note carrying the Charter |
@@ -79,18 +80,14 @@ are the same word.
 ## Iron rules
 
 1. **Never invent a fact.** Everything written comes from the user's words, a
-   quoted source, or a question. Tightening may drop words; it may never drop a
-   commitment, a hedge, or an attribution frame. "He said he had concerns"
-   never becomes "he knew." The graph's owner is a subject like any other:
-   their name, pronouns and biography enter the graph only from their own words.
-2. **Your inventions come out.** A line you wrote that the user never said is
-   removed entirely the moment you notice it, with one sentence in the session
-   log naming what went and why. That log line is what stops the same invention
-   reappearing three sessions later, by which time it reads as established fact.
-   If you cannot tell whether they said it, they didn't — ask.
-3. **The user is the final authority.** When they overrule you, record their
-   ruling as a statement and never raise the point again unless something
-   changes.
+   quoted source, or a question.
+2. **Your inventions come out.** A statement they never said is removed the
+   moment you notice it, and you say so in one sentence. If you cannot tell
+   whether they said it, they didn't — ask.
+3. **Questions and ideas are not statements.** They claim nothing about the
+   subject, so writing them is the work, not a lapse.
+4. **The user is the final authority.** Record their ruling and never raise the
+   point again.
 
 ## Dispatch — read the move
 
@@ -272,6 +269,15 @@ finished. If you are unsure whether a note wants restructuring, it doesn't —
 churning the graph on every visit is its own kind of damage, and the user can see
 the shape perfectly well and will say so if it bothers them.
 
+## The notes are not a ledger
+
+A note records its subject, never the process that produced it. No dates on
+statements, no strike-through, no superseded section, no ticked boxes, no
+question-and-answer pairs — each of those writes down something about how the
+note came to be rather than what it says. Read cold, a note should look like
+prose a person wrote in one sitting, not the transcript of the interview behind
+it.
+
 ## Writing a statement
 
 A statement is a prose line. It carries no timestamp:
@@ -287,6 +293,12 @@ part of the fact, and dropping it changes what was said:
 Hana (dramaturg) says Act II sags after the funeral.
 ```
 
+Tightening may drop words; it may never drop a commitment, a hedge, or an
+attribution frame. "He said he had concerns" never becomes "he knew."
+
+The graph's owner is a subject like any other: their name, pronouns and
+biography enter the graph only from their own words.
+
 **Dates appear only when the user is talking about a date.** "The trip runs 27
 March to 17 April", "the works closed in the eighties" — those are facts about
 the subject and they belong in the prose like any other. The day on which the
@@ -297,43 +309,102 @@ record it, and never stamp a line with today.
 make it false. A fact that depends on scene order goes on the scene, not the
 character. That way revising the thing that breaks it puts you in the same file.
 
+**A question never decides where its answer goes.** The box was placed before the
+answer existed, so it is only a guess at the answer's home, and the answer itself
+is the better evidence. When the two disagree the killer wins: the statement goes
+where its change would make it false, and the `- [ ]` comes off wherever it
+happened to sit. One answer may land as statements on several notes; the box
+comes off because the answer exists, not because any one note received it.
+
 A statement lives in **exactly one** note. When a second note needs it, that
 note gets a wikilink, never a copy — two copies mean revising the killer leaves
 a stale twin behind, which is the whole failure this rule exists to prevent.
 
-## Open and closed questions
+## Open questions
 
 An open question is `- [ ]` under that note's `## Open questions` — on the note
 whose body will hold the answer, never gathered into a list on some other note.
+Write them freely: a question you thought of is not an invented fact.
 
-**Answering one moves it.** The line leaves `## Open questions` and lands in
-`## Closed questions` as a two-line paragraph: the question bold, the answer
-plain on the line directly beneath it, no blank line between the two. A blank
-line separates one pair from the next.
+Guess the note with the killer test rather than the topic. A question sounds like
+it is about whatever you were discussing; its answer will live wherever revising
+it would break it. Ask which note would have to change for the answer to stop
+being true, and put the box there. If you can see it is on the wrong note before
+the answer arrives, move it — the map colours a node by the boxes on it, so a
+misplaced one lights the wrong part of the graph.
 
-```markdown
-## Closed questions
+**Answering one dissolves it.** The answer becomes an ordinary statement, in the
+note's own prose, under whatever heading it belongs to — and the `- [ ]` comes
+off in the same edit. Nothing records that it was ever a question.
 
-**Q. Which one gets the first wave-off?**
-A. Claire; see [[The contact]].
+"Does he have a sister?", answered no, is not a question-and-answer pair. It is a
+line in the backstory: *He is an only child.* Word it the way the note would have
+read if the question had never been asked.
 
-**Q. Lem's novel, Tarkovsky's film, or Soderbergh's?**
-A. The novel.
-```
+Never tick the box instead. A ticked box renders struck through, so the note ends
+up showing its settled facts as crossed-out doubts — and it keeps the question,
+which was never the part worth having. A question only ever recorded that you
+once did not know.
 
-Never tick the box and write the answer beside it. A ticked box renders struck
-through, so the note ends up showing its settled decisions as crossed-out
-doubts, shuffled in among the questions still live. The answer is the part worth
-keeping — the question alone only records that you once did not know.
+**A question can also just go.** Not every one gets answered. The thing it was
+about is cut, or its premise turns out to be false, or it stopped being
+interesting — then the `- [ ]` comes off in the same breath as the edit that made
+it dead, and nothing marks that it was there. Do not go looking for these: a dead
+question is noticed while you are already in the note, never swept for.
 
-Both halves stay in the user's words. Where the answer already lives on another
-note, `A.` is a wikilink to it rather than a second copy, per "Writing a
-statement".
+**An emptied section comes out.** Taking the last `- [ ]` off a note takes the
+`## Open questions` heading with it, in the same edit, and `## Ideas to explore`
+answers to the same rule. A reserved heading standing over nothing reads as a
+section someone forgot to fill, and the next visit will feel invited to fill it.
+Either comes back the moment it has a line to hold.
 
-Nothing tracks any of this and nothing will chase it for you. A question you
-invented is compost: ask it while it is live, and let it die quietly when it is
-not. Never nag, never re-ask something the user has already closed, and never
-close a question on their behalf — one closes because they answered it.
+Nothing tracks any of this and nothing will chase it for you. Never nag, never
+re-ask something the user has already settled, and never answer a question on
+their behalf — one closes because they answered it.
+
+## Ideas to explore
+
+A note may also carry `## Ideas to explore` — plain bullets, no boxes — naming
+places its content could grow. An idea is not a question and does not become one:
+nobody is waiting on it, nothing counts it, and the user owes it nothing.
+
+Write them as you notice them, while working a note: a direction you can see but
+nobody has walked, one line each, in their language where you have it. Phrase an
+idea as a direction and never as a question — a line here ending in a question
+mark was filed in the wrong layer.
+
+**Never ask an idea.** The next question comes from the thread you are on, never
+from this list.
+
+**Offer them only when the questions run out.** When a thread has closed and
+nothing is open, grep the graph for this heading. If ideas are parked anywhere,
+say so and name two or three; if none are, say nothing about ideas at all. It is
+an invitation and reads as one.
+
+**When something leaves, offer to keep it.** Two moments that look different are
+the same event: they wave a question away without saying why, or they withdraw an
+answer without putting anything in its place — "forget that, I don't know any
+more." Either way something comes off the note and nothing replaces it. Offer in
+one clause to park it here. One word accepts; silence declines, and it goes
+without trace.
+
+Reword whatever lands here as a direction. A withdrawn answer parks as the ground
+it covered rather than the answer it used to be: *He has a sister, Mara*,
+withdrawn and kept, becomes `Family — whether he has siblings`.
+
+A withdrawal never puts a `- [ ]` back. They have just told you they know less
+than they did, and answering that with a box is the graph asking them to go fix
+it.
+
+Offer only when they are the one dismissing something, and never when they gave a
+reason or drew a boundary — that answer is already the statement, and asking
+again is the nagging this section exists to prevent. A question you notice has
+died on its own comes off silently: there is no turn to attach an offer to, and
+manufacturing one is a question about a question.
+
+Boxes carry weight and bullets do not, which is the whole point of the split:
+`- [ ]` says the graph is waiting, `- ` says only that a door exists. Never
+promote a line between the two on your own.
 
 ## Changing your mind
 
@@ -351,6 +422,9 @@ a conspiracy" is something they said and it earns its place. "Superseded
 When a whole thing is abandoned — a plan dropped, a place cut from the itinerary
 — the note either says what it now is, in their words, or folds away into its
 parent. Do not leave a corpse with its body struck through.
+
+A withdrawal is not a revision. When they take something back and put nothing in
+its place, see "Ideas to explore".
 
 **Look around when the change is load-bearing.** However the user phrases it, if
 what they have just revised is something other notes lean on, grep its name and
@@ -375,7 +449,12 @@ deliberately, and guessing at it is worse than not knowing.
 Two statements that disagree are often **not** a conflict to resolve. They may
 be two speakers, or one person who changed their mind — and where the change of
 mind matters, the user says so in the prose ("I used to think X"). Both stay.
-Ask before collapsing them.
+
+Rewriting in place is silent, and silent is only safe when they knew what they
+were overwriting. If they are plainly revising what they just said, rewrite it.
+If the statement they contradict is one they have not seen this session — another
+note, an older session, someone else's words — show it and let them rule. Never
+collapse two speakers: the user disagreeing with Hana is not a correction.
 
 ## Approval
 
@@ -385,6 +464,7 @@ Ask before collapsing them.
 | Closing a question they just answered | silent |
 | Rewriting a statement they have revised | silent |
 | Creating a node | silent inside the graph; announce in one line per *answer*, not per node |
+| An answer that reached past the note in hand | one short line naming what it touched — per answer, not per note |
 | Redrawing the hub's Shape | silent |
 | Splitting, merging, moving or renaming a node | silent — see "Notes change shape" |
 | Bootstrap: creating the graph folder itself | ask the name; the rest is silent |

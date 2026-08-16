@@ -24,6 +24,7 @@ describe("shipped prompt assets", () => {
   it("system prompt keeps the iron rules verbatim", () => {
     expect(systemPrompt).toContain("**Never invent a fact.**");
     expect(systemPrompt).toContain("**Your inventions come out.**");
+    expect(systemPrompt).toContain("**Questions and ideas are not statements.**");
     expect(systemPrompt).toContain("**The user is the final authority.**");
   });
   it("system prompt keeps the approval table", () => {
@@ -112,7 +113,7 @@ describe("one name per thing", () => {
       .join("\n");
 
   it("the system prompt fixes all four reserved headings", () => {
-    for (const heading of ["## Charter", "## Shape", "## Open questions", "## Closed questions"]) {
+    for (const heading of ["## Charter", "## Shape", "## Open questions", "## Ideas to explore"]) {
       expect(systemPrompt).toContain(`| \`${heading}\``);
     }
   });
@@ -126,12 +127,43 @@ describe("one name per thing", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("the closed-question pair is shown in the shape it must be written in", () => {
-    // Bold question, plain answer on the very next line — one paragraph, the
-    // boldness doing the separating. The prompt carries a worked example, and
-    // this is what stops that example drifting from the prose describing it.
-    expect(systemPrompt).toMatch(/^\*\*Q\. .+\*\*\nA\. /m);
-    expect(systemPrompt).toContain("**Answering one moves it.**");
+  /**
+   * A vault note has no closed questions. An answer becomes an ordinary
+   * statement and the box comes off, because a `**Q.**` / `A.` pair is a second
+   * copy of that statement sitting in the same file — the duplication "Writing a
+   * statement" exists to forbid. The convention shipped for months and is still
+   * described in the plans under `docs/`, so this is the assertion that stops it
+   * being read back in. `docs/` keeps its own pairs and its own test: a spec
+   * records that alternatives were weighed, a character sheet does not.
+   */
+  it("no asset still describes a closed-question pair", () => {
+    for (const [name, asset] of ASSETS) {
+      expect([name, /Closed questions|\*\*Q\. /.test(asset)]).toEqual([name, false]);
+    }
+    expect(systemPrompt).toContain("**Answering one dissolves it.**");
+  });
+
+  it("both note sections are told to disappear once empty", () => {
+    expect(systemPrompt).toContain("**An emptied section comes out.**");
+    expect(flat(systemPrompt)).toContain("`## Ideas to explore` answers to the same rule");
+    expect(grill).toContain("the emptied heading goes too");
+  });
+
+  /**
+   * The idea layer is the weightless half of the split, and the notation is what
+   * makes it weightless: `countOpenQuestions` in src/open-questions.ts counts
+   * `- [ ]` anywhere in a body without looking at headings, so an idea written as
+   * a box would heat its node on the map and become exactly the obligation this
+   * layer exists to remove. Plain bullets are load-bearing, not cosmetic.
+   */
+  it("ideas are plain bullets and are never asked", () => {
+    expect(flat(systemPrompt)).toContain("plain bullets, no boxes");
+    expect(systemPrompt).toContain("**Never ask an idea.**");
+  });
+
+  it("parked ideas are reached for only once nothing is open", () => {
+    expect(flat(grill)).toContain("Parked ideas are doors");
+    expect(flat(askMe)).toContain("Look for ideas I have parked instead");
   });
 
   it("no asset still tells the interviewer to tick a box in place", () => {

@@ -62,6 +62,23 @@ describe("questions sections", () => {
     expect(offenders.map(relative)).toEqual([]);
   });
 
+  it("a questions section that has emptied is removed, not left standing", () => {
+    // Either heading exists only while it has something under it. A heading over
+    // nothing reads as a section someone forgot to fill, and the next visit will
+    // feel invited to fill it — which is how invented questions get in.
+    const offenders: string[] = [];
+    for (const file of FILES) {
+      const markdown = fs.readFileSync(file, "utf8");
+      const open = section(markdown, "Open questions");
+      // Any bullet counts: graph notes write open questions as `- [ ]` boxes so
+      // the map can count them, docs as plain bullets. Same rule, two styles.
+      if (open !== null && !/^[ \t]*[-*+] /m.test(open)) offenders.push(`${relative(file)} → Open questions`);
+      const closed = section(markdown, "Closed questions");
+      if (closed !== null && !/^\*\*Q\. /m.test(closed)) offenders.push(`${relative(file)} → Closed questions`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("each closed pair is one paragraph — bold question, answer on the next line", () => {
     const offenders: string[] = [];
     for (const file of FILES) {
@@ -71,9 +88,6 @@ describe("questions sections", () => {
         .split(/\n\s*\n/)
         .map((block) => block.trim())
         .filter(Boolean);
-      // An empty Closed section is a heading nobody filled in rather than a
-      // convention being kept.
-      if (pairs.length === 0) offenders.push(`${relative(file)} → (nothing)`);
       for (const pair of pairs) {
         const first = (pair.split("\n")[0] ?? "").slice(0, 60);
         // Boldness is the delimiter, so the answer sits on the line directly

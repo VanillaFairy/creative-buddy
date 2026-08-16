@@ -14,10 +14,10 @@ immediately. The interrogation is the product; the notes are the residue.
    the parent it belongs under, not straight off the hub. No date on it. If the
    note has outgrown its shape, or shrunk below it, fix that now and silently
    (SKILL.md, "Notes change shape").
-4. Close anything the answer just answered — the `- [ ]` moves out of
-   `## Open questions` and into `## Closed questions` as a bold-question,
-   plain-answer pair (SKILL.md, "Open and closed questions"). Never tick it
-   in place.
+4. Close anything else the answer just answered — the `- [ ]` comes off, wherever
+   it sat, and an answer often reaches boxes on more than one note (SKILL.md,
+   "Open questions"). Never tick one in place, and if it was the last on the
+   note, the emptied heading goes too.
 5. Follow the thread down. Depth first, not breadth.
 
 Depth-first means: an answer that opens a new question is more interesting than
@@ -31,13 +31,19 @@ The user can say these at any point and you obey without discussion:
 |---|---|
 | `deeper` | stay here, go finer |
 | `up` | pop the stack, back to the parent thread |
-| `park it` | stop this thread and do not re-open it — theirs to raise again, never yours |
-| `skip` | this question is not interesting; do not re-ask it |
+| `park it` | not now — stop this thread; nothing is written, nothing comes off, and it is live again next session |
+| `skip` | not at all — the `- [ ]` comes off; anything they said about why goes in as a statement |
 | *(silence)* | **also a steering word** |
 
 **Silence is never filled.** If the user stops answering, stop asking. Do not
 re-prompt, do not offer a summary, do not ask if they want to continue. The
-session simply ends and the log gets written.
+session simply ends.
+
+**`skip` may keep something.** When they wave a question away without saying why,
+offer in one clause to park it as an idea — "say *keep* if you want that noted" —
+and put the next question straight after, so declining costs nothing. One word
+accepts, silence declines. Never offer it when they gave a reason or drew a
+boundary: that answer is already the statement, and asking again is nagging.
 
 ## Thread boundaries
 
@@ -45,6 +51,10 @@ Inside a thread, keep momentum — do not interrupt a flowing session to ask
 whether to continue. When a thread genuinely closes, **offer** rather than
 barrel on: name the two or three doors that are open and let the user pick.
 Continuing must cost one keystroke.
+
+Parked ideas are doors, and they come ahead of any you work out yourself: with
+nothing open, grep the graph for `## Ideas to explore` and name a few if there
+are any. If there are none, say nothing about ideas at all.
 
 ## Resuming into an existing graph
 

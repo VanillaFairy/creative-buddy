@@ -56,10 +56,11 @@ moment it matters — here, in an answer — is the mechanism, and it is enough.
 ## When the graph doesn't know
 
 Say so. "Nothing in the graph answers that" is a good answer and a useful one —
-it tells the user where the hole is. Offer to open a question — a `- [ ]` under
-`## Open questions` — in the note where the answer would live, as SKILL.md
-describes. Never fill a gap with plausible inference and never dress a guess as
-a finding.
+it tells the user where the hole is. Offer to note it in the graph — a `- [ ]`
+under `## Open questions` where the answer would live if they mean to answer it,
+a plain bullet under `## Ideas to explore` if it is only a direction worth
+keeping, as SKILL.md describes. Never fill a gap with plausible inference and
+never dress a guess as a finding.
 
 ## Deadlines override the stack
 
