@@ -140,12 +140,26 @@ since, in order:
   contract, a test that could not fail on the bug beside it, and an image in a
   project folder counting as the note you are reading. Wave-by-wave detail is in
   `docs/superpowers/plans/progress/2026-08-13-current-note-behaviour-checkpoint.md`.
+- **Effort, and Fable in the model list** (2026-09-05). The plugin had never set
+  the SDK's `effort` option, so every session ran at whatever the CLI defaults
+  to. There is now a `defaultEffort` setting seeding new conversations and a
+  second quiet control beside the model picker, changeable mid-thread and
+  surviving a restart. `src/agent/effort.ts` owns the one rule underneath:
+  which levels a model honours, and what a stored value means on a model that
+  honours none. Haiku 4.5 has no effort control at all, so it shows no picker
+  and the CLI is told to clear the level — while the conversation keeps the
+  level you chose, so moving back off Haiku restores it. The live session owns
+  the coupled pair: `setModel` and `setEffort` both re-answer what this model
+  may be told. Design: `docs/superpowers/specs/2026-09-05-effort-setting-design.md`.
 
 ## Suite state
 
-406/406 tests green (checked 2026-08-13, including the uncommitted
-disappearing-section work above); `tsc --noEmit` clean and
-`npm run build` writing a 2.52MB bundle. At the plan's last merge (`e2b4efa`) it
+430/430 tests green (checked 2026-09-05, after the effort work above);
+`tsc --noEmit` clean and `npm run build` writing a 2.53MB bundle. Live smoke
+green on that change, plus one throwaway paid run on `claude-sonnet-5` at
+`effort: "low"` — the committed smoke runs on Haiku, which exercises the
+branch that *omits* effort and so proves nothing about the new option
+reaching the CLI. At the plan's last merge (`e2b4efa`) it
 was 192/192 with the build clean at ~2.4MB and live smoke green over 3 paid runs,
 ≤ $0.02 each.
 
