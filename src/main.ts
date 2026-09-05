@@ -5,6 +5,8 @@ import { findClaudeExecutable } from "./claude-locator";
 import { ChatView, CHAT_VIEW_TYPE } from "./chat/ChatView";
 import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
 import { countOpenQuestions } from "./open-questions";
+import { charterEdit } from "./project-list";
+import { dirName } from "./graph/types";
 import { existsSync } from "node:fs";
 
 export default class CreativeBuddyPlugin extends Plugin {
@@ -125,6 +127,43 @@ export default class CreativeBuddyPlugin extends Plugin {
    * cover picture would tell the interviewer it is looking at a note and hand it a
    * path it cannot read.
    */
+  /**
+   * The folder holding the note you are reading — "" for one at the vault root,
+   * null when nothing is open. Read off the path rather than the file's parent
+   * folder, because Obsidian calls the root folder "/" and the whole index is
+   * keyed on vault-relative paths.
+   */
+  activeFolderDir(): string | null {
+    const file = this.app.workspace.getActiveFile();
+    return file === null ? null : dirName(file.path);
+  }
+
+  /**
+   * Give a folder a charter, so it becomes a project of its own.
+   *
+   * The model is told the moment the write lands, rather than waiting for the
+   * vault event and its read to come back around: the caller binds a view to
+   * this project in the next line, and binding to a dir `graphs()` does not yet
+   * carry is the one thing the graph list exists to prevent.
+   */
+  async createProjectFrom(dir: string): Promise<boolean> {
+    const model = this.model;
+    if (model === null) return false;
+    const edit = charterEdit(model, dir);
+    if (edit === null) return true;
+
+    try {
+      const existing = this.app.vault.getAbstractFileByPath(edit.path);
+      if (existing instanceof TFile) await this.app.vault.modify(existing, edit.content);
+      else await this.app.vault.create(edit.path, edit.content);
+    } catch {
+      new Notice(`Creative Buddy could not write ${edit.path}.`);
+      return false;
+    }
+    model.setFile(edit.path, edit.content);
+    return true;
+  }
+
   activeNoteIn(graphDir: string): { path: string; openQuestions: number } | null {
     const file = this.app.workspace.getActiveFile();
     if (file === null || this.model === null) return null;

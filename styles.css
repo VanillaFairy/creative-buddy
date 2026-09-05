@@ -1065,6 +1065,32 @@
   color: var(--cb-ink);
 }
 
+/* The last row is not a destination but a way to make one, so it takes the
+   accent while keeping every edge the rows above it have — a sibling of the
+   projects, not a control bolted under them. */
+.cb-picker-graphs .cb-picker-offer .cb-picker-name {
+  color: var(--text-accent);
+}
+
+/* Refused: the row is still there, still says which folder and why, and simply
+   cannot be pressed. A folder that vanished would read as a bug. */
+.cb-picker-graphs .cb-picker-offer:disabled {
+  cursor: default;
+}
+
+.cb-picker-graphs .cb-picker-offer:disabled .cb-picker-name {
+  color: var(--cb-faint);
+}
+
+.cb-picker-graphs .cb-picker-offer:disabled .cb-picker-state {
+  font-style: italic;
+}
+
+.cb-picker-graphs .cb-picker-offer:disabled:hover {
+  background: none;
+  padding-left: var(--size-4-3);
+}
+
 /* The quietest thing in the panel: it is there for the one time you need it and
    should not compete with the list you came to read. */
 .cb-picker .cb-picker-hint {

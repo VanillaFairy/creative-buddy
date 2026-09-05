@@ -10,7 +10,7 @@ import { heatClass } from "./heat";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import type { GraphModel } from "../graph/graph-model";
-import { PICKER_EMPTY, noteCount, projectRowLabel, projectRows } from "../project-list";
+import { PICKER_EMPTY, folderOffer, noteCount, offerLabel, projectRowLabel, projectRows } from "../project-list";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const H_GAP = 48;
@@ -90,7 +90,8 @@ export class MindmapView extends ItemView {
     const picker = container.createDiv({ cls: "cb-picker" });
     picker.createEl("h3", { cls: "cb-picker-question", text: "Which project should I draw?" });
     const rows = projectRows(model);
-    if (rows.length === 0) {
+    const offer = folderOffer(model, this.plugin.activeFolderDir());
+    if (rows.length === 0 && offer === null) {
       picker.createEl("p", { text: PICKER_EMPTY });
       return;
     }
@@ -103,6 +104,24 @@ export class MindmapView extends ItemView {
       state.createSpan({ text: noteCount(row.notes) });
       button.onclick = () => this.showGraph(row.dir);
     }
+    if (offer === null) return;
+
+    const adopt = list.createEl("button", {
+      cls: "cb-picker-graph cb-picker-offer",
+      attr: { "aria-label": offerLabel(offer) },
+    });
+    adopt.createSpan({ cls: "cb-picker-name", text: offerLabel(offer) });
+    if (offer.location !== null) adopt.createSpan({ cls: "cb-picker-where", text: offer.location });
+    if (offer.refusal !== null) {
+      adopt.disabled = true;
+      adopt.createSpan({ cls: "cb-picker-state", attr: { "aria-hidden": "true" } }).createSpan({ text: offer.refusal });
+      return;
+    }
+    adopt.onclick = () => {
+      void this.plugin.createProjectFrom(offer.dir).then((done) => {
+        if (done) this.showGraph(offer.dir);
+      });
+    };
   }
 
   private scheduleRedraw(): void {

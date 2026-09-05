@@ -118,3 +118,45 @@ export function folderOffer(model: GraphModel, dir: string | null): FolderOffer 
 export function offerLabel(offer: FolderOffer): string {
   return `Create a project from current folder: ${offer.name}`;
 }
+
+/**
+ * The line under the list. Nothing when the row above can simply be pressed —
+ * telling someone to build a folder by hand beside a button that builds it is
+ * two answers to one question.
+ */
+export function pickerHint(rows: readonly ProjectRow[], offer: FolderOffer | null): string | null {
+  return offer !== null && offer.refusal === null ? null : bootstrapHint(rows);
+}
+
+const CHARTER = "## Charter";
+const SHAPE = "## Shape";
+
+/** The single write that turns a folder into a project. */
+export interface CharterEdit {
+  path: string;
+  content: string;
+}
+
+function hasHeading(text: string, heading: string): boolean {
+  return text.split("\n").some((line) => line.trim() === heading);
+}
+
+/**
+ * What the hub note has to say for `dir` to be a project, and null when it
+ * already says it.
+ *
+ * Both headings, nearly empty, per the bootstrap section of the interviewer's
+ * own prompt: the charter is interviewed, not drafted, so nothing here guesses
+ * at what the project is about. A folder that already keeps a note of its own
+ * name keeps every word of it — the headings go underneath.
+ */
+export function charterEdit(model: GraphModel, dir: string): CharterEdit | null {
+  if (model.graphs().includes(dir)) return null;
+  const path = model.hubPathOf(dir);
+  const existing = model.contentOf(path);
+  if (existing.trim() === "") {
+    return { path, content: `# ${projectName(dir, model.rootName)!}\n\n${CHARTER}\n\n${SHAPE}\n` };
+  }
+  const added = hasHeading(existing, SHAPE) ? [CHARTER] : [CHARTER, SHAPE];
+  return { path, content: `${existing.replace(/\n*$/, "\n")}\n${added.join("\n\n")}\n` };
+}

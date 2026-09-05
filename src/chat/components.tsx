@@ -7,7 +7,15 @@ import { visiblePresets } from "./presets";
 import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
 import { MODEL_CHOICES } from "../settings";
 import { coerce, EFFORT_LABELS, EffortLevel, levelsFor } from "../agent/effort";
-import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
+import {
+  FolderOffer,
+  PICKER_EMPTY,
+  PICKER_INDEXING,
+  ProjectRow,
+  noteCount,
+  offerLabel,
+  projectRowLabel,
+} from "../project-list";
 
 export interface ChatCallbacks {
   /** What you typed, or a preset carrying the name it should be shown under. */
@@ -387,15 +395,22 @@ export function GraphPicker(props: {
   question: string;
   indexing: boolean;
   projects: ProjectRow[];
-  hint?: string;
+  offer?: FolderOffer | null;
+  hint?: string | null;
   onPick(dir: string): void;
+  onAdopt?(dir: string): void;
 }): React.JSX.Element {
+  const offer = props.offer ?? null;
+  // A vault with no projects still has a list when the folder you are reading
+  // could become the first one.
+  const listed = props.projects.length > 0 || offer !== null;
+
   return (
     <div className="cb-picker">
       <h3 className="cb-picker-question">{props.question}</h3>
       {props.indexing ? (
         <p>{PICKER_INDEXING}</p>
-      ) : props.projects.length === 0 ? (
+      ) : !listed ? (
         <p>{PICKER_EMPTY}</p>
       ) : (
         <div className="cb-picker-graphs">
@@ -413,9 +428,25 @@ export function GraphPicker(props: {
               </span>
             </button>
           ))}
+          {offer !== null ? (
+            <button
+              className="cb-picker-graph cb-picker-offer"
+              disabled={offer.refusal !== null}
+              aria-label={offerLabel(offer)}
+              onClick={() => props.onAdopt?.(offer.dir)}
+            >
+              <span className="cb-picker-name">{offerLabel(offer)}</span>
+              {offer.location !== null ? <span className="cb-picker-where">{offer.location}</span> : null}
+              {offer.refusal !== null ? (
+                <span className="cb-picker-state" aria-hidden="true">
+                  <span>{offer.refusal}</span>
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
       )}
-      {props.hint !== undefined ? <p className="cb-picker-hint">{props.hint}</p> : null}
+      {props.hint !== undefined && props.hint !== null ? <p className="cb-picker-hint">{props.hint}</p> : null}
     </div>
   );
 }

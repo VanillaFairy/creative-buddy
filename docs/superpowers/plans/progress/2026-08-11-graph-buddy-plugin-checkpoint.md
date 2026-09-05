@@ -104,6 +104,21 @@ since, in order:
   with it in the same edit. The check is style-aware — graph notes write open
   questions as `- [ ]` boxes because the map counts them, `docs/` as plain
   bullets, so it asks for a bullet of either kind rather than a checkbox.
+- **A project can be made from the picker** (`c4a6fc5` and the wiring beside it)
+  — the last row of both pickers offers the folder holding the note you are
+  reading: *Create a project from current folder: `<name>`*. One click writes
+  `<name>/<name>.md` with an empty `## Charter` and `## Shape` — the shape
+  `system.md`'s bootstrap section specifies — and binds the view, so the charter
+  is interviewed rather than collected in a form. `folderOffer`, `pickerHint` and
+  `charterEdit` in `src/project-list.ts` hold every decision; the two shells only
+  draw and write. The offer is gated on `activeGraphDir()` already answering
+  `null`, and the views already re-rendered on `file-open` and
+  `active-leaf-change`, so no new event wiring was needed. Two refusals are
+  rendered rather than hidden, both the same `findGraphs` rule read from
+  opposite ends: a folder inside a project names its owner, and the vault root
+  says it would hide every other project. A folder that already keeps a note of
+  its own name keeps it — the headings are appended, and a `## Shape` is never
+  added twice.
 
   **`## Closed questions` did not survive the day.** It was built, applied across
   a live graph, and then retired the same afternoon in favour of the rule already

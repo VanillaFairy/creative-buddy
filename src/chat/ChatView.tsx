@@ -27,7 +27,7 @@ import { restorePresetsOpen } from "./presets";
 import { noteAnnouncement } from "./note-context";
 import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
-import { bootstrapHint, projectRows } from "../project-list";
+import { folderOffer, pickerHint, projectRows } from "../project-list";
 import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
 
 /** What a new conversation in this panel starts as. */
@@ -282,6 +282,16 @@ export class ChatView extends ItemView {
     const graphDir = this.plugin.activeGraphDir();
     if (graphDir === null) this.render();
     else this.patch(current.key, { graphDir });
+  }
+
+  /**
+   * Give the folder you are reading a charter, then bind this tab to it. The
+   * write has to land before the bind: a tab pointed at a dir `graphs()` does
+   * not carry is exactly what the graph list exists to prevent. A failed write
+   * has already said so in a notice, and leaves the picker as it was.
+   */
+  private async adopt(key: string, dir: string): Promise<void> {
+    if (await this.plugin.createProjectFrom(dir)) this.patch(key, { graphDir: dir });
   }
 
   private closeTab(index: number): void {
@@ -608,6 +618,8 @@ export class ChatView extends ItemView {
     const session = activeSession(this.list);
     const runtime = this.runtime(session.key);
     const projects = this.plugin.model === null ? [] : projectRows(this.plugin.model);
+    const offer =
+      this.plugin.model === null ? null : folderOffer(this.plugin.model, this.plugin.activeFolderDir());
 
     this.root.render(
       <ChatPanel
@@ -620,10 +632,12 @@ export class ChatView extends ItemView {
         {session.graphDir === null ? (
           <GraphPicker
             question="Which project are we working on?"
-            hint={bootstrapHint(projects)}
+            hint={pickerHint(projects, offer)}
             indexing={this.plugin.model === null}
             projects={projects}
+            offer={offer}
             onPick={(dir) => this.patch(session.key, { graphDir: dir })}
+            onAdopt={(dir) => void this.adopt(session.key, dir)}
           />
         ) : (
           <ChatSurface

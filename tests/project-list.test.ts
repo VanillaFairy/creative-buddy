@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import { GraphModel } from "../src/graph/graph-model";
 import {
   bootstrapHint,
+  charterEdit,
   folderOffer,
   noteCount,
   offerLabel,
+  pickerHint,
   projectRowLabel,
   projectRows,
 } from "../src/project-list";
@@ -178,5 +180,57 @@ describe("offerLabel", () => {
   it("names the folder in the row, as the button that acts on it", () => {
     const offer = { dir: "Harbour", name: "Harbour", location: null, refusal: null };
     expect(offerLabel(offer)).toBe("Create a project from current folder: Harbour");
+  });
+});
+
+describe("pickerHint", () => {
+  const projects = [{ dir: "Kitchen", name: "Kitchen", location: null, notes: 3 }];
+
+  it("says nothing when the row already offers the folder — the button is the answer", () => {
+    const offer = { dir: "Harbour", name: "Harbour", location: null, refusal: null };
+    expect(pickerHint(projects, offer)).toBeNull();
+  });
+
+  it("explains the folder shape when there is no folder to offer", () => {
+    expect(pickerHint(projects, null)).toBe(bootstrapHint(projects));
+  });
+
+  it("still explains it when the folder on offer cannot be taken", () => {
+    const refused = { dir: "Sea Fort/Soundings", name: "Soundings", location: "Sea Fort", refusal: "already part of Sea Fort" };
+    expect(pickerHint(projects, refused)).toBe(bootstrapHint(projects));
+  });
+});
+
+describe("charterEdit", () => {
+  /** The shape assets/prompts/system.md tells the interviewer to bootstrap. */
+  it("writes a fresh hub for a folder that has no note of its own", () => {
+    const model = modelOf("MyVault", { "Harbour/Tide tables.md": note("Harbour") });
+    expect(charterEdit(model, "Harbour")).toEqual({
+      path: "Harbour/Harbour.md",
+      content: "# Harbour\n\n## Charter\n\n## Shape\n",
+    });
+  });
+
+  it("names the note after the folder, however deep it sits", () => {
+    const model = modelOf("MyVault", { "Clips/Sound design/Reel.md": note("Sound design") });
+    expect(charterEdit(model, "Clips/Sound design")!.path).toBe("Clips/Sound design/Sound design.md");
+  });
+
+  it("keeps what the folder's note already says and adds the headings under it", () => {
+    const model = modelOf("MyVault", { "Harbour/Harbour.md": "# Harbour\n\nTide notes.\n" });
+    expect(charterEdit(model, "Harbour")!.content).toBe("# Harbour\n\nTide notes.\n\n## Charter\n\n## Shape\n");
+  });
+
+  /** ## Shape is reserved and belongs to the hub once — never twice. */
+  it("adds no second Shape to a note that already has one", () => {
+    const model = modelOf("MyVault", { "Harbour/Harbour.md": "# Harbour\n\n## Shape\n\n- [[Tides]]\n" });
+    const content = charterEdit(model, "Harbour")!.content;
+    expect(content.match(/^## Shape$/gm)).toHaveLength(1);
+    expect(content).toContain("## Charter");
+  });
+
+  it("has nothing to do for a folder that is a project already", () => {
+    const model = modelOf("MyVault", { "Sea Fort/Sea Fort.md": hub("Sea Fort") });
+    expect(charterEdit(model, "Sea Fort")).toBeNull();
   });
 });

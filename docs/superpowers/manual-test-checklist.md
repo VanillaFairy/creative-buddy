@@ -130,6 +130,22 @@ older than the code.
       bootstrap a new folder for you. In a vault where it is not, the hint
       instead explains the folder-plus-charter shape — it must never point at a
       "whole vault" row that is not on the list.
+- [ ] Open a note in a folder that is not a project → the picker's last row
+      offers **Create a project from current folder: <name>**, with the folder
+      path underneath only when the name alone is ambiguous. Click it → the
+      folder gains `<name>/<name>.md` carrying an empty `## Charter` and
+      `## Shape`, the tab binds to it, and the interviewer opens by asking what
+      it is about. The hint above disappears while the row is offered.
+- [ ] Walk between notes with the picker open → the row follows the folder you
+      are reading, and vanishes when you open a note inside a project. It says
+      **already part of `<project>`** and cannot be clicked for a folder nested
+      inside one, and **would hide every other project** for a note at the vault
+      root.
+- [ ] Adopt a folder that already keeps a note of its own name → every word of
+      that note survives, with the two headings added underneath; a note that
+      already had a `## Shape` does not get a second one.
+- [ ] The same row appears in the map's picker and does the same thing, drawing
+      the new project once it is made.
 - [ ] **Open** the model dropdown in a dark theme → the list itself is dark and
       its rows are readable, not a light popup with washed-out grey text. Switch
       Obsidian to a light theme and open it again → it follows. Same for the
