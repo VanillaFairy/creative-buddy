@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { GraphModel } from "../src/graph/graph-model";
-import { bootstrapHint, noteCount, projectRowLabel, projectRows } from "../src/project-list";
+import {
+  bootstrapHint,
+  folderOffer,
+  noteCount,
+  offerLabel,
+  projectRowLabel,
+  projectRows,
+} from "../src/project-list";
 
 /** A minimal hub: the folder's own note carrying the heading that makes it a graph. */
 function hub(title: string): string {
@@ -103,5 +110,73 @@ describe("bootstrapHint", () => {
 
   it("still says something useful for a vault with no projects at all", () => {
     expect(bootstrapHint([])).toContain("## Charter");
+  });
+});
+
+describe("folderOffer", () => {
+  const vault = {
+    "Sea Fort/Sea Fort.md": hub("Sea Fort"),
+    "Sea Fort/Soundings/Depths.md": note("Sea Fort"),
+    "Harbour/Tide tables.md": note("Harbour"),
+    "Clips/Sound design/Reel.md": note("Sound design"),
+    "Stray.md": "Nothing here.\n",
+  };
+
+  it("offers a folder that no project owns", () => {
+    expect(folderOffer(modelOf("MyVault", vault), "Harbour")).toEqual({
+      dir: "Harbour",
+      name: "Harbour",
+      location: null,
+      refusal: null,
+    });
+  });
+
+  it("says where a nested folder sits, so two of a name can be told apart", () => {
+    expect(folderOffer(modelOf("MyVault", vault), "Clips/Sound design")).toMatchObject({
+      name: "Sound design",
+      location: "Clips",
+      refusal: null,
+    });
+  });
+
+  /** findGraphs stops at the first project it finds, so this folder can never be one. */
+  it("refuses a folder inside a project, and names the project holding it", () => {
+    expect(folderOffer(modelOf("MyVault", vault), "Sea Fort/Soundings")).toMatchObject({
+      name: "Soundings",
+      refusal: "already part of Sea Fort",
+    });
+  });
+
+  /** A charter on the root note makes it the only project findGraphs can reach. */
+  it("refuses the vault root, because a project there would hide the rest", () => {
+    expect(folderOffer(modelOf("MyVault", vault), "")).toMatchObject({
+      dir: "",
+      name: "MyVault",
+      location: "the whole vault",
+      refusal: "would hide every other project",
+    });
+  });
+
+  it("offers nothing for a folder that is already a project — the list above holds it", () => {
+    expect(folderOffer(modelOf("MyVault", vault), "Sea Fort")).toBeNull();
+  });
+
+  it("offers nothing when no note is open", () => {
+    expect(folderOffer(modelOf("MyVault", vault), null)).toBeNull();
+  });
+
+  it("names a root project as the owner by the vault's name", () => {
+    const model = modelOf("MyVault", {
+      "MyVault.md": hub("MyVault"),
+      "Harbour/Tide tables.md": note("MyVault"),
+    });
+    expect(folderOffer(model, "Harbour")!.refusal).toBe("already part of MyVault");
+  });
+});
+
+describe("offerLabel", () => {
+  it("names the folder in the row, as the button that acts on it", () => {
+    const offer = { dir: "Harbour", name: "Harbour", location: null, refusal: null };
+    expect(offerLabel(offer)).toBe("Create a project from current folder: Harbour");
   });
 });

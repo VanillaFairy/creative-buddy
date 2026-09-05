@@ -1,6 +1,7 @@
 import type { GraphModel } from "./graph/graph-model";
 import { projectName } from "./view-title";
 import { baseName } from "./graph/types";
+import { graphOfNote } from "./graph/ownership";
 
 /**
  * One project as the picker offers it. The dir is what a conversation or a map
@@ -68,4 +69,52 @@ export function projectRows(model: GraphModel): ProjectRow[] {
     location: locationOf(dir),
     notes: model.stats(dir)?.nodes ?? 0,
   }));
+}
+
+/**
+ * The folder you have open, offered as a project of its own.
+ *
+ * A refusal is a row you can see and cannot press. It is there because a folder
+ * that simply goes missing reads as a bug, while one that names the project
+ * holding it is an answer.
+ */
+export interface FolderOffer {
+  dir: string;
+  name: string;
+  /** Where it sits — null when its name already says. */
+  location: string | null;
+  /** Why it cannot become a project; null when it can. */
+  refusal: string | null;
+}
+
+/**
+ * What the picker offers for `dir`, the folder holding the note being read.
+ *
+ * Null twice over: nothing is open, or the folder is a project already and the
+ * list above holds it. Otherwise a row, refused or not.
+ *
+ * `graphOfNote` answers for a folder path exactly as it does for a note — the
+ * question is the same prefix match — and it deliberately does not count a
+ * folder as its own owner, which is why the list membership is asked first.
+ */
+export function folderOffer(model: GraphModel, dir: string | null): FolderOffer | null {
+  if (dir === null) return null;
+  const graphs = model.graphs();
+  if (graphs.includes(dir)) return null;
+
+  const row = { dir, name: projectName(dir, model.rootName)!, location: locationOf(dir) };
+  // findGraphs stops at the first project it finds, so a charter on the root
+  // note would leave the root the only project the plugin can still see.
+  if (dir === "") return { ...row, refusal: "would hide every other project" };
+
+  const owner = graphOfNote(graphs, dir);
+  return {
+    ...row,
+    refusal: owner === null ? null : `already part of ${projectName(owner, model.rootName)}`,
+  };
+}
+
+/** The button's own words, so both pickers say them the same way. */
+export function offerLabel(offer: FolderOffer): string {
+  return `Create a project from current folder: ${offer.name}`;
 }
