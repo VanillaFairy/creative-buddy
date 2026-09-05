@@ -38,6 +38,15 @@ export function levelsFor(model: string): EffortLevel[] {
 }
 
 /**
+ * A stored preference read back as a level. Says nothing about any model — a
+ * conversation keeps the level you chose even while it sits on a model that
+ * cannot use it, so switching back gives you what you had.
+ */
+export function asLevel(stored: unknown, fallback: EffortLevel = DEFAULT_EFFORT): EffortLevel {
+  return LEVELS.includes(stored as EffortLevel) ? (stored as EffortLevel) : fallback;
+}
+
+/**
  * The effort a session should actually run at: null when the model has none,
  * otherwise a level it honours — falling back to the default rather than
  * passing on something unrecognised.
@@ -45,5 +54,6 @@ export function levelsFor(model: string): EffortLevel[] {
 export function coerce(model: string, stored: unknown): EffortLevel | null {
   const levels = levelsFor(model);
   if (levels.length === 0) return null;
-  return levels.includes(stored as EffortLevel) ? (stored as EffortLevel) : DEFAULT_EFFORT;
+  const level = asLevel(stored);
+  return levels.includes(level) ? level : DEFAULT_EFFORT;
 }

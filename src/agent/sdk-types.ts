@@ -2,6 +2,8 @@
  *  `query` from @anthropic-ai/claude-agent-sdk satisfies these shapes; keeping
  *  them local lets tests script the boundary without the SDK's 37-member unions. */
 
+import { EffortLevel } from "./effort";
+
 export interface SdkUserMessage {
   type: "user";
   message: { role: "user"; content: string };
@@ -14,6 +16,8 @@ export type SdkMessage = Record<string, unknown> & { type: string; subtype?: str
 export interface SdkQueryHandle extends AsyncIterable<SdkMessage> {
   interrupt(): Promise<unknown>;
   setModel(model?: string): Promise<void>;
+  /** null clears the level, which is what a model without effort wants. */
+  applyFlagSettings(settings: { effortLevel: EffortLevel | null }): Promise<void>;
   close(): void;
 }
 

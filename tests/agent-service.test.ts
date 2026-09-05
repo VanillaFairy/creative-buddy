@@ -4,7 +4,7 @@ import type { SdkMessage, SdkUserMessage, QueryFn, SdkQueryHandle } from "../src
 
 /** A scripted fake for the SDK boundary. */
 function fakeQuery(script: SdkMessage[]) {
-  const captured: { options?: Record<string, unknown>; prompt?: AsyncIterable<SdkUserMessage>; sent: SdkUserMessage[] } = { sent: [] };
+  const captured: { options?: Record<string, unknown>; prompt?: AsyncIterable<SdkUserMessage>; sent: SdkUserMessage[]; handle?: SdkQueryHandle } = { sent: [] };
   const queryFn: QueryFn = ({ prompt, options }) => {
     captured.options = options;
     captured.prompt = prompt;
@@ -19,8 +19,10 @@ function fakeQuery(script: SdkMessage[]) {
       },
       interrupt: vi.fn(async () => undefined),
       setModel: vi.fn(async () => undefined),
+      applyFlagSettings: vi.fn(async () => undefined),
       close: vi.fn(),
     };
+    captured.handle = handle;
     return handle;
   };
   return { queryFn, captured };
@@ -31,6 +33,7 @@ const CONFIG: SessionConfig = {
   graphDir: "Noir game",
   hubPath: "Noir game/Noir game.md",
   model: "claude-sonnet-5",
+  effort: "high",
   claudePath: "C:/fake/claude.exe",
   todayIso: "2026-08-11",
   stats: { nodes: 4, hubChildren: 2 },
@@ -339,5 +342,71 @@ describe("approval without a surface", () => {
     const canUse = captured.options!["canUseTool"] as CanUse;
     const result = await canUse("Write", { file_path: "C:/elsewhere/x.md", content: "x" });
     expect(result["behavior"]).toBe("deny");
+  });
+});
+
+describe("effort", () => {
+  const flagCalls = (captured: { handle?: SdkQueryHandle }): unknown[] =>
+    (captured.handle!.applyFlagSettings as unknown as { mock: { calls: unknown[][] } }).mock.calls.map((c) => c[0]);
+
+  it("sends the conversation's level on a model that honours it", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start({ ...CONFIG, effort: "xhigh" }, {});
+    session.sendUserMessage("hello");
+    await session.done();
+    expect(captured.options!["effort"]).toBe("xhigh");
+  });
+
+  it("omits effort entirely for a model that has none", async () => {
+    // Haiku rejects the parameter, and a rejected option fails the whole session.
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start(
+      { ...CONFIG, model: "claude-haiku-4-5", effort: "max" },
+      {},
+    );
+    session.sendUserMessage("hello");
+    await session.done();
+    expect(captured.options!["effort"]).toBeUndefined();
+    expect("effort" in captured.options!).toBe(false);
+  });
+
+  it("does not pass on a stored level that is not a level", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start(
+      { ...CONFIG, effort: "ludicrous" as never },
+      {},
+    );
+    session.sendUserMessage("hello");
+    await session.done();
+    expect(captured.options!["effort"]).toBe("high");
+  });
+
+  it("applies a switch to the running session", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start(CONFIG, {});
+    session.sendUserMessage("hello");
+    await session.setEffort("low");
+    await session.done();
+    expect(flagCalls(captured)).toEqual([{ effortLevel: "low" }]);
+  });
+
+  it("clears the level when the conversation moves onto a model without effort", async () => {
+    // The preference survives on the session; what the CLI is told does not.
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start({ ...CONFIG, effort: "max" }, {});
+    session.sendUserMessage("hello");
+    await session.setModel("claude-haiku-4-5");
+    await session.done();
+    expect(flagCalls(captured)).toEqual([{ effortLevel: null }]);
+  });
+
+  it("restores the level when the conversation moves back onto a model with effort", async () => {
+    const { queryFn, captured } = fakeQuery([INIT, RESULT]);
+    const session = new AgentService({ queryFn }).start({ ...CONFIG, effort: "max" }, {});
+    session.sendUserMessage("hello");
+    await session.setModel("claude-haiku-4-5");
+    await session.setModel("claude-opus-5");
+    await session.done();
+    expect(flagCalls(captured)).toEqual([{ effortLevel: null }, { effortLevel: "max" }]);
   });
 });

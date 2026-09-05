@@ -1,3 +1,4 @@
+import { asLevel, EffortLevel } from "../agent/effort";
 import { TranscriptItem } from "./transcript";
 
 /**
@@ -13,8 +14,16 @@ export interface ChatSession {
   key: string;
   graphDir: string | null;
   model: string;
+  /** Kept even on a model with no effort, so switching back restores it. */
+  effort: EffortLevel;
   sessionId: string | null;
   items: TranscriptItem[];
+}
+
+/** What a new conversation starts as, before you have said anything to it. */
+export interface SessionSeed {
+  model: string;
+  effort: EffortLevel;
 }
 
 export interface SessionList {
@@ -24,8 +33,8 @@ export interface SessionList {
   seq: number;
 }
 
-export function emptySession(key: string, model: string, graphDir: string | null = null): ChatSession {
-  return { key, graphDir, model, sessionId: null, items: [] };
+export function emptySession(key: string, seed: SessionSeed, graphDir: string | null = null): ChatSession {
+  return { key, graphDir, model: seed.model, effort: seed.effort, sessionId: null, items: [] };
 }
 
 /**
@@ -34,9 +43,9 @@ export function emptySession(key: string, model: string, graphDir: string | null
  * did not; a second conversation on a project that already has one is allowed,
  * because asking for a new conversation twice is a thing people do.
  */
-export function addSession(list: SessionList, model: string, graphDir: string | null = null): SessionList {
+export function addSession(list: SessionList, seed: SessionSeed, graphDir: string | null = null): SessionList {
   return {
-    sessions: [...list.sessions, emptySession(`t${list.seq}`, model, graphDir)],
+    sessions: [...list.sessions, emptySession(`t${list.seq}`, seed, graphDir)],
     active: list.sessions.length,
     seq: list.seq + 1,
   };
@@ -80,14 +89,14 @@ export function isPristine(session: ChatSession): boolean {
  * never rebound either: its Claude session and transcript belong to the project
  * it was opened on, so a fresh tab is the only honest place to put another.
  */
-export function openOn(list: SessionList, graphDir: string, model: string): SessionList {
+export function openOn(list: SessionList, graphDir: string, seed: SessionSeed): SessionList {
   // Returned unchanged, so the caller has nothing to save and nothing to redraw.
   if (activeSession(list).graphDir === graphDir) return list;
   const existing = list.sessions.findIndex((s) => s.graphDir === graphDir);
   if (existing !== -1) return activate(list, existing);
   // The blank conversation you are sitting on is the one to use; anything in use
   // keeps its own project and gets a new tab beside it.
-  if (!isPristine(activeSession(list))) return addSession(list, model, graphDir);
+  if (!isPristine(activeSession(list))) return addSession(list, seed, graphDir);
   const target = activeSession(list);
   return replaceSession(list, target.key, { ...target, graphDir });
 }
@@ -105,7 +114,7 @@ export function activeSession(list: SessionList): ChatSession {
  * strip existed, so an upgrade keeps the transcripts that are already on disk
  * rather than opening a blank panel over them.
  */
-export function restoreSessions(raw: unknown, defaultModel: string): SessionList {
+export function restoreSessions(raw: unknown, seed: SessionSeed): SessionList {
   const state = (raw ?? {}) as Record<string, unknown>;
   const stored = state["sessions"];
   const rows: unknown[] = Array.isArray(stored)
@@ -114,8 +123,8 @@ export function restoreSessions(raw: unknown, defaultModel: string): SessionList
       ? [state]
       : [];
 
-  const sessions = rows.map((row, i) => restoreSession(row, defaultModel, `t${i}`));
-  if (sessions.length === 0) sessions.push(emptySession("t0", defaultModel));
+  const sessions = rows.map((row, i) => restoreSession(row, seed, `t${i}`));
+  if (sessions.length === 0) sessions.push(emptySession("t0", seed));
 
   const active = Number.isInteger(state["active"]) ? (state["active"] as number) : 0;
   return {
@@ -130,13 +139,16 @@ function isLegacyPanel(state: Record<string, unknown>): boolean {
   return "graphDir" in state || "items" in state || "sessionId" in state;
 }
 
-function restoreSession(raw: unknown, defaultModel: string, fallbackKey: string): ChatSession {
+function restoreSession(raw: unknown, seed: SessionSeed, fallbackKey: string): ChatSession {
   const row = (raw ?? {}) as Record<string, unknown>;
   const items = Array.isArray(row["items"]) ? (row["items"] as TranscriptItem[]) : [];
   return {
     key: typeof row["key"] === "string" && row["key"] !== "" ? row["key"] : fallbackKey,
     graphDir: typeof row["graphDir"] === "string" ? row["graphDir"] : null,
-    model: typeof row["model"] === "string" ? row["model"] : defaultModel,
+    model: typeof row["model"] === "string" ? row["model"] : seed.model,
+    // A panel written before effort existed has none, and workspace.json is a
+    // file anyone can edit, so the stored value is read rather than trusted.
+    effort: asLevel(row["effort"], seed.effort),
     sessionId: typeof row["sessionId"] === "string" ? row["sessionId"] : null,
     items: items.map(restoreItem),
   };

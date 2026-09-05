@@ -6,12 +6,14 @@ import { draggedHeight, heightBounds, pxLength } from "./composer-size";
 import { visiblePresets } from "./presets";
 import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
 import { MODEL_CHOICES } from "../settings";
+import { coerce, EFFORT_LABELS, EffortLevel, levelsFor } from "../agent/effort";
 import { PICKER_EMPTY, PICKER_INDEXING, ProjectRow, noteCount, projectRowLabel } from "../project-list";
 
 export interface ChatCallbacks {
   /** What you typed, or a preset carrying the name it should be shown under. */
   onSend(message: Outgoing): void;
   onModelChange(model: string): void;
+  onEffortChange(effort: EffortLevel): void;
   onApprove(id: string, allow: boolean, message?: string): void;
   /** Stop the turn in flight and take back everything still waiting behind it. */
   onInterrupt(): void;
@@ -82,6 +84,8 @@ export function ChatPanel(props: {
 
 export function ChatSurface(props: {
   model: string;
+  /** The conversation's preference; the header shows what the model will honour. */
+  effort: EffortLevel;
   busy: boolean;
   status: string | null;
   items: TranscriptItem[];
@@ -92,6 +96,7 @@ export function ChatSurface(props: {
   callbacks: ChatCallbacks;
 }): React.JSX.Element {
   const { callbacks } = props;
+  const effort = coerce(props.model, props.effort);
   const [draft, setDraft] = React.useState("");
   const listRef = React.useRef<HTMLDivElement>(null);
   const boxRef = React.useRef<HTMLTextAreaElement>(null);
@@ -196,6 +201,13 @@ export function ChatSurface(props: {
               <option key={id} value={id}>{label}</option>
             ))}
           </select>
+          {effort === null ? null : (
+            <select className="cb-quiet-control" value={effort} onChange={(e) => callbacks.onEffortChange(e.target.value as EffortLevel)}>
+              {levelsFor(props.model).map((level) => (
+                <option key={level} value={level}>{EFFORT_LABELS[level]}</option>
+              ))}
+            </select>
+          )}
         </div>
       </header>
       <div className="cb-chat-list" ref={listRef}>

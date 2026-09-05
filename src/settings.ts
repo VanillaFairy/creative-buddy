@@ -1,10 +1,12 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import { execFile } from "node:child_process";
+import { DEFAULT_EFFORT, EFFORT_LABELS, EffortLevel, levelsFor } from "./agent/effort";
 import type CreativeBuddyPlugin from "./main";
 
 export interface CreativeBuddySettings {
   claudePath: string;        // "" = auto-detect
-  defaultModel: string;      // claude-opus-5 | claude-sonnet-5 | claude-haiku-4-5
+  defaultModel: string;      // a key of MODEL_CHOICES
+  defaultEffort: EffortLevel; // seeds new conversations; ignored by models without effort
   apiKeyOverride: string;    // "" = subscription (the path)
   openInMainTab: boolean;    // false = the right sidebar
 }
@@ -12,11 +14,13 @@ export interface CreativeBuddySettings {
 export const DEFAULT_SETTINGS: CreativeBuddySettings = {
   claudePath: "",
   defaultModel: "claude-sonnet-5",
+  defaultEffort: DEFAULT_EFFORT,
   apiKeyOverride: "",
   openInMainTab: false,
 };
 
 export const MODEL_CHOICES: Record<string, string> = {
+  "claude-fable-5-1": "Fable 5.1 — ultimate mastermind (may use credits)",
   "claude-opus-5": "Opus 5 — deepest interviewer",
   "claude-sonnet-5": "Sonnet 5 — the daily default",
   "claude-haiku-4-5": "Haiku 4.5 — quick and cheap",
@@ -62,8 +66,27 @@ export class CreativeBuddySettingTab extends PluginSettingTab {
         dd.setValue(this.plugin.settings.defaultModel).onChange(async (value) => {
           this.plugin.settings.defaultModel = value;
           await this.plugin.saveSettings();
+          // The effort row below belongs to this model, so it is redrawn rather
+          // than left offering levels the new model would reject.
+          this.display();
         });
       });
+
+    // Kept in settings even while hidden, so switching off a model without
+    // effort brings back the level you had rather than the default.
+    const effortLevels = levelsFor(this.plugin.settings.defaultModel);
+    if (effortLevels.length > 0) {
+      new Setting(containerEl)
+        .setName("Default effort")
+        .setDesc("How hard the interviewer thinks. Each conversation can change it mid-thread.")
+        .addDropdown((dd) => {
+          for (const level of effortLevels) dd.addOption(level, EFFORT_LABELS[level]);
+          dd.setValue(this.plugin.settings.defaultEffort).onChange(async (value) => {
+            this.plugin.settings.defaultEffort = value as EffortLevel;
+            await this.plugin.saveSettings();
+          });
+        });
+    }
 
     new Setting(containerEl)
       .setName("API key override")

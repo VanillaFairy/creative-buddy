@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { coerce, DEFAULT_EFFORT, EFFORT_LABELS, EffortLevel, LEVELS, levelsFor } from "../src/agent/effort";
+import { asLevel, coerce, DEFAULT_EFFORT, EFFORT_LABELS, EffortLevel, LEVELS, levelsFor } from "../src/agent/effort";
 
 describe("levelsFor", () => {
   it("gives every level to the models that honour every level", () => {
@@ -46,6 +46,24 @@ describe("coerce", () => {
 
   it("defaults to what the CLI would have done unasked", () => {
     expect(DEFAULT_EFFORT).toBe("high");
+  });
+});
+
+describe("asLevel", () => {
+  it("passes a real level through", () => {
+    expect(asLevel("xhigh")).toBe("xhigh");
+  });
+
+  it("says nothing about models — a preference outlives the model it was set on", () => {
+    // The conversation may be sitting on Haiku right now; the level it keeps is
+    // still the one to restore when it moves back to a model that has effort.
+    expect(asLevel("max")).toBe("max");
+  });
+
+  it("falls back when the stored value is not a level", () => {
+    expect(asLevel("banana")).toBe(DEFAULT_EFFORT);
+    expect(asLevel(undefined)).toBe(DEFAULT_EFFORT);
+    expect(asLevel(null, "low")).toBe("low");
   });
 });
 

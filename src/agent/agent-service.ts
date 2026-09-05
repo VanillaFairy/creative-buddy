@@ -2,6 +2,7 @@ import { GraphStats } from "../graph/validation";
 import { Problem } from "../graph/types";
 import { buildSystemPrompt, buildSessionPreamble } from "./prompts";
 import { decideToolUse, targetPathOf, zeroByteWriteMessage, PermissionContext } from "./permissions";
+import { coerce, EffortLevel } from "./effort";
 import { KG_SCOUT } from "./kg-scout";
 import { MessageChannel, QueryFn, SdkMessage, SdkQueryHandle } from "./sdk-types";
 
@@ -10,6 +11,8 @@ export interface SessionConfig {
   graphDir: string;
   hubPath: string;
   model: string;
+  /** The conversation's preference. Dropped when the model has no effort. */
+  effort: EffortLevel;
   claudePath: string;
   todayIso: string;
   stats: GraphStats;
@@ -52,6 +55,7 @@ export interface SessionHandle {
   sendUserMessage(text: string): void;
   interrupt(): Promise<void>;
   setModel(model: string): Promise<void>;
+  setEffort(effort: EffortLevel): Promise<void>;
   sessionId(): string | null;
   done(): Promise<void>;
   dispose(): void;
@@ -203,6 +207,13 @@ export class AgentService {
       },
       stderr: (data: string) => events.onStderr?.(data),
     };
+    // Effort and model are coupled, and the live session is what owns the pair:
+    // switching either one has to re-answer "what may this model be told?".
+    let currentModel = config.model;
+    let currentEffort = config.effort;
+    const startingEffort = coerce(currentModel, currentEffort);
+    if (startingEffort !== null) options["effort"] = startingEffort;
+
     if (config.resumeSessionId !== undefined) options["resume"] = config.resumeSessionId;
 
     let handle: SdkQueryHandle;
@@ -212,6 +223,11 @@ export class AgentService {
       events.onError?.(error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
+
+    /** null clears the level, so moving onto a model without effort says so. */
+    const pushEffort = async (): Promise<void> => {
+      await handle.applyFlagSettings({ effortLevel: coerce(currentModel, currentEffort) });
+    };
 
     let ended = false;
     const donePromise = (async () => {
@@ -239,7 +255,13 @@ export class AgentService {
         await handle.interrupt();
       },
       setModel: async (model) => {
+        currentModel = model;
         await handle.setModel(model);
+        await pushEffort();
+      },
+      setEffort: async (effort) => {
+        currentEffort = effort;
+        await pushEffort();
       },
       sessionId: () => currentSessionId,
       done: async () => {

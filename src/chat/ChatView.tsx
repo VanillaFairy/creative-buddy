@@ -3,11 +3,14 @@ import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
 import type CreativeBuddyPlugin from "../main";
 import { AgentService, SessionHandle } from "../agent/agent-service";
+import { EffortLevel } from "../agent/effort";
+import type { CreativeBuddySettings } from "../settings";
 import { reduceTranscript, TranscriptEvent } from "./transcript";
 import { ChatCallbacks, ChatPanel, ChatSurface, ChatTab, GraphPicker } from "./components";
 import {
   ChatSession,
   SessionList,
+  SessionSeed,
   activate,
   activeSession,
   addSession,
@@ -26,6 +29,11 @@ import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
 import { bootstrapHint, projectRows } from "../project-list";
 import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
+
+/** What a new conversation in this panel starts as. */
+function seedFrom(settings: CreativeBuddySettings): SessionSeed {
+  return { model: settings.defaultModel, effort: settings.defaultEffort };
+}
 
 export const CHAT_VIEW_TYPE = "creative-buddy-chat";
 
@@ -71,7 +79,7 @@ export class ChatView extends ItemView {
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
-    this.list = restoreSessions(undefined, plugin.settings.defaultModel);
+    this.list = restoreSessions(undefined, seedFrom(plugin.settings));
   }
 
   getViewType(): string { return CHAT_VIEW_TYPE; }
@@ -86,6 +94,7 @@ export class ChatView extends ItemView {
         key: s.key,
         graphDir: s.graphDir,
         model: s.model,
+        effort: s.effort,
         sessionId: s.sessionId,
         items: s.items,
       })),
@@ -96,7 +105,7 @@ export class ChatView extends ItemView {
 
   async setState(state: unknown, result: unknown): Promise<void> {
     this.presetsShown = restorePresetsOpen(state);
-    const restored = restoreSessions(state, this.plugin.settings.defaultModel);
+    const restored = restoreSessions(state, seedFrom(this.plugin.settings));
     // Drop anything live whose conversation this state does not contain, or
     // which was rebound to another graph — a handle outliving its graph would
     // go on writing into the old one.
@@ -226,7 +235,7 @@ export class ChatView extends ItemView {
    * both are writing to the same graph.
    */
   private newTab(): void {
-    this.list = addSession(this.list, this.plugin.settings.defaultModel, this.plugin.activeGraphDir());
+    this.list = addSession(this.list, seedFrom(this.plugin.settings), this.plugin.activeGraphDir());
     this.app.workspace.requestSaveLayout();
     this.render();
   }
@@ -242,7 +251,7 @@ export class ChatView extends ItemView {
    * and another blank tab would not be an answer.
    */
   openConversation(graphDir: string | null): void {
-    const next = graphDir === null ? this.list : openOn(this.list, graphDir, this.plugin.settings.defaultModel);
+    const next = graphDir === null ? this.list : openOn(this.list, graphDir, seedFrom(this.plugin.settings));
     if (next !== this.list) {
       this.list = next;
       this.app.workspace.requestSaveLayout();
@@ -343,6 +352,7 @@ export class ChatView extends ItemView {
           graphDir,
           hubPath: model.hubPathOf(graphDir),
           model: session.model,
+          effort: session.effort,
           claudePath,
           todayIso,
           stats,
@@ -483,6 +493,13 @@ export class ChatView extends ItemView {
         .handle?.setModel(model)
         .catch(() => new Notice("Model switch failed — the session keeps its current model."));
     },
+    onEffortChange: (effort: EffortLevel): void => {
+      const session = activeSession(this.list);
+      this.patch(session.key, { effort });
+      this.runtime(session.key)
+        .handle?.setEffort(effort)
+        .catch(() => new Notice("Effort switch failed — the session keeps its current level."));
+    },
     onApprove: (id: string, allow: boolean, message?: string): void => {
       const session = activeSession(this.list);
       const runtime = this.runtime(session.key);
@@ -593,6 +610,7 @@ export class ChatView extends ItemView {
         ) : (
           <ChatSurface
             model={session.model}
+            effort={session.effort}
             busy={runtime.busy}
             status={runtime.status}
             items={session.items}
