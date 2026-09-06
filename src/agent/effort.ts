@@ -17,11 +17,11 @@ export const LEVELS: readonly EffortLevel[] = ["low", "medium", "high", "xhigh",
 export const DEFAULT_EFFORT: EffortLevel = "high";
 
 export const EFFORT_LABELS: Record<EffortLevel, string> = {
-  low: "Low — file it and move on",
-  medium: "Medium — balanced",
-  high: "High — the default",
-  xhigh: "Extra high — a long grilling",
-  max: "Max — no ceiling",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "Extra high",
+  max: "Max",
 };
 
 // Only the models the picker offers. Anything else is unknown rather than

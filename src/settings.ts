@@ -20,10 +20,10 @@ export const DEFAULT_SETTINGS: CreativeBuddySettings = {
 };
 
 export const MODEL_CHOICES: Record<string, string> = {
-  "claude-fable-5-1": "Fable 5.1 — ultimate mastermind",
-  "claude-opus-5": "Opus 5 — deepest interviewer",
-  "claude-sonnet-5": "Sonnet 5 — the daily default",
-  "claude-haiku-4-5": "Haiku 4.5 — quick and cheap",
+  "claude-fable-5-1": "Fable 5.1",
+  "claude-opus-5": "Opus 5",
+  "claude-sonnet-5": "Sonnet 5",
+  "claude-haiku-4-5": "Haiku 4.5",
 };
 
 export class CreativeBuddySettingTab extends PluginSettingTab {

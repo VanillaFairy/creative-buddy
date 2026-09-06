@@ -68,11 +68,15 @@ for that billing path, and Claude Code's own picker already flags it there.
 `MODEL_CHOICES` gains one entry, at the top:
 
 ```
-claude-fable-5-1  Fable 5.1 — ultimate mastermind
-claude-opus-5     Opus 5 — deepest interviewer
-claude-sonnet-5   Sonnet 5 — the daily default
-claude-haiku-4-5  Haiku 4.5 — quick and cheap
+claude-fable-5-1  Fable 5.1
+claude-opus-5     Opus 5
+claude-sonnet-5   Sonnet 5
+claude-haiku-4-5  Haiku 4.5
 ```
+
+(revised 2026-09-06: the labels dropped their descriptors — see the closed
+question below — so the dropdown now just names the model and, for effort,
+the level.)
 
 ### `src/agent/effort.ts`, the one new rule
 
@@ -147,11 +151,16 @@ natural rendering, and a permanently-disabled control that explains itself is
 more UI than the fact deserves.
 
 **Q. Where does the Fable usage-credits warning go?**
-A. Nowhere in this plugin's UI (revised 2026-09-06; the first build put it in
-the option label). Claude Code's own model picker already surfaces "Requires
-usage credits" when it applies, and a plugin-side warning risked going stale
-against that — Anthropic's billing rules change more often than this plugin's
-release cadence. `MODEL_CHOICES` labels stay purely descriptive.
+A. Nowhere in this plugin's UI. Claude Code's own model picker already
+surfaces "Requires usage credits" when it applies, and a plugin-side warning
+risked going stale against that — Anthropic's billing rules change more often
+than this plugin's release cadence.
+
+**Q. Should the labels carry a one-line descriptor ("deepest interviewer") or just the name?**
+A. Just the name (revised 2026-09-06; the first build wrote a descriptor per
+model and per effort level). A descriptor is one more thing to keep honest as
+Anthropic's own model positioning shifts, for a dropdown whose job is just to
+tell two model names or five effort levels apart.
 
 **Q. Should the level list come from the CLI's supportedModels() instead of a table?**
 A. No. `supportedModels()` hangs off a running query handle, so the settings tab
