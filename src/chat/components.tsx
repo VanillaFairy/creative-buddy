@@ -23,7 +23,7 @@ export interface ChatCallbacks {
   onModelChange(model: string): void;
   onEffortChange(effort: EffortLevel): void;
   onApprove(id: string, allow: boolean, message?: string): void;
-  /** Stop the turn in flight and take back everything still waiting behind it. */
+  /** Stop the turn in flight. What is queued behind it still goes out. */
   onInterrupt(): void;
   /** Take one waiting message back, or put a canceled one back in line. */
   onQueuedCanceled(index: number, canceled: boolean): void;
@@ -111,9 +111,10 @@ export function ChatSurface(props: {
   // null until you drag the grip, so min-height governs the resting size and
   // the CSS stays in charge of what "three lines" means.
   const [boxHeight, setBoxHeight] = React.useState<number | null>(null);
-  // Anything the agent is spending on your behalf, in flight or lined up behind
-  // it. It is what the composer offers to stop, and what Escape stops.
-  const running = props.busy || hasWaiting(props.queued);
+  // What the agent is spending on your behalf right now — the turn itself, and
+  // nothing else. A stop is about this turn only, and a message still waiting
+  // has cost nothing yet, so there is nothing there for a stop to reach.
+  const running = props.busy;
   // How much transcript sat below the fold when a resize began. See
   // scroll-anchor.ts for why that is the number worth holding.
   const anchorRef = React.useRef<number | null>(null);

@@ -61,8 +61,8 @@ interface Runtime {
   /**
    * Whether the turn in flight is one you stopped. The SDK reports an aborted
    * turn as an error, indistinguishable from one that failed, so the only
-   * witness to the difference is the side that asked for the stop. Cleared at
-   * the top of every send, so it can only ever describe the turn it was set in.
+   * witness to the difference is the side that asked for the stop. Consumed by
+   * the result it describes, so it can only ever describe the turn it was set in.
    */
   stopping: boolean;
 }
@@ -406,10 +406,16 @@ export class ChatView extends ItemView {
           },
           onResult: (result) => {
             runtime.busy = false;
+            // Consumed here rather than cleared on the next send: with the queue
+            // no longer taken back by a stop, the message behind a stopped turn
+            // can go out before its result lands, and clearing on the way past
+            // would leave the stop reported as a failure.
+            const stopped = runtime.stopping;
+            runtime.stopping = false;
             this.dispatch(key, {
               type: "result",
               costUsd: result.totalCostUsd,
-              stopped: runtime.stopping,
+              stopped,
               isError: result.isError,
               resultText: result.resultText,
             });
@@ -433,6 +439,9 @@ export class ChatView extends ItemView {
             // taken back rather than quietly restarting claude.exe to spend on
             // messages you queued against a session that no longer exists.
             runtime.queue = cancelAll(runtime.queue);
+            // No result is coming to consume it — the turn it described died
+            // with the process, and it must not describe the next one.
+            runtime.stopping = false;
             // The next send is a fresh process, so it gets told which note you are
             // on again — the same rule a reload follows, for the same reason.
             runtime.announced = undefined;
@@ -490,7 +499,6 @@ export class ChatView extends ItemView {
       return;
     }
     runtime.busy = true;
-    runtime.stopping = false;
     this.dispatch(key, { type: "user-sent", text: step.send.text, label: step.send.label });
     // The transcript keeps what was said; the note line is plumbing that rides
     // along with it, like the session preamble, and is not part of the record.
@@ -540,9 +548,10 @@ export class ChatView extends ItemView {
       // So the turn's own rule can say you stopped it rather than reporting the
       // abort the SDK is about to flag as a failure.
       runtime.stopping = true;
-      // Stopping is about not spending any more, so what was lined up behind
-      // this turn comes back too rather than going out one beat later.
-      runtime.queue = cancelAll(runtime.queue);
+      // Stopping is about this turn and only this turn. What is lined up behind
+      // it was queued deliberately and goes out as it always would. Not pumped
+      // here either: the stopped turn's own result is what releases the next
+      // message, so the rule saying you stopped this one is written before it.
       this.render();
     },
     onQueuedCanceled: (index: number, canceled: boolean): void => {
