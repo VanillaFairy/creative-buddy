@@ -57,7 +57,9 @@ three models take all five levels, and Haiku takes no control at all.
 Two notes on Fable, both from the Claude Code docs: it is not the default on any
 plan, and it may bill to usage credits rather than the subscription. This plugin
 sells itself on subscription billing — the settings tab warns against API
-billing in as many words — so the label says so.
+billing in as many words. The label does not spell this out (see the closed
+question below); anyone using Fable is choosing the model most likely to reach
+for that billing path, and Claude Code's own picker already flags it there.
 
 ## Design
 
@@ -66,7 +68,7 @@ billing in as many words — so the label says so.
 `MODEL_CHOICES` gains one entry, at the top:
 
 ```
-claude-fable-5-1  Fable 5.1 — ultimate mastermind (may use credits)
+claude-fable-5-1  Fable 5.1 — ultimate mastermind
 claude-opus-5     Opus 5 — deepest interviewer
 claude-sonnet-5   Sonnet 5 — the daily default
 claude-haiku-4-5  Haiku 4.5 — quick and cheap
@@ -145,8 +147,11 @@ natural rendering, and a permanently-disabled control that explains itself is
 more UI than the fact deserves.
 
 **Q. Where does the Fable usage-credits warning go?**
-A. In the option label, because that is what you are reading at the moment you
-choose it. A note elsewhere in settings would be read after the fact.
+A. Nowhere in this plugin's UI (revised 2026-09-06; the first build put it in
+the option label). Claude Code's own model picker already surfaces "Requires
+usage credits" when it applies, and a plugin-side warning risked going stale
+against that — Anthropic's billing rules change more often than this plugin's
+release cadence. `MODEL_CHOICES` labels stay purely descriptive.
 
 **Q. Should the level list come from the CLI's supportedModels() instead of a table?**
 A. No. `supportedModels()` hangs off a running query handle, so the settings tab
