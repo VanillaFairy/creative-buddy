@@ -94,6 +94,38 @@ tokens, and look at both themes: their relative order flips in light.
 That is fine for incidental metadata (a turn's cost, a caption) and wrong for
 anything the user is meant to read or copy.
 
+## What the chat actually did is in the CLI's own transcripts
+"The chat threw an error" is close to undiagnosable from inside Obsidian — the
+transcript records `isError` and nothing else, so a stop, a crash and a real
+API failure all render the same. Two files settle it without reproducing
+anything:
+
+```bash
+ls -lt ~/.claude/projects/G--My-Drive-Obsidian-General/     # newest first
+```
+`~/.claude/projects/<cwd-slug>/<session-id>.jsonl` is the CLI's own record of
+the session the plugin drove. The slug is the **vault path**, because
+`AgentService` passes `cwd: vaultRoot` — so the plugin's sessions land in the
+same folder as any interactive `claude` run the user started in that vault. Tell
+them apart by `entrypoint`: the plugin's are `"sdk-ts"` with `promptSource:
+"sdk"`, and their attachment set is minimal (environment, model, agent listing —
+including `kg-scout`), where an interactive session also carries `skill_listing`,
+`auto_mode` and `hook_*`. Read it with Python and `PYTHONIOENCODING=utf-8`; a
+vault in Russian will otherwise die on cp1252 mid-dump.
+
+What it answers that nothing else can: a user record followed by
+`[Request interrupted by user]` and no assistant record means the turn was
+**aborted client-side** — `interrupt()` or `close()`, not a failure. The gap
+between the two timestamps is the evidence: tens of milliseconds is programmatic
+or same-gesture, hundreds is a person. Whether the *process* survived is legible
+too — a resumed turn re-emits the environment and model attachments, so a second
+turn carrying only `total_tokens_reminder` proves the handle was never disposed.
+
+The panel's own side is in the vault's `.obsidian/workspace.json`, under the
+`creative-buddy-chat` leaf state: every transcript item, including the `result`
+rows and their costs. Together the two say what the user saw and what the CLI
+was told, which is usually the whole answer.
+
 ## Isolating a React view without launching Obsidian
 `src/chat/components.tsx` imports nothing from `obsidian`, so `ChatSurface` can
 be bundled standalone and driven by Playwright — which is the only way to tell a
@@ -110,6 +142,21 @@ the browser; alias to a stub instead. Have the probe's wrapper re-render with
 fresh props on a timer, the way `ChatView.render()` does, or the test proves
 nothing about the case that actually matters. Obsidian's own bare-element rules
 have to be copied into the probe page (see the harness note above).
+
+For a question about *behaviour* rather than CSS — which control a click lands
+on, what a row renders — the suite can now do it directly:
+`tests/chat-panel.test.ts` mounts `ChatSurface` under `// @vitest-environment
+jsdom`. Three things are needed and each fails in its own confusing way. The
+`obsidian` alias in `vitest.config.ts` points at `tests/helpers/obsidian-stub.ts`
+(same reason as the esbuild stub above — `settings.ts` is in the import path).
+`Element.prototype.scrollTo` has to be stubbed, or the transcript's
+scroll-to-bottom effect throws before any assertion runs. And typing means
+calling the prototype's `value` setter, not assigning `box.value` — React tracks
+the last value it wrote, so a plain assignment looks like no change and the
+`input` event does nothing.
+
+Keep this rare. Every decision still belongs in a pure module beside the shell;
+this is for the handful of facts that are about the rendered DOM itself.
 
 ## Mixing border-box measurements with content-box limits
 `getBoundingClientRect().height` is *always* the border box, while
