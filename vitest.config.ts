@@ -1,5 +1,6 @@
 import { defineConfig, defaultExclude } from "vitest/config";
 import fs from "node:fs";
+import path from "node:path";
 
 export default defineConfig({
   plugins: [
@@ -13,6 +14,9 @@ export default defineConfig({
       },
     },
   ],
+  // The chat components reach through settings.ts for the model list, which
+  // imports Obsidian's runtime. Nothing under test touches it — see the stub.
+  resolve: { alias: { obsidian: path.resolve("tests/helpers/obsidian-stub.ts") } },
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
