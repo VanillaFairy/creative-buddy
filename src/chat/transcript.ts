@@ -31,7 +31,17 @@ export type TranscriptItem =
       resolution: "pending" | "allowed" | "denied";
     }
   | { kind: "notice"; tone: "info" | "error"; text: string }
-  | { kind: "result"; costUsd: number; isError: boolean };
+  /**
+   * The rule under the turn. `reason` is the failure's own words, and is set
+   * only when there was a failure and it had something to say.
+   */
+  | { kind: "result"; costUsd: number; outcome: TurnOutcome; reason?: string };
+
+/** How a turn ended. Stopping one is a thing you did, not a thing that broke. */
+export type TurnOutcome = "done" | "stopped" | "error";
+
+/** Long enough for a real message, short enough to live in workspace.json. */
+const REASON_LIMIT = 300;
 
 export type TranscriptEvent =
   | { type: "user-sent"; text: string; label?: string }
@@ -50,7 +60,12 @@ export type TranscriptEvent =
   | { type: "approval"; id: string; toolName: string; targetPath: string | null; reason: string; title: string | null }
   | { type: "approval-resolved"; id: string; allowed: boolean }
   | { type: "notice"; text: string }
-  | { type: "result"; costUsd: number; isError: boolean }
+  /**
+   * `stopped` is the shell's own knowledge — it is what asked for the stop. The
+   * SDK cannot supply it: an aborted turn comes back flagged `is_error` exactly
+   * like one that failed.
+   */
+  | { type: "result"; costUsd: number; stopped: boolean; isError: boolean; resultText: string }
   | { type: "error"; message: string };
 
 export interface ToolLineContext {
@@ -88,6 +103,13 @@ function toolBody(name: string, input: Record<string, unknown>, path: string | n
     default:
       return name;
   }
+}
+
+/** A failure's own words, or null when it had none worth keeping. */
+function trimReason(text: string): string | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  return trimmed.length <= REASON_LIMIT ? trimmed : `${trimmed.slice(0, REASON_LIMIT - 1)}…`;
 }
 
 /**
@@ -151,9 +173,22 @@ export function reduceTranscript(items: TranscriptItem[], event: TranscriptEvent
       next.push({ kind: "notice", tone: "info", text: event.text });
       return next;
 
-    case "result":
-      next.push({ kind: "result", costUsd: event.costUsd, isError: event.isError });
+    case "result": {
+      // A stop wins over the error flag: the abort races the turn's own
+      // ending, and which side got there first says nothing about what you
+      // asked for.
+      if (event.stopped) {
+        next.push({ kind: "result", costUsd: event.costUsd, outcome: "stopped" });
+        return next;
+      }
+      if (!event.isError) {
+        next.push({ kind: "result", costUsd: event.costUsd, outcome: "done" });
+        return next;
+      }
+      const reason = trimReason(event.resultText);
+      next.push({ kind: "result", costUsd: event.costUsd, outcome: "error", ...(reason === null ? {} : { reason }) });
       return next;
+    }
 
     case "error":
       next.push({ kind: "notice", tone: "error", text: event.message });

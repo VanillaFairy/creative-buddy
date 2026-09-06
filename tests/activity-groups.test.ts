@@ -54,7 +54,7 @@ describe("groupActivity — run boundaries", () => {
   });
 
   it("passes non-tool items through untouched and in order", () => {
-    const items = [say("hi"), tool("t1", "Read"), { kind: "result" as const, costUsd: 0.4, isError: false }];
+    const items = [say("hi"), tool("t1", "Read"), { kind: "result" as const, costUsd: 0.4, outcome: "done" as const }];
     const rows = groupActivity(items, false);
     expect(shape(rows)).toEqual(["assistant", "explore", "result"]);
     expect(rows[0]).toMatchObject({ kind: "item", item: items[0] });

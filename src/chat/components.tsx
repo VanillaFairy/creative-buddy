@@ -1,5 +1,5 @@
 import * as React from "react";
-import { TranscriptItem } from "./transcript";
+import { TranscriptItem, TurnOutcome } from "./transcript";
 import { groupActivity, groupTitle, ActivityGroup, ActivityItem } from "./activity-groups";
 import { Outgoing, Queued, hasWaiting } from "./queue";
 import { draggedHeight, heightBounds, pxLength } from "./composer-size";
@@ -420,6 +420,13 @@ export function GraphPicker(props: {
   );
 }
 
+/** "you stopped this" rather than "stopped": the rule says whose doing it was. */
+const TURN_END: Record<TurnOutcome, string> = {
+  done: "turn done",
+  stopped: "you stopped this turn",
+  error: "turn errored",
+};
+
 function TranscriptRow({ item, callbacks }: { item: ActivityItem; callbacks: ChatCallbacks }): React.JSX.Element {
   switch (item.kind) {
     case "user":
@@ -439,11 +446,16 @@ function TranscriptRow({ item, callbacks }: { item: ActivityItem; callbacks: Cha
       return <div className={`cb-notice cb-notice-${item.tone}`}>{item.text}</div>;
     case "result":
       // The rule is the row: a turn boundary that happens to carry its cost,
-      // rather than one more block of content in the column.
+      // rather than one more block of content in the column. A failure gets to
+      // say why on the line under it, because a rule reading "turn errored" and
+      // nothing else sends you looking through logs for what it already knew.
       return (
-        <div className={`cb-turn-end${item.isError ? " cb-turn-end-error" : ""}`}>
-          <span>{item.isError ? "turn errored" : "turn done"} · ${item.costUsd.toFixed(2)}</span>
-        </div>
+        <>
+          <div className={`cb-turn-end${item.outcome === "error" ? " cb-turn-end-error" : ""}`}>
+            <span>{TURN_END[item.outcome]} · ${item.costUsd.toFixed(2)}</span>
+          </div>
+          {item.reason === undefined ? null : <p className="cb-turn-end-reason">{item.reason}</p>}
+        </>
       );
   }
 }

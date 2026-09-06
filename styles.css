@@ -433,6 +433,17 @@
 
 .cb-turn-end-error { color: var(--cb-broken); }
 
+/* Under the rule rather than on it: the rule is a hairline across the column,
+   and a sentence long enough to be useful would not fit on one. */
+.cb-turn-end-reason {
+  margin: var(--size-2-2) 0 0;
+  padding-left: var(--size-4-3);
+  color: var(--cb-broken);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+  overflow-wrap: anywhere;
+}
+
 /* Sits where the first message will sit, so nothing jumps when one arrives —
    which means matching its size and leading too, not just its position. */
 .cb-chat-empty {

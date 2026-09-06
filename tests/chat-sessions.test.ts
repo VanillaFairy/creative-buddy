@@ -221,6 +221,20 @@ describe("restoreSessions", () => {
     expect(list.sessions[0]!.items[0]).toMatchObject({ streaming: false });
   });
 
+  it("reads a result saved before turns knew how they had ended", () => {
+    // Those items only carried `isError`, which conflated a stop with a
+    // failure. A restored one can only be read the pessimistic way, but it must
+    // at least come back in the shape the panel now draws.
+    const list = restoreSessions(
+      { sessions: [{ items: [{ kind: "result", costUsd: 0.4, isError: true }, { kind: "result", costUsd: 0.1, isError: false }] }] },
+      SEED,
+    );
+    expect(list.sessions[0]!.items).toEqual([
+      { kind: "result", costUsd: 0.4, outcome: "error" },
+      { kind: "result", costUsd: 0.1, outcome: "done" },
+    ]);
+  });
+
   it("falls back to the default model for a session that has none", () => {
     const list = restoreSessions({ sessions: [{ key: "t0" }] }, SEED);
     expect(list.sessions[0]!.model).toBe(MODEL);

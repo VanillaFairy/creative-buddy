@@ -119,13 +119,61 @@ describe("reduceTranscript", () => {
 
   it("results and errors append trailing notices", () => {
     const items = apply([
-      { type: "result", costUsd: 0.42, isError: false },
+      { type: "result", costUsd: 0.42, stopped: false, isError: false, resultText: "all done" },
       { type: "error", message: "boom" },
     ]);
     expect(items).toEqual([
-      { kind: "result", costUsd: 0.42, isError: false },
+      { kind: "result", costUsd: 0.42, outcome: "done" },
       { kind: "notice", tone: "error", text: "boom" },
     ]);
+  });
+});
+
+/**
+ * A turn ends one of three ways and the rule has to say which, because the SDK
+ * cannot: a turn you stopped comes back flagged `is_error` exactly like one that
+ * failed. Reporting a stop as a failure is what sent a real session's user
+ * hunting for a bug that was their own Escape key.
+ */
+describe("how a turn ended", () => {
+  const end = (event: Partial<Extract<TranscriptEvent, { type: "result" }>>): TranscriptItem =>
+    apply([{ type: "result", costUsd: 0, stopped: false, isError: false, resultText: "", ...event }])[0]!;
+
+  it("calls a turn you stopped stopped, not errored", () => {
+    expect(end({ stopped: true, isError: true })).toEqual({ kind: "result", costUsd: 0, outcome: "stopped" });
+  });
+
+  it("still calls it stopped when the SDK reports no error at all", () => {
+    // Whether the abort beat the turn to the finish is a race, and which side
+    // won says nothing about what you asked for.
+    expect(end({ stopped: true, isError: false, resultText: "half an answer" })).toEqual({
+      kind: "result",
+      costUsd: 0,
+      outcome: "stopped",
+    });
+  });
+
+  it("keeps the reason a genuine failure gave", () => {
+    expect(end({ isError: true, resultText: "Credit balance too low" })).toEqual({
+      kind: "result",
+      costUsd: 0,
+      outcome: "error",
+      reason: "Credit balance too low",
+    });
+  });
+
+  it("carries no reason when the failure came with nothing to say", () => {
+    expect(end({ isError: true, resultText: "   " })).toEqual({ kind: "result", costUsd: 0, outcome: "error" });
+  });
+
+  it("truncates a reason too long to belong in a saved workspace", () => {
+    const item = end({ isError: true, resultText: "x".repeat(500) }) as { reason: string };
+    expect(item.reason.length).toBeLessThanOrEqual(300);
+    expect(item.reason.endsWith("…")).toBe(true);
+  });
+
+  it("keeps no reason on a turn that succeeded", () => {
+    expect(end({ costUsd: 0.42, resultText: "the whole answer" })).toEqual({ kind: "result", costUsd: 0.42, outcome: "done" });
   });
 });
 

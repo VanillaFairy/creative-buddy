@@ -1,17 +1,25 @@
 // @vitest-environment jsdom
 /**
- * The one shell test in the suite, and it earns its place: the bug it guards
- * against cannot be seen from a pure module. Send and Stop used to be the two
- * branches of one ternary, so React reused a single <button> and swapped only
- * its handler — the control under your finger became Stop the instant the send
- * it had just made flipped the panel to busy, and a second press inside that
- * gesture cancelled the turn the first had started.
+ * The one shell test in the suite. Everywhere else a decision lives in a pure
+ * module and is tested there; these two facts are about the rendered DOM
+ * itself, and a pure module cannot see either.
+ *
+ * The first: Send and Stop used to be the two branches of one ternary, so React
+ * reused a single <button> and swapped only its handler — the control under
+ * your finger became Stop the instant the send it had just made flipped the
+ * panel to busy, and a second press inside that gesture cancelled the turn the
+ * first had started.
+ *
+ * The second: what a finished turn says it was. A real session's user pressed
+ * Escape, the SDK reported the abort as `is_error`, and the panel drew "turn
+ * errored · $0.00" — sending them hunting for a bug that was their own keyboard.
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
 import { act } from "react";
 import { ChatSurface, ChatCallbacks } from "../src/chat/components";
+import { TranscriptItem } from "../src/chat/transcript";
 
 function noopCallbacks(record: string[]): ChatCallbacks {
   return {
@@ -34,7 +42,7 @@ interface Panel {
   stopButton: () => HTMLButtonElement | null;
 }
 
-async function mount(record: string[]): Promise<Panel> {
+async function mount(record: string[], items: TranscriptItem[] = []): Promise<Panel> {
   const callbacks = noopCallbacks(record);
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -48,7 +56,7 @@ async function mount(record: string[]): Promise<Panel> {
           effort: "high",
           busy,
           status: null,
-          items: [],
+          items,
           queued: [],
           presetsOpen: false,
           openQuestions: 0,
@@ -130,3 +138,24 @@ describe("the composer's controls", () => {
   });
 });
 
+describe("how a finished turn reads", () => {
+  const rule = (host: HTMLElement): string => host.querySelector(".cb-turn-end")!.textContent!;
+
+  it("names a stop as yours rather than as a failure", async () => {
+    const panel = await mount([], [{ kind: "result", costUsd: 0, outcome: "stopped" }]);
+    expect(rule(panel.host)).toContain("you stopped this turn");
+    expect(panel.host.querySelector(".cb-turn-end-error")).toBeNull();
+  });
+
+  it("shows a failure's own words under the rule", async () => {
+    const panel = await mount([], [{ kind: "result", costUsd: 0, outcome: "error", reason: "Credit balance too low" }]);
+    expect(rule(panel.host)).toContain("turn errored");
+    expect(panel.host.querySelector(".cb-turn-end-reason")!.textContent).toBe("Credit balance too low");
+  });
+
+  it("draws a finished turn as the rule alone", async () => {
+    const panel = await mount([], [{ kind: "result", costUsd: 0.42, outcome: "done" }]);
+    expect(rule(panel.host)).toContain("turn done · $0.42");
+    expect(panel.host.querySelector(".cb-turn-end-reason")).toBeNull();
+  });
+});

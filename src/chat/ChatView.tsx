@@ -58,6 +58,13 @@ interface Runtime {
    * the one whose context may have been compacted since.
    */
   announced: string | null | undefined;
+  /**
+   * Whether the turn in flight is one you stopped. The SDK reports an aborted
+   * turn as an error, indistinguishable from one that failed, so the only
+   * witness to the difference is the side that asked for the stop. Cleared at
+   * the top of every send, so it can only ever describe the turn it was set in.
+   */
+  stopping: boolean;
 }
 
 /**
@@ -177,6 +184,7 @@ export class ChatView extends ItemView {
       responders: new Map(),
       queue: [],
       announced: undefined,
+      stopping: false,
     };
     this.runtimes.set(key, fresh);
     return fresh;
@@ -388,7 +396,13 @@ export class ChatView extends ItemView {
           },
           onResult: (result) => {
             runtime.busy = false;
-            this.dispatch(key, { type: "result", costUsd: result.totalCostUsd, isError: result.isError });
+            this.dispatch(key, {
+              type: "result",
+              costUsd: result.totalCostUsd,
+              stopped: runtime.stopping,
+              isError: result.isError,
+              resultText: result.resultText,
+            });
             // Last, so the next message lands under this turn's rule rather
             // than ahead of it.
             this.pump(key);
@@ -466,6 +480,7 @@ export class ChatView extends ItemView {
       return;
     }
     runtime.busy = true;
+    runtime.stopping = false;
     this.dispatch(key, { type: "user-sent", text: step.send.text, label: step.send.label });
     // The transcript keeps what was said; the note line is plumbing that rides
     // along with it, like the session preamble, and is not part of the record.
@@ -512,6 +527,9 @@ export class ChatView extends ItemView {
       const runtime = this.runtime(session.key);
       runtime.handle?.interrupt().catch(() => undefined);
       runtime.busy = false;
+      // So the turn's own rule can say you stopped it rather than reporting the
+      // abort the SDK is about to flag as a failure.
+      runtime.stopping = true;
       // Stopping is about not spending any more, so what was lined up behind
       // this turn comes back too rather than going out one beat later.
       runtime.queue = cancelAll(runtime.queue);

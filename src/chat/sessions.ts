@@ -171,13 +171,19 @@ function nextSeq(sessions: ChatSession[]): number {
  * dimmed) forever — the stream it belonged to is gone. A tool item written
  * before the activity panels carries an `input` blob and no timestamps; the
  * destructuring drops the blob and the nulls make its panel report an unknown
- * duration rather than a nonsense one.
+ * duration rather than a nonsense one. A result written before turns knew how
+ * they had ended carries only `isError`, which cannot tell a stop from a
+ * failure — the old flag is all there is, so it is read as written.
  */
 export function restoreItem(item: TranscriptItem): TranscriptItem {
   if (item.kind === "assistant" && item.streaming) return { ...item, streaming: false };
   if (item.kind === "tool") {
     const { id, name, line, done } = item;
     return { kind: "tool", id, name, line, done, at: item.at ?? null, doneAt: item.doneAt ?? null };
+  }
+  if (item.kind === "result" && item.outcome === undefined) {
+    const legacy = (item as { isError?: boolean }).isError === true;
+    return { kind: "result", costUsd: item.costUsd, outcome: legacy ? "error" : "done" };
   }
   return item;
 }
