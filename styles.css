@@ -329,6 +329,10 @@
    interviewer, because none of it is anybody speaking. */
 .cb-msg {
   overflow-wrap: anywhere;
+  /* Same reasoning as .cb-queued-text: a message is the thing you came here to
+     read back and copy, so it stays selectable no matter what the active
+     theme's own resets do to plain divs. */
+  user-select: text;
 }
 
 /* The interviewer's turn: the live thing, set full-bleed in the vault's
