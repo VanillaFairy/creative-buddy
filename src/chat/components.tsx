@@ -196,6 +196,13 @@ export function ChatSurface(props: {
       <header className="cb-chat-header">
         <div className="cb-chat-controls">
           {props.busy ? <span className="cb-chat-status">{props.status ?? "thinking…"}</span> : null}
+          {/* Beside the status, because the status is the thing it stops. */}
+          {running ? (
+            <button className="cb-quiet-control cb-stop" title="Stop this turn (Escape)" onClick={() => callbacks.onInterrupt()}>
+              <span className="cb-stop-glyph" aria-hidden="true" />
+              Stop
+            </button>
+          ) : null}
           <select className="cb-quiet-control" value={props.model} onChange={(e) => callbacks.onModelChange(e.target.value)}>
             {Object.entries(MODEL_CHOICES).map(([id, label]) => (
               <option key={id} value={id}>{label}</option>
@@ -298,17 +305,14 @@ export function ChatSurface(props: {
             }
           }}
         />
-        {/* One button, because there is only ever one thing worth doing with a
-            click here: stop what is running, or send what is typed. Queueing is
-            Enter's job — the placeholder says so while a turn is up. */}
-        {running ? (
-          <button className="cb-stop" onClick={() => callbacks.onInterrupt()}>
-            <span className="cb-stop-glyph" aria-hidden="true" />
-            Stop
-          </button>
-        ) : (
-          <button onClick={send} disabled={draft.trim() === ""}>Send</button>
-        )}
+        {/* Send and nothing else, always. This slot used to hold Stop while a
+            turn was up, and React — same tag, same place — kept the one DOM
+            node and swapped only the handler, so the button under your finger
+            became Stop the moment the send it had just made marked the panel
+            busy. A second press inside that gesture then cancelled the turn the
+            first had started. Stopping lives on the header now, out of reach of
+            the hand that sends. */}
+        <button className="cb-send" onClick={send} disabled={draft.trim() === ""}>Send</button>
       </div>
       <PresetRow open={props.presetsOpen} openQuestions={props.openQuestions} callbacks={callbacks} />
     </div>

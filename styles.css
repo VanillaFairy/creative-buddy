@@ -674,14 +674,19 @@
   line-height: 1.65;
 }
 
-/* The stop is the send button's slot, not a second control beside it: while a
-   turn is up there is only one thing a click here can usefully do. The square
-   is drawn rather than typed, so no font gets a vote on how it lands. */
-.cb-chat-composer .cb-stop {
-  flex: none;
+/* Stop sits on the header, beside the status it stops — deliberately not in
+   the composer. Sharing a slot with Send put the two under one pointer, and a
+   second press of what had just sent cancelled the turn instead. The square is
+   drawn rather than typed, so no font gets a vote on how it lands. */
+.cb-chat-controls .cb-stop {
   display: flex;
   align-items: center;
   gap: var(--size-2-2);
+  color: var(--cb-live);
+}
+
+.cb-chat-composer .cb-send {
+  flex: none;
 }
 
 .cb-stop-glyph {
