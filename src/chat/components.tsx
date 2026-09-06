@@ -27,6 +27,8 @@ export interface ChatCallbacks {
   onInterrupt(): void;
   /** Take one waiting message back, or put a canceled one back in line. */
   onQueuedCanceled(index: number, canceled: boolean): void;
+  /** Throw one away for good. Only ever offered on a message that never went out. */
+  onQueuedDeleted(index: number): void;
   /** Show or hide the preset row. The panel remembers the answer. */
   onPresetsToggle(open: boolean): void;
   renderMarkdown(el: HTMLElement, markdown: string): void;
@@ -113,7 +115,7 @@ export function ChatSurface(props: {
   const [boxHeight, setBoxHeight] = React.useState<number | null>(null);
   // What the agent is spending on your behalf right now — the turn itself, and
   // nothing else. A stop is about this turn only, and a message still waiting
-  // has cost nothing yet, so there is nothing there for a stop to reach.
+  // has cost nothing yet, so there is nothing there to stop: you bin it.
   const running = props.busy;
   // How much transcript sat below the fold when a resize began. See
   // scroll-anchor.ts for why that is the number worth holding.
@@ -239,7 +241,10 @@ export function ChatSurface(props: {
             : <TranscriptRow key={row.key} item={row.item} callbacks={callbacks} />,
         )}
       </div>
-      {hasWaiting(props.queued) ? <p className="cb-queued-note">Waiting for this turn to finish</p> : null}
+      {/* Only while there is a turn to wait for. A message inside its own hold
+          is waiting on the clock, not on the model, and says so by being gone
+          again half a second later. */}
+      {props.busy && hasWaiting(props.queued) ? <p className="cb-queued-note">Waiting for this turn to finish</p> : null}
       {props.queued.length > 0 ? (
         <ul className="cb-queued">
           {props.queued.map((message, i) => (
@@ -272,6 +277,18 @@ export function ChatSurface(props: {
                   ×
                 </button>
               )}
+              {/* Bottom-right, and only here: this row is a message that has
+                  never left, so throwing it away really does unsay it. The same
+                  bin on a message the model has already read could only hide it
+                  from you. */}
+              <button
+                className="cb-queued-delete"
+                aria-label="Delete this message"
+                title="Delete this message — it is not sent"
+                onClick={() => callbacks.onQueuedDeleted(i)}
+              >
+                🗑
+              </button>
             </li>
           ))}
         </ul>

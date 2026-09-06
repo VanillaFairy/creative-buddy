@@ -20,6 +20,7 @@ import { createRoot, Root } from "react-dom/client";
 import { act } from "react";
 import { ChatSurface, ChatCallbacks } from "../src/chat/components";
 import { TranscriptItem } from "../src/chat/transcript";
+import { Queued } from "../src/chat/queue";
 
 function noopCallbacks(record: string[]): ChatCallbacks {
   return {
@@ -28,7 +29,8 @@ function noopCallbacks(record: string[]): ChatCallbacks {
     onEffortChange: () => undefined,
     onApprove: () => undefined,
     onInterrupt: () => record.push("interrupt"),
-    onQueuedCanceled: () => undefined,
+    onQueuedCanceled: () => record.push("cancel"),
+    onQueuedDeleted: (i: number) => record.push(`delete:${i}`),
     onPresetsToggle: () => undefined,
   } as unknown as ChatCallbacks;
 }
@@ -42,7 +44,7 @@ interface Panel {
   stopButton: () => HTMLButtonElement | null;
 }
 
-async function mount(record: string[], items: TranscriptItem[] = []): Promise<Panel> {
+async function mount(record: string[], items: TranscriptItem[] = [], queued: Queued[] = []): Promise<Panel> {
   const callbacks = noopCallbacks(record);
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -57,7 +59,7 @@ async function mount(record: string[], items: TranscriptItem[] = []): Promise<Pa
           busy,
           status: null,
           items,
-          queued: [],
+          queued,
           presetsOpen: false,
           openQuestions: 0,
           callbacks,
@@ -135,6 +137,47 @@ describe("the composer's controls", () => {
 
     await panel.click(stop!);
     expect(record).toEqual(["interrupt"]);
+  });
+});
+
+/**
+ * The bin is only honest on a message that has never left. Once one goes, the
+ * model has it for good — a stop aborts the answer, not the message — so a bin
+ * on a sent message could only ever hide it from the person who wrote it while
+ * the interviewer went on reading it. The rule is therefore about *where* the
+ * control may appear, which makes it a fact about the rendered panel.
+ */
+describe("deleting a message that never went out", () => {
+  const unsent = (text: string): Queued => ({ text, canceled: false, at: 0 });
+
+  it("offers a bin on a message still waiting to go", async () => {
+    const record: string[] = [];
+    const panel = await mount(record, [], [unsent("wait, no")]);
+    const bin = panel.host.querySelector(".cb-queued-delete") as HTMLButtonElement;
+    expect(bin, "a waiting message can be thrown away").not.toBeNull();
+
+    await panel.click(bin);
+    expect(record).toEqual(["delete:0"]);
+  });
+
+  it("offers one on a message taken back, too — it also never went out", async () => {
+    const panel = await mount([], [], [{ text: "held", canceled: true, at: 0 }]);
+    expect(panel.host.querySelector(".cb-queued-delete")).not.toBeNull();
+  });
+
+  it("bins the row you pointed at, not the first one", async () => {
+    const record: string[] = [];
+    const panel = await mount(record, [], [unsent("keep"), unsent("bin"), unsent("keep too")]);
+    const bins = panel.host.querySelectorAll(".cb-queued-delete");
+    await panel.click(bins[1]!);
+    expect(record).toEqual(["delete:1"]);
+  });
+
+  it("offers none on a message the model has already been given", async () => {
+    // The same words, in the transcript rather than the queue: said, and past
+    // taking back.
+    const panel = await mount([], [{ kind: "user", text: "wait, no" }], []);
+    expect(panel.host.querySelector(".cb-queued-delete"), "nothing to bin once it is said").toBeNull();
   });
 });
 

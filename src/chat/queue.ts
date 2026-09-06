@@ -41,10 +41,21 @@ export interface Outgoing {
   note?: string;
 }
 
+/**
+ * How long a message is yours after you commit to it.
+ *
+ * The moment one leaves, it is in the model's history for good — stopping the
+ * turn aborts the answer and not the message, so there is no unsaying it
+ * afterwards. This is the window in which there is still something to undo.
+ */
+export const HOLD_MS = 500;
+
 /** An Outgoing that has not gone out yet. */
 export interface Queued extends Outgoing {
   /** Taken back before it went out. Never sent, but kept to read, copy or send again. */
   canceled: boolean;
+  /** Epoch ms you committed to it. Nothing leaves before `at + HOLD_MS`. */
+  at: number;
 }
 
 export interface QueueStep {
@@ -54,16 +65,19 @@ export interface QueueStep {
   send: Outgoing | null;
 }
 
-export function advance(queue: readonly Queued[], busy: boolean, message?: Outgoing): QueueStep {
+export function advance(queue: readonly Queued[], busy: boolean, now: number, message?: Outgoing): QueueStep {
   const blank = message === undefined || message.text.trim() === "";
-  const waiting = blank ? [...queue] : [...queue, { ...message, canceled: false }];
+  const waiting = blank ? [...queue] : [...queue, { ...message, canceled: false, at: now }];
   const next = waiting.findIndex((m) => !m.canceled);
   if (busy || next === -1) return { queue: waiting, send: null };
   const front = waiting[next]!;
-  // Everything the message carries, minus the one field that is the queue's own
+  // The front holds the line even when something behind it is riper: what the
+  // conversation is owed next is a matter of order, not of whose hold ran out.
+  if (now < front.at + HOLD_MS) return { queue: waiting, send: null };
+  // Everything the message carries, minus the fields that are the queue's own
   // bookkeeping. Naming the fields to keep instead is how `note` came to be
   // silently dropped once already, and the next field added would go the same way.
-  const { canceled: _waiting, ...send } = front;
+  const { canceled: _waiting, at: _committed, ...send } = front;
   return { queue: waiting.filter((_, i) => i !== next), send };
 }
 
@@ -73,6 +87,30 @@ export function advance(queue: readonly Queued[], busy: boolean, message?: Outgo
  */
 export function setCanceled(queue: readonly Queued[], index: number, canceled: boolean): Queued[] {
   return queue.map((message, i) => (i === index ? { ...message, canceled } : message));
+}
+
+/**
+ * Throw one away. Not the same as taking it back: a canceled message is still
+ * on screen to read, copy or send again, and this one was never anywhere else.
+ * It has no transcript row, is not in the saved workspace, and the model has
+ * never seen it, so nothing survives it.
+ */
+export function remove(queue: readonly Queued[], index: number): Queued[] {
+  return queue.filter((_, i) => i !== index);
+}
+
+/**
+ * How long until the front of the queue may leave — null when nothing is due.
+ *
+ * The shell owns the clock and the timer; this says when to set it. A running
+ * turn answers null because its ending is already the wake-up, and a queue of
+ * nothing but canceled messages is waiting for a hand, not for time.
+ */
+export function msUntilSendable(queue: readonly Queued[], busy: boolean, now: number): number | null {
+  if (busy) return null;
+  const front = queue.find((m) => !m.canceled);
+  if (front === undefined) return null;
+  return Math.max(0, front.at + HOLD_MS - now);
 }
 
 /** Stopping takes back everything still waiting — none of it had been said yet. */

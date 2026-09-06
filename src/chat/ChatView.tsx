@@ -22,7 +22,7 @@ import {
   restoreSessions,
   sharedGraphs,
 } from "./sessions";
-import { Outgoing, Queued, advance, cancelAll, setCanceled } from "./queue";
+import { Outgoing, Queued, advance, cancelAll, msUntilSendable, remove, setCanceled } from "./queue";
 import { restorePresetsOpen } from "./presets";
 import { noteAnnouncement } from "./note-context";
 import { noteLinktext } from "./links";
@@ -61,10 +61,12 @@ interface Runtime {
   /**
    * Whether the turn in flight is one you stopped. The SDK reports an aborted
    * turn as an error, indistinguishable from one that failed, so the only
-   * witness to the difference is the side that asked for the stop. Consumed by
-   * the result it describes, so it can only ever describe the turn it was set in.
+   * witness to the difference is the side that asked for the stop. Cleared at
+   * the top of every send, so it can only ever describe the turn it was set in.
    */
   stopping: boolean;
+  /** Pending wake-up for a message still inside its hold. See `wakeForQueue`. */
+  holdTimer: number | null;
 }
 
 /**
@@ -185,14 +187,38 @@ export class ChatView extends ItemView {
       queue: [],
       announced: undefined,
       stopping: false,
+      holdTimer: null,
     };
     this.runtimes.set(key, fresh);
     return fresh;
   }
 
   private disposeRuntime(key: string): void {
-    this.runtimes.get(key)?.handle?.dispose();
+    const runtime = this.runtimes.get(key);
+    if (runtime !== undefined) {
+      if (runtime.holdTimer !== null) window.clearTimeout(runtime.holdTimer);
+      runtime.handle?.dispose();
+    }
     this.runtimes.delete(key);
+  }
+
+  /**
+   * Come back when the front of the queue is allowed to leave.
+   *
+   * Nothing else would: a held message is waiting on the clock rather than on
+   * the model, so no SDK event is coming to release it. One timer per
+   * conversation, replaced rather than stacked, because only the front of the
+   * queue is ever the next thing to go.
+   */
+  private wakeForQueue(key: string, runtime: Runtime, now: number): void {
+    if (runtime.holdTimer !== null) window.clearTimeout(runtime.holdTimer);
+    runtime.holdTimer = null;
+    const due = msUntilSendable(runtime.queue, runtime.busy, now);
+    if (due === null) return;
+    runtime.holdTimer = window.setTimeout(() => {
+      runtime.holdTimer = null;
+      this.pump(key);
+    }, due);
   }
 
   /** Silently drops events for a conversation whose tab closed mid-turn. */
@@ -482,9 +508,11 @@ export class ChatView extends ItemView {
     const session = this.list.sessions.find((s) => s.key === key);
     if (session === undefined) return;
     const runtime = this.runtime(key);
-    const step = advance(runtime.queue, runtime.busy, message);
+    const now = Date.now();
+    const step = advance(runtime.queue, runtime.busy, now, message);
     runtime.queue = step.queue;
     if (step.send === null) {
+      this.wakeForQueue(key, runtime, now);
       this.render();
       return;
     }
@@ -494,7 +522,7 @@ export class ChatView extends ItemView {
       // Notice. The message goes back on screen as canceled rather than
       // disappearing between the queue and the transcript, keeping its name so
       // a preset does not turn back into its paragraph on the way.
-      runtime.queue = [{ ...step.send, canceled: true }, ...runtime.queue];
+      runtime.queue = [{ ...step.send, canceled: true, at: now }, ...runtime.queue];
       this.render();
       return;
     }
@@ -549,9 +577,10 @@ export class ChatView extends ItemView {
       // abort the SDK is about to flag as a failure.
       runtime.stopping = true;
       // Stopping is about this turn and only this turn. What is lined up behind
-      // it was queued deliberately and goes out as it always would. Not pumped
-      // here either: the stopped turn's own result is what releases the next
-      // message, so the rule saying you stopped this one is written before it.
+      // it was queued deliberately and goes out as it always would — the bin on
+      // each row is how you change your mind about one of those. Not pumped
+      // here: the stopped turn's own result is what releases the next message,
+      // so the rule saying you stopped this one is written before it goes.
       this.render();
     },
     onQueuedCanceled: (index: number, canceled: boolean): void => {
@@ -560,8 +589,16 @@ export class ChatView extends ItemView {
       runtime.queue = setCanceled(runtime.queue, index, canceled);
       // Putting one back in line is itself a send: it goes out now if nothing
       // is running, and waits its turn like anything else if something is.
-      if (canceled) this.render();
-      else this.pump(key);
+      // Taking one back can free the message behind it, so both ways pump.
+      this.pump(key);
+    },
+    onQueuedDeleted: (index: number): void => {
+      const key = activeSession(this.list).key;
+      const runtime = this.runtime(key);
+      runtime.queue = remove(runtime.queue, index);
+      // Nothing survives this: a message that never went out has no transcript
+      // row, is not in the saved workspace, and was never said to the model.
+      this.pump(key);
     },
     onPresetsToggle: (open: boolean): void => {
       this.presetsShown = open;

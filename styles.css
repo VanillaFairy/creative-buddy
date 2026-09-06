@@ -954,6 +954,45 @@
   outline-offset: 1px;
 }
 
+/* The bin, in the row's bottom-right corner — last in the row and aligned to
+   its end rather than its baseline, so on a message that wraps it settles
+   beside the final line where there is most often nothing. Hidden until hovered
+   like the ×, and in the broken colour because unlike every other control here
+   it does not keep what it touches. */
+.cb-queued .cb-queued-delete {
+  flex: none;
+  align-self: flex-end;
+  height: auto;
+  margin: 0;
+  padding: 0 var(--size-4-1);
+  background: none;
+  border: none;
+  border-radius: var(--radius-s);
+  box-shadow: none;
+  color: var(--cb-faint);
+  font-size: var(--font-ui-small);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+
+.cb-queued-item:hover .cb-queued-delete,
+.cb-queued .cb-queued-delete:focus-visible {
+  opacity: 1;
+}
+
+.cb-queued .cb-queued-delete:hover {
+  background: none;
+  box-shadow: none;
+  color: var(--cb-broken);
+}
+
+.cb-queued .cb-queued-delete:focus-visible {
+  outline: 1px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+
 /* ──────────────────────────────────────────────────────────── picker ──── */
 
 .cb-picker {
