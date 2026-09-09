@@ -1416,6 +1416,28 @@
   stroke: var(--cb-heat-line, transparent);
 }
 
+/* Under the pointer, a branch's dot shows which way it goes. It takes the dot's
+   own outline colour, which is the one colour guaranteed to read against the
+   dot's fill in either theme and at every step of the heat scale.
+
+   Revealed by the dot's hover rather than the whole node's, because the name
+   beside it does something else entirely — hovering the name must not promise a
+   fold. The adjacent-sibling selector is what keeps that precise without `:has`,
+   and it is why `paintRadial` appends the mark straight after the dot. */
+.cb-mm-fold-mark {
+  pointer-events: none;
+  opacity: 0;
+  stroke: var(--cb-heat-line, var(--cb-ink));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transition: opacity 100ms ease;
+}
+
+.cb-mm-dot:hover + .cb-mm-fold-mark,
+.cb-mm-node:focus-visible .cb-mm-fold-mark {
+  opacity: 1;
+}
+
 /* The name is the note's link — it takes the pointer and says so, while the dot
    beside it stays the branch control.
 

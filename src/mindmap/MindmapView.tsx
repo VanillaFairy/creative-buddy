@@ -9,6 +9,7 @@ import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { Box, Bounds, Measure, childRegionPath, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
 import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP, HIDDEN_RING_GAP } from "./radial";
 import type { Reaching } from "./radial";
+import { foldMark } from "./fold";
 import { heatClass } from "./heat";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
@@ -287,7 +288,7 @@ export class MindmapView extends ItemView {
     node: MindmapNode,
     setActive: (node: MindmapNode | null) => void,
   ): void {
-    const foldable = node.children.length > 0 || node.collapsedChildren > 0;
+    const foldable = foldMark(node) !== null;
     const fold = (): void => {
       this.collapse.toggle(this.graphDir!, node.path);
       this.app.workspace.requestSaveLayout();
@@ -513,16 +514,31 @@ export class MindmapView extends ItemView {
       const problem = node.problemKinds.length > 0;
       const ownHeat = this.heatmap ? ` ${heatClass(node.openQuestions)}` : "";
       const base = problem ? "cb-mm-dot cb-mm-problem" : "cb-mm-dot";
-      g.append("circle")
-        .attr("class", isHub ? `${base} cb-mm-hub-dot${ownHeat}` : `${base}${ownHeat}`)
-        .attr("r", reach.dot);
 
       // What a collapse is hiding, in the only shape a circle has for it: a
-      // second ring outside the dot, coloured by the heat it is hiding.
+      // second ring outside the dot, coloured by the heat it is hiding. Drawn
+      // before the dot so the dot can keep the mark as its next sibling, which
+      // is how the stylesheet reveals one without reaching for `:has`.
       if (node.collapsedChildren > 0 && this.heatmap) {
         g.append("circle")
           .attr("class", `cb-mm-dot-hidden ${heatClass(node.hiddenOpenQuestions)}`)
           .attr("r", reach.dot + HIDDEN_RING_GAP);
+      }
+      g.append("circle")
+        .attr("class", isHub ? `${base} cb-mm-hub-dot${ownHeat}` : `${base}${ownHeat}`)
+        .attr("r", reach.dot);
+
+      // Under the pointer, the dot says which way it goes: a minus over a
+      // branch that is showing its children, a plus over one that is hiding
+      // them, nothing over a leaf whose click opens the note.
+      const mark = foldMark(node);
+      if (mark !== null) {
+        const arm = reach.dot * 0.55;
+        const marks = g.append("g").attr("class", "cb-mm-fold-mark");
+        marks.append("line").attr("x1", -arm).attr("y1", 0).attr("x2", arm).attr("y2", 0);
+        if (mark === "expand") {
+          marks.append("line").attr("x1", 0).attr("y1", -arm).attr("x2", 0).attr("y2", arm);
+        }
       }
 
       const anchor = radialNode.labelAnchor;
