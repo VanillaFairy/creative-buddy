@@ -1061,13 +1061,15 @@ Add beside `paintCartesian`:
         .text(caption.label);
       if (caption.suffix !== null && caption.suffixX !== null) {
         // The count sits past the stem on the outward side, so it never lands
-        // between the dot and the name it belongs to.
-        const offset =
-          placed.labelAnchor === "start" ? caption.suffixX : caption.suffixX - caption.width;
+        // between the dot and the name it belongs to. Anchor it the same way
+        // the stem is anchored and offset by `suffixX` along the outward
+        // direction — anchoring it "start" while the stem is anchored "end"
+        // measures the two from opposite edges and lands the count on top of
+        // the name.
         g.append("text")
           .attr("class", "cb-mm-caption cb-mm-fold")
-          .attr("text-anchor", "start")
-          .attr("x", start + offset)
+          .attr("text-anchor", placed.labelAnchor)
+          .attr("x", start + outward * caption.suffixX)
           .attr("y", 0)
           .text(caption.suffix);
       }
