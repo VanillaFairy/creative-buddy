@@ -269,19 +269,9 @@ export class MindmapView extends ItemView {
       ? this.paintRadial(canvas, data, hubPath, measure, setActive, crossByPath)
       : this.paintCartesian(canvas, data, hubPath, measure, setActive, crossByPath);
 
-    // Written as a CSS transform, not the SVG `transform` attribute, and this is
-    // a performance decision rather than a stylistic one. The attribute is a
-    // geometry change: the browser re-transforms and re-rasterises every
-    // descendant on every frame, which a few hundred vectors cannot afford once
-    // you are zoomed in. A CSS transform on a layer the compositor has been told
-    // to expect movement from is handled on the GPU instead — the bitmap is
-    // moved rather than redrawn. `transform-box`/`transform-origin` in the
-    // stylesheet are what make it land in the same place the attribute did.
-    const canvasEl = canvas.node()!;
     const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 2.5]).on("zoom", (event) => {
-      const t = event.transform as ZoomTransform;
-      this.lastTransform = t;
-      canvasEl.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.k})`;
+      this.lastTransform = event.transform as ZoomTransform;
+      canvas.attr("transform", String(event.transform));
     });
     svg.call(zoomBehavior);
 

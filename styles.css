@@ -1225,17 +1225,6 @@
   cursor: grabbing;
 }
 
-/* The pan/zoom group. `transform-box: view-box` with a zero origin makes a CSS
-   transform land exactly where the SVG `transform` attribute used to, and
-   `will-change` asks the compositor for a layer of its own so panning moves a
-   bitmap on the GPU instead of re-rasterising a few hundred vectors per frame.
-   The attribute path is a geometry change and has no such shortcut. */
-.cb-mm-svg > g {
-  transform-box: view-box;
-  transform-origin: 0 0;
-  will-change: transform;
-}
-
 /* Edges take the text-faint ink rather than the border grey: a border colour is
    a hairline meant to disappear, and in a light theme it does — these are the
    graph's actual structure and have to stay readable. */
