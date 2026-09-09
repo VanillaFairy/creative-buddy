@@ -1365,6 +1365,58 @@
   fill: var(--cb-broken);
 }
 
+/* Radial mode. The dot's fill is the note's own heat and the ring outside it is
+   the heat of whatever a collapse is hiding — the two areas the box splits at
+   its divider, in the only shape a circle has for them. */
+.cb-mm-dot {
+  fill: var(--cb-heat-fill, var(--background-modifier-border));
+  stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
+  stroke-width: 1.5;
+  transition: fill 120ms ease, stroke 120ms ease;
+}
+
+.cb-mm-dot-hidden {
+  fill: none;
+  stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
+  stroke-width: 2.5;
+}
+
+.cb-mm-node:hover .cb-mm-dot,
+.cb-mm-node:focus-visible .cb-mm-dot {
+  stroke: var(--text-accent);
+}
+
+.cb-mm-dot.cb-mm-problem {
+  stroke: var(--text-error);
+  stroke-dasharray: 3 2;
+}
+
+/* The hub's dot answers to Heat like every other, so its accent colour is the
+   fallback rather than an override — otherwise the one note that carries the
+   charter would be the one note whose questions the map does not colour. */
+.cb-mm-hub-dot {
+  fill: var(--cb-heat-fill, var(--text-accent));
+  stroke: var(--cb-heat-line, transparent);
+}
+
+.cb-mm-caption {
+  fill: var(--text-muted);
+  font-size: var(--font-ui-small);
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.cb-mm-node:hover .cb-mm-caption,
+.cb-mm-node:focus-visible .cb-mm-caption {
+  fill: var(--text-normal);
+}
+
+.cb-mm-hub .cb-mm-caption {
+  fill: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  font-weight: 600;
+}
+
 .cb-mm-hub:hover text,
 .cb-mm-hub:focus-visible text {
   fill: var(--cb-live);
