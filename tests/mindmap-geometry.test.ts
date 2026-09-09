@@ -5,8 +5,12 @@ import {
   edgeOpacity,
   fitTransform,
   inspectorLine,
+  radialCaption,
   NODE_HEIGHT,
   HUB_HEIGHT,
+  DOT_RADIUS,
+  HUB_DOT_RADIUS,
+  type Caption,
 } from "../src/mindmap/geometry";
 
 /** A fixed-advance stand-in for the real face — 7px a character. */
@@ -178,5 +182,172 @@ describe("inspectorLine", () => {
 
   it("ignores an empty frontmatter scalar rather than printing a stray separator", () => {
     expect(inspectorLine({ ...bare, kind: "", status: "open" })).toBe("Doors · open");
+  });
+});
+
+describe("radialCaption", () => {
+  /** A name far too long for any sensible cap, with spaces the trim has to notice. */
+  const LONG = "A ferry crossing that never arrives at the far bank";
+  /** The same overrun without spaces, so a truncation's slack is one character, never more. */
+  const RUN = "x".repeat(120);
+  /** One character's advance in the stand-in face — the slack any per-character trim leaves. */
+  const STEP = measure("x");
+  /** Whatever character a box truncates with; a caption has to use the same one. */
+  const ELLIPSIS = nodeBox(LONG, measure).label.slice(-1);
+
+  /**
+   * A caption's own arithmetic has to close: `width` is the number a caller
+   * reserves screen space with, so it must be exactly the parts that get drawn.
+   */
+  const expectAddsUp = (caption: Caption): void => {
+    if (caption.suffix === null) {
+      expect(caption.suffixX).toBeNull();
+      expect(caption.width).toBe(measure(caption.label));
+    } else {
+      expect(caption.suffixX).not.toBeNull();
+      // The count sits after the stem, never on top of it.
+      expect(caption.suffixX!).toBeGreaterThan(measure(caption.label));
+      expect(caption.width).toBe(caption.suffixX! + measure(caption.suffix));
+    }
+  };
+
+  it("draws a name that fits as bare text — no padding either side", () => {
+    const caption = radialCaption("Doors", measure);
+    expect(caption.label).toBe("Doors");
+    expect(caption.width).toBe(measure("Doors"));
+    expect(caption.suffix).toBeNull();
+    expect(caption.suffixX).toBeNull();
+  });
+
+  it("gives a one-letter note no floor to sit on, unlike a box", () => {
+    const caption = radialCaption("A", measure);
+    expect(caption.width).toBe(measure("A"));
+    expect(caption.width).toBeLessThan(nodeBox("A", measure).width);
+  });
+
+  it("is text and nothing else — no height, no inset, no divider", () => {
+    expect(Object.keys(radialCaption("Doors", measure, { suffix: "+4" })).sort()).toEqual([
+      "label",
+      "suffix",
+      "suffixX",
+      "width",
+    ]);
+  });
+
+  it("takes no options at all, and reads every empty count as no count", () => {
+    const bare = radialCaption("Doors", measure);
+    expect(radialCaption("Doors", measure, {})).toEqual(bare);
+    expect(radialCaption("Doors", measure, { suffix: undefined })).toEqual(bare);
+    expect(radialCaption("Doors", measure, { suffix: null })).toEqual(bare);
+    expect(radialCaption("Doors", measure, { suffix: "" })).toEqual(bare);
+  });
+
+  it("holds an over-long name tighter than the same name in a box", () => {
+    const caption = radialCaption(LONG, measure);
+    expect(caption.width).toBeLessThan(nodeBox(LONG, measure).width);
+    expect([...caption.label].length).toBeLessThan([...LONG].length);
+  });
+
+  it("reports the width it will actually draw, not the cap it clipped against", () => {
+    const caption = radialCaption(LONG, measure);
+    expect(caption.width).toBe(measure(caption.label));
+  });
+
+  it("truncates with the same character a box uses", () => {
+    expect(radialCaption(LONG, measure).label.slice(-1)).toBe(ELLIPSIS);
+  });
+
+  it("keeps the start of the name, so a clipped caption still names the note", () => {
+    const caption = radialCaption(LONG, measure);
+    expect(LONG.startsWith(caption.label.slice(0, -1))).toBe(true);
+  });
+
+  it("never leaves a dangling space before the ellipsis, wherever the cut lands", () => {
+    const spacey = "ab ".repeat(70);
+    for (let take = 1; take <= spacey.length; take++) {
+      expect(radialCaption(spacey.slice(0, take), measure).label).not.toMatch(/\s…$/);
+    }
+  });
+
+  it("counts astral characters as one, so an emoji stem is not cut mid-pair", () => {
+    const caption = radialCaption("🚢".repeat(80), measure);
+    expect([...caption.label].every((ch) => ch === "🚢" || ch === ELLIPSIS)).toBe(true);
+    // No lone surrogate survived the slice.
+    expect([...caption.label].some((ch) => {
+      const code = ch.codePointAt(0)!;
+      return code >= 0xd800 && code <= 0xdfff;
+    })).toBe(false);
+  });
+
+  it("sets the count after the stem, a constant gap away", () => {
+    const short = radialCaption("Doors", measure, { suffix: "+4" });
+    const gap = short.suffixX! - measure(short.label);
+    expect(gap).toBeGreaterThan(0);
+    expect(short.suffix).toBe("+4");
+
+    const other = radialCaption("References", measure, { suffix: "+12" });
+    expect(other.suffixX! - measure(other.label)).toBe(gap);
+  });
+
+  it("leaves a short stem whole when it carries a count", () => {
+    expect(radialCaption("Doors", measure, { suffix: "+4" }).label).toBe("Doors");
+  });
+
+  it("adds up, in every shape a caption comes in", () => {
+    for (const caption of [
+      radialCaption("", measure),
+      radialCaption("A", measure),
+      radialCaption("Doors", measure),
+      radialCaption("Doors", measure, { suffix: "+4" }),
+      radialCaption(LONG, measure),
+      radialCaption(LONG, measure, { suffix: "+12" }),
+      radialCaption(RUN, measure, { suffix: "+123" }),
+      radialCaption("🚢".repeat(80), measure, { suffix: "+9" }),
+    ]) {
+      expectAddsUp(caption);
+    }
+  });
+
+  it("clips the stem to keep the count, since a name loses less than a number", () => {
+    const withCount = radialCaption(LONG, measure, { suffix: "+12" });
+    expect(withCount.suffix).toBe("+12");
+    expect([...withCount.label].length).toBeLessThan([...radialCaption(LONG, measure).label].length);
+  });
+
+  it("takes the count's room out of the stem instead of adding it on top", () => {
+    const bare = radialCaption(RUN, measure);
+    const withCount = radialCaption(RUN, measure, { suffix: "+12" });
+    // Both clip against one total cap, and a per-character trim can undershoot
+    // it by at most a character — so the count can never widen the caption.
+    expect(withCount.width).toBeLessThanOrEqual(bare.width + STEP);
+  });
+
+  it("never drops the count, even one too wide to be sensible", () => {
+    const absurd = "+999999999999999999999999";
+    const caption = radialCaption(LONG, measure, { suffix: absurd });
+    expect(caption.suffix).toBe(absurd);
+    expect(caption.suffixX).not.toBeNull();
+    expectAddsUp(caption);
+  });
+
+  it("stops growing however long the name gets", () => {
+    const widths: number[] = [];
+    for (let take = 0; take <= 120; take++) widths.push(radialCaption(RUN.slice(0, take), measure).width);
+    for (let i = 1; i < widths.length; i++) expect(widths[i]!).toBeGreaterThanOrEqual(widths[i - 1]!);
+
+    const plateau = radialCaption("x".repeat(200), measure).width;
+    expect(radialCaption("x".repeat(400), measure).width).toBe(plateau);
+    expect(plateau).toBeLessThan(measure("x".repeat(200)));
+  });
+
+  describe("the dots beside the captions", () => {
+    it("draws the hub larger than a note", () => {
+      expect(HUB_DOT_RADIUS).toBeGreaterThan(DOT_RADIUS);
+    });
+
+    it("gives both a radius you can actually see", () => {
+      expect(DOT_RADIUS).toBeGreaterThan(0);
+      expect(Number.isFinite(HUB_DOT_RADIUS)).toBe(true);
+    });
   });
 });
