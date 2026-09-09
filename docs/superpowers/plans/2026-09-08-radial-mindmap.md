@@ -701,7 +701,7 @@ Write findings as a list. Anything needing a new test becomes a new `red` task a
 ## Task 3: Dress the dots and captions
 
 **Files:**
-- Modify: `styles.css` (append to the mindmap block, after the `.cb-mm-hub-spine-problem` rule near line 1364)
+- Modify: `styles.css` — append after the `.cb-mm-hub:hover text` / `:focus-visible` rule, so the block sits below the hub group rather than splitting it
 
 No test. Per `CLAUDE.md` the views are manual-test-only by design, and the decisions that *can* be tested already live in `radial.ts` and `geometry.ts`.
 
@@ -712,7 +712,7 @@ No test. Per `CLAUDE.md` the views are manual-test-only by design, and the decis
    the heat of whatever a collapse is hiding — the two areas the box splits at
    its divider, in the only shape a circle has for them. */
 .cb-mm-dot {
-  fill: var(--cb-heat-fill, var(--background-modifier-border));
+  fill: var(--cb-heat-fill, var(--cb-rail));
   stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
   stroke-width: 1.5;
   transition: fill 120ms ease, stroke 120ms ease;
@@ -726,11 +726,13 @@ No test. Per `CLAUDE.md` the views are manual-test-only by design, and the decis
 
 .cb-mm-node:hover .cb-mm-dot,
 .cb-mm-node:focus-visible .cb-mm-dot {
-  stroke: var(--text-accent);
+  stroke: var(--cb-live);
 }
 
+/* The same red the box mode uses. Two reds for one "this note is broken"
+   signal would make the map's meaning depend on which shape you were in. */
 .cb-mm-dot.cb-mm-problem {
-  stroke: var(--text-error);
+  stroke: var(--cb-broken);
   stroke-dasharray: 3 2;
 }
 
@@ -738,12 +740,13 @@ No test. Per `CLAUDE.md` the views are manual-test-only by design, and the decis
    fallback rather than an override — otherwise the one note that carries the
    charter would be the one note whose questions the map does not colour. */
 .cb-mm-hub-dot {
-  fill: var(--cb-heat-fill, var(--text-accent));
+  fill: var(--cb-heat-fill, var(--cb-live));
   stroke: var(--cb-heat-line, transparent);
 }
 
-.cb-mm-caption {
-  fill: var(--text-muted);
+/* `text.` is load-bearing, not decoration — see the note below the block. */
+text.cb-mm-caption {
+  fill: var(--cb-quiet);
   font-size: var(--font-ui-small);
   dominant-baseline: middle;
   pointer-events: none;
@@ -751,17 +754,19 @@ No test. Per `CLAUDE.md` the views are manual-test-only by design, and the decis
 
 .cb-mm-node:hover .cb-mm-caption,
 .cb-mm-node:focus-visible .cb-mm-caption {
-  fill: var(--text-normal);
+  fill: var(--cb-ink);
 }
 
 .cb-mm-hub .cb-mm-caption {
-  fill: var(--text-normal);
+  fill: var(--cb-ink);
   font-size: var(--font-ui-medium);
   font-weight: 600;
 }
 ```
 
-The existing `.cb-mm-node text` rule already sets a family and baseline; `.cb-mm-caption` is more specific for the properties it names and inherits the rest. Do not delete or edit that rule.
+The caption's selector is `text.cb-mm-caption`, not a bare class, and that matters. `.cb-mm-node text` is **(0,1,1)** — one class plus one type — so a bare `.cb-mm-caption` at (0,1,0) would lose to it on `fill`, `font-size` and `dominant-baseline`, no matter where it sat in the file. The caption would then render in `--cb-ink`, which is what the hover rule sets, making the hover rule dead code and the muted-to-normal progression invisible. Matching (0,1,1) and coming later in source is what wins the tie. Do not delete or edit `.cb-mm-node text` itself; other rules depend on it.
+
+The same trap is live elsewhere in the file: `.cb-mm-fold` (0,1,0) has never actually beaten `.cb-mm-node text`, so a folded branch's count renders in `--cb-ink` at `--font-ui-small` rather than the `--cb-quiet` / `--font-ui-smaller` its own comment promises. That is a pre-existing defect, tracked separately — do not fix it here.
 
 - [ ] **Step 2: Check the palette hooks resolve**
 
