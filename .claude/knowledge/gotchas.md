@@ -315,3 +315,28 @@ therefore *invariant* under it, and arc is the natural unit here because the
 no-overlap contract is made of arcs. Removing the scale entirely left 536 tests
 green while putting three notes at ±120° on a 49px circle. Anything asserting
 that the scale ran must be phrased in angle and radius separately.
+
+## `.cb-mm-node text` turns off pointer events for every label in a node
+Any `<text>` inside `g.cb-mm-node` is unclickable by default — `.cb-mm-node text`
+(styles.css) sets `pointer-events: none`, and it is specificity (0,1,1). A rule
+like `text.cb-mm-caption` ties it at (0,1,1), so **deleting** `pointer-events`
+from the more specific-looking rule does not override it; only declaring
+`pointer-events: auto` does. Equal weight means a rule that says nothing about a
+property loses it to one that does.
+
+The symptom is two failures from one cause: the element takes no clicks, and
+because it is not a hit target, `:hover` never matches either — so a hover style
+on it silently does nothing too. If a label's click *and* its hover are both
+dead, look here first rather than at the handler.
+
+## A CSS harness must inline the whole stylesheet, not selected rules
+Verifying view behaviour in a browser by extracting the relevant rules from
+`styles.css` is worse than it looks: choosing which rules to include is the same
+mistake as retyping them, and it hides exactly the rules you did not think of.
+A harness built this way reported a working caption link over a completely dead
+one, because the hand-picked list left out `.cb-mm-node text`.
+
+Inline the entire file. If a rule needs Obsidian's variables, stub the `--cb-*`
+and `--font-ui-*` custom properties in a `:root` block and leave everything else
+alone. Then reproduce the bug in the harness *before* fixing it — a harness that
+has only ever seen working code has not been tested.
