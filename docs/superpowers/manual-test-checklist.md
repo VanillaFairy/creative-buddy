@@ -457,6 +457,14 @@ older than the code.
 - [ ] Hover a name → it underlines, and only that one does. Hover the `+N`
       beside a folded name → no underline, and clicking it does nothing; the
       count is metadata, not part of the link.
+- [ ] Hover a branch's **dot** → a **−** appears inside it when its children are
+      on screen, a **+** when it is hiding them. Hover a leaf's dot → nothing
+      appears, because clicking it opens the note instead. The mark says what
+      the click is about to do before you commit to it.
+- [ ] Hover a note's **name** → no mark appears on its dot. The name opens the
+      note, so it must not promise a fold.
+- [ ] Tab to a dot with the keyboard → the mark shows on focus too, so Space
+      says what it will do.
 - [ ] Tab to a dot → Enter opens the note, Space folds the branch, same as
       the flat map.
 - [ ] Turn Heat on with Radial on → dots take colour by their own open
