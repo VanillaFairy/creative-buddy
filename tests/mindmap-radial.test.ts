@@ -115,6 +115,14 @@ const captionRect = (node: RadialNode, reach: Reach): Rect => {
   };
 };
 
+/** The rectangle a dot occupies, from the same two sources. */
+const dotRect = (node: RadialNode, reach: Reach): Rect => ({
+  left: node.x - reach.dot,
+  right: node.x + reach.dot,
+  top: node.y - reach.dot,
+  bottom: node.y + reach.dot,
+});
+
 const overlaps = (a: Rect, b: Rect): boolean =>
   a.left + EPS < b.right && b.left + EPS < a.right && a.top + EPS < b.bottom && b.top + EPS < a.bottom;
 
@@ -122,7 +130,13 @@ const where = (node: RadialNode, rect: Rect): string =>
   `${node.path} @${node.angle.toFixed(4)}rad r${node.radius.toFixed(2)} ` +
   `[${rect.left.toFixed(2)}..${rect.right.toFixed(2)}]x[${rect.top.toFixed(2)}..${rect.bottom.toFixed(2)}]`;
 
-/** The load-bearing invariant, checked pair by pair over one ring. */
+/**
+ * The load-bearing invariant, checked pair by pair over one ring. Two things
+ * are drawn per note and both of them are in the way: a reservation that counts
+ * a caption's width but forgets the dot it hangs off keeps every pair of
+ * captions apart and still parks a dot several pixels inside its neighbour's
+ * text, which is why the second pass is here.
+ */
 const expectNoCollisions = (ring: RadialNode[], reachOf: ReachOf): void => {
   for (let i = 0; i < ring.length; i++) {
     for (let j = i + 1; j < ring.length; j++) {
@@ -131,6 +145,19 @@ const expectNoCollisions = (ring: RadialNode[], reachOf: ReachOf): void => {
       const rectA = captionRect(a, reachOf(a.data));
       const rectB = captionRect(b, reachOf(b.data));
       expect(overlaps(rectA, rectB), `captions collide: ${where(a, rectA)} vs ${where(b, rectB)}`).toBe(false);
+    }
+  }
+  for (const a of ring) {
+    const reachA = reachOf(a.data);
+    if (reachA.caption <= 0) continue;
+    const caption = captionRect(a, reachA);
+    for (const b of ring) {
+      if (b === a) continue;
+      const dot = dotRect(b, reachOf(b.data));
+      expect(
+        overlaps(caption, dot),
+        `a caption is written over a dot: ${where(a, caption)} vs ${where(b, dot)}`,
+      ).toBe(false);
     }
   }
 };
@@ -225,6 +252,17 @@ describe("radialLayout: the shape of the circle", () => {
     // Not vacuous: something has to be off the vertical for the check to bite.
     expect(nodes.some((n: RadialNode) => Math.abs(n.x) > 1)).toBe(true);
   });
+
+  it("reads a ring around the circle in the order the notes stand in the tree", () => {
+    // A map mirrored left to right keeps `angle`, `x` and `y` agreeing with one
+    // another exactly as the check above wants them to, and hands the reader a
+    // note list that runs backwards against the folder it came from.
+    const children = brood(6);
+    const layout = radialLayout(note("Hub", children), evenReach(70));
+    const ring = ringAt(layout, 1);
+    expect(ring).toHaveLength(children.length);
+    expect(ring.map((n: RadialNode) => n.data.stem)).toEqual(children.map((c: MindmapNode) => c.stem));
+  });
 });
 
 describe("radialLayout: no two captions on a ring may collide", () => {
@@ -245,9 +283,17 @@ describe("radialLayout: no two captions on a ring may collide", () => {
     expectNoCollisions(ringAt(layout, 2), reachOf);
   });
 
-  it("holds when the notes on a ring are wildly different widths", () => {
+  it("draws a ring of wildly different widths without two captions meeting", () => {
     // A layout that reserves one width for everything passes the even case and
     // fails here — the wide captions land on top of their narrow neighbours.
+    //
+    // What it is not is the guard for splitting the difference between two
+    // unequal neighbours. Whether two rectangles meet depends on how far out
+    // the ring sits, and at the radius this implementation picks the vertical
+    // drop between neighbours pulls the text apart on its own even with the
+    // spacing correction taken out. "Keeps a long name's whole width beside a
+    // short one on one crowded ring" further down is that guard, and it weighs
+    // arc against reach so it holds at whatever radius a layout chooses.
     const root = note("Hub", nested(5, 2));
     const reachOf = variedReach(root, [12, 190, 44, 150, 8, 96]);
     const layout = radialLayout(root, reachOf);
@@ -283,6 +329,19 @@ describe("radialLayout: no two captions on a ring may collide", () => {
     const ring = ringAt(layout, 1);
     expect(ring).toHaveLength(72);
     expectNoCollisions(ring, reachOf);
+  });
+
+  it("holds through three generations of a graph that fills every ring it has", () => {
+    // Every ring here is packed, so a reservation that is short by a dot or by
+    // its breathing room shows up as a caption written across a neighbouring
+    // dot on whichever ring the shortfall bites first.
+    const reachOf = evenReach(168);
+    const layout = radialLayout(note("Hub", nested(5, 3)), reachOf);
+    for (const depth of [1, 2, 3]) {
+      const ring = ringAt(layout, depth);
+      expect(ring).toHaveLength(5 ** depth);
+      expectNoCollisions(ring, reachOf);
+    }
   });
 
   it("holds for a ring far too big for one turn at any sane radius", () => {
@@ -342,6 +401,38 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
         expect(step).toBeGreaterThanOrEqual(leastBreadth(reach) - EPS);
       }
     }
+  });
+
+  it("keeps a long name's whole width beside a short one on one crowded ring", () => {
+    // Nine leaves off the hub and nothing else — no second ring, no cousins, no
+    // parent structure for a shortfall to hide behind. `d3-flextree` separates
+    // two neighbours by the MEAN of what they reserved, which is right for a box
+    // centred on its own space and wrong for a caption hanging off one side of
+    // its dot. Take the correction out and this ring hands a 200px name about
+    // eighty pixels less than it needs beside its 8px neighbour.
+    const root = note("Hub", brood(9, "k"));
+    const reachOf = variedReach(root, [200, 190, 8, 6]);
+    const ring = ringAt(radialLayout(root, reachOf), 1);
+    expect(ring).toHaveLength(9);
+
+    let lopsidedPairs = 0;
+    arcSteps(ring).forEach((step: number, i: number) => {
+      const before = ring[i]!;
+      const after = ring[i + 1]!;
+      const wantsBefore = leastBreadth(reachOf(before.data));
+      const wantsAfter = leastBreadth(reachOf(after.data));
+      const needed = Math.max(wantsBefore, wantsAfter);
+      if (Math.abs(wantsBefore - wantsAfter) > 100) lopsidedPairs++;
+      expect(
+        step,
+        `${before.path} (${wantsBefore.toFixed(0)}px) and ${after.path} (${wantsAfter.toFixed(0)}px) ` +
+          `were given ${step.toFixed(2)}px of the ring between them, ` +
+          `and the wider of the two needs ${needed.toFixed(0)}px of it to itself`,
+      ).toBeGreaterThanOrEqual(needed - EPS);
+    });
+    // Not vacuous: a ring of equals would prove nothing about splitting a
+    // difference, so a wide name has to actually stand next to a narrow one.
+    expect(lopsidedPairs).toBeGreaterThan(0);
   });
 
   it("keeps a long name's whole width between it and the note beside it, whoever its parent is", () => {
@@ -433,14 +524,44 @@ describe("radialLayout: a small graph stays a fan", () => {
     expect(fanStep).toBeLessThanOrEqual(packedStep + EPS);
   });
 
+  it("leaves three notes on the ring one note sits on, at the angle six notes get", () => {
+    // The claim above is arc, and arc cannot see this: the shrink multiplies
+    // every angle and divides every radius by the same factor, so it leaves
+    // arc untouched. Read apart, the two halves are plain. A ring only ever
+    // moves outward under crowding, so three notes sit exactly where one does;
+    // and until a ring is full every note gets the same slice of it, so three
+    // notes are spread no wider than six.
+    const reachOf = evenReach(70);
+    const ringOf = (count: number): RadialNode[] => ringAt(radialLayout(note("Hub", brood(count)), reachOf), 1);
+    const lone = ringOf(1);
+    const fan = ringOf(3);
+    const more = ringOf(6);
+    expect(lone).toHaveLength(1);
+    expect(fan).toHaveLength(3);
+    expect(more).toHaveLength(6);
+    expect(fan[0]!.radius).toBeCloseTo(lone[0]!.radius, 6);
+    const widestStep = (ring: RadialNode[]): number =>
+      Math.max(...ring.slice(1).map((n: RadialNode, i: number) => n.angle - ring[i]!.angle));
+    expect(widestStep(fan)).toBeCloseTo(widestStep(more), 6);
+  });
+
   it("opens the fan wider for wide notes than for small ones, rather than filling the circle either way", () => {
     // A layout that spreads whatever it is given evenly around the circle gives
     // both of these the same span; one that reserves real breadth does not.
-    const span = (reachOf: ReachOf): number => {
-      const angles = radialLayout(note("Hub", brood(3)), reachOf).nodes.map((n: RadialNode) => n.angle);
-      return Math.max(...angles) - Math.min(...angles);
+    //
+    // Comparing spans only means something while both fans stand on the same
+    // ring, so that is asserted first — otherwise a layout that shrinks a
+    // roomy graph into the whole circle passes this on whichever side of a
+    // rounding error its two spans happen to land.
+    const fan = (reachOf: ReachOf): { radius: number; span: number } => {
+      const ring = ringAt(radialLayout(note("Hub", brood(3)), reachOf), 1);
+      expect(ring).toHaveLength(3);
+      return { radius: ring[0]!.radius, span: ring[2]!.angle - ring[0]!.angle };
     };
-    expect(span(evenReach(10, 2))).toBeLessThan(span(evenReach(200, 6)));
+    const small = fan(evenReach(10, 2));
+    const wide = fan(evenReach(200, 6));
+    expect(small.radius).toBeCloseTo(wide.radius, 6);
+    expect(small.span).toBeLessThan(wide.span);
   });
 });
 
@@ -506,20 +627,28 @@ describe("radialLayout: what it reports back", () => {
     expect(nodes.find((n: RadialNode) => n.depth === 0)!.data).toBe(root);
   });
 
-  it("returns bounds that enclose every caption and every dot it laid out", () => {
+  it("returns the smallest box that holds every caption and every dot it laid out", () => {
+    // The view hands `bounds` straight to a fit-to-viewport transform, so a box
+    // that merely encloses the drawing is not enough: one a thousand times too
+    // big encloses it too, and paints the whole map as a speck in the middle of
+    // an empty pane. Each edge has to sit on a note.
     const root = note("Hub", nested(5, 2));
     const reachOf = variedReach(root, [30, 170, 60, 120]);
     const { nodes, bounds } = radialLayout(root, reachOf);
+    expect(nodes.length).toBeGreaterThan(1);
+    const drawn = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const node of nodes) {
       const reach = reachOf(node.data);
       const rect = captionRect(node, reach);
-      expect(bounds.minX).toBeLessThanOrEqual(rect.left + EPS);
-      expect(bounds.maxX).toBeGreaterThanOrEqual(rect.right - EPS);
-      expect(bounds.minX).toBeLessThanOrEqual(node.x - reach.dot + EPS);
-      expect(bounds.maxX).toBeGreaterThanOrEqual(node.x + reach.dot - EPS);
-      expect(bounds.minY).toBeLessThanOrEqual(node.y - reach.dot + EPS);
-      expect(bounds.maxY).toBeGreaterThanOrEqual(node.y + reach.dot - EPS);
+      drawn.minX = Math.min(drawn.minX, rect.left, node.x - reach.dot);
+      drawn.maxX = Math.max(drawn.maxX, rect.right, node.x + reach.dot);
+      drawn.minY = Math.min(drawn.minY, node.y - reach.dot);
+      drawn.maxY = Math.max(drawn.maxY, node.y + reach.dot);
     }
+    expect(bounds.minX).toBeCloseTo(drawn.minX, 6);
+    expect(bounds.maxX).toBeCloseTo(drawn.maxX, 6);
+    expect(bounds.minY).toBeCloseTo(drawn.minY, 6);
+    expect(bounds.maxY).toBeCloseTo(drawn.maxY, 6);
     expect(bounds.maxX).toBeGreaterThan(bounds.minX);
     expect(bounds.maxY).toBeGreaterThan(bounds.minY);
   });
@@ -592,6 +721,26 @@ const pointsIn = (path: string): Point[] => {
   return points;
 };
 
+/**
+ * Where a curve actually runs, from its points alone — de Casteljau over as
+ * many of them as there are, so this reads a quadratic and a cubic alike and
+ * does not care which command the module wrote them with.
+ */
+const bezierAt = (points: Point[], t: number): Point => {
+  let level = points;
+  while (level.length > 1) {
+    const next: Point[] = [];
+    for (let i = 1; i < level.length; i++) {
+      next.push({
+        x: level[i - 1]!.x + (level[i]!.x - level[i - 1]!.x) * t,
+        y: level[i - 1]!.y + (level[i]!.y - level[i - 1]!.y) * t,
+      });
+    }
+    level = next;
+  }
+  return level[0]!;
+};
+
 /** Checks a path's two ends and hands back the shape between them. */
 const expectRunsBetween = (path: string, from: RadialNode, to: RadialNode): Point[] => {
   const points = pointsIn(path);
@@ -619,6 +768,42 @@ describe("radialLinkPath", () => {
     const points = pointsIn(radialLinkPath(inner.source, inner.target));
     expect(points.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
     expectRunsBetween(radialLinkPath(inner.source, inner.target), inner.source, inner.target);
+  });
+
+  it("sets off from the parent straight outward and comes in on the child's own bearing", () => {
+    // The check below weighs the curve's shape by how far from the hub it
+    // passes, and every point of it keeps its distance whichever end's bearing
+    // it was put on — so a curve whose two controls have been swapped, and which
+    // therefore leaves the parent almost sideways and crosses itself on the way
+    // back, sails past it. A branch setting off across the circle instead of out
+    // from the hub is the very thing this curve exists not to look like.
+    const layout = radialLayout(note("Hub", nested(5, 2)), evenReach(60));
+    const spread = (link: RadialLink): number => Math.abs(link.source.angle - link.target.angle);
+    const link = layout.links
+      .filter((l: RadialLink) => l.source.depth > 0)
+      .sort((a: RadialLink, b: RadialLink) => spread(b) - spread(a))[0]!;
+    // Radial and chordal are the same direction for a child sitting straight
+    // out from its parent, so the pair has to be well off each other's bearing.
+    expect(spread(link)).toBeGreaterThan(0.15);
+
+    const path = radialLinkPath(link.source, link.target);
+    const shape = expectRunsBetween(path, link.source, link.target);
+    const points = pointsIn(path);
+    const leaving = {
+      x: shape[0]!.x - points[0]!.x,
+      y: shape[0]!.y - points[0]!.y,
+    };
+    const arriving = {
+      x: points[points.length - 1]!.x - shape[shape.length - 1]!.x,
+      y: points[points.length - 1]!.y - shape[shape.length - 1]!.y,
+    };
+    /** The sine of the angle between a step of the curve and a note's own radius. */
+    const offRadial = (step: Point, node: RadialNode): number =>
+      Math.abs(step.x * node.y - step.y * node.x) / (Math.hypot(step.x, step.y) * node.radius);
+    expect(Math.hypot(leaving.x, leaving.y)).toBeGreaterThan(1);
+    expect(Math.hypot(arriving.x, arriving.y)).toBeGreaterThan(1);
+    expect(offRadial(leaving, link.source)).toBeCloseTo(0, 6);
+    expect(offRadial(arriving, link.target)).toBeCloseTo(0, 6);
   });
 
   it("bends through the space between the two rings, not through the hub and not past the child", () => {
@@ -675,6 +860,48 @@ describe("crossLinkPath", () => {
   it("starts and ends on its two notes whichever way round it is asked", () => {
     const ring = ringAt(fan, 1);
     expectRunsBetween(crossLinkPath(ring[5]!, ring[1]!), ring[5]!, ring[1]!);
+  });
+
+  it("draws one and the same curve whichever of its two notes is named first", () => {
+    // A cross-link joins two notes and points at neither: the map dedupes them
+    // by an unordered key, so which end arrives first is whatever the walk
+    // happened to hit. Bend the curve around one of them and the same pair of
+    // notes gets two different arcs on two different draws.
+    const ring = ringAt(fan, 1);
+    const one = ring[1]!;
+    const other = ring[5]!;
+    const there = pointsIn(crossLinkPath(one, other));
+    const back = pointsIn(crossLinkPath(other, one)).reverse();
+    expect(there.length).toBeGreaterThanOrEqual(3);
+    expect(back).toHaveLength(there.length);
+    there.forEach((point: Point, i: number) => {
+      expect(point.x).toBeCloseTo(back[i]!.x, 2);
+      expect(point.y).toBeCloseTo(back[i]!.y, 2);
+    });
+  });
+
+  it("bows in by a real share of the chord, neither hugging it nor diving at the hub", () => {
+    // "Bows inward at all" is satisfied by a hair's breadth, and satisfied
+    // equally by a curve dragged all the way onto the hub. Both are wrong on
+    // screen for the same reason the straight chord is: one is unreadable as a
+    // curve, the other buries the middle of the map under every cross-link
+    // drawn. The band is deliberately loose — the fraction itself is the
+    // module's to pick — and only says the bow is worth drawing and stops well
+    // short of the centre.
+    const ring = ringAt(fan, 1);
+    const from = ring[0]!;
+    const to = ring[3]!;
+    const points = pointsIn(crossLinkPath(from, to));
+    const samples = 200;
+    const closest = Math.min(
+      ...Array.from({ length: samples + 1 }, (_, i) => {
+        const point = bezierAt(points, i / samples);
+        return Math.hypot(point.x, point.y);
+      }),
+    );
+    const straight = straightDistance(from, to);
+    expect(closest).toBeLessThan(straight * 0.95);
+    expect(closest).toBeGreaterThan(straight * 0.6);
   });
 
   it("stays a real curve between two notes on opposite sides of the circle", () => {
