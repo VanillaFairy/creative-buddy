@@ -26,6 +26,22 @@ export interface Box {
   dividerX: number | null;
 }
 
+/**
+ * A node's caption in radial mode: the same text rules as a box, without the
+ * box. There is no divider to draw, so the fold count is simply set after the
+ * stem at the same remove the box puts either side of its rule.
+ */
+export interface Caption {
+  /** Rendered stem, ellipsised if the full one would overrun. */
+  label: string;
+  /** The count of children folded away, or null. */
+  suffix: string | null;
+  /** Total drawn width, stem plus the gap and the count. */
+  width: number;
+  /** Where the count starts, measured from the caption's own start. */
+  suffixX: number | null;
+}
+
 export interface Bounds {
   minX: number;
   minY: number;
@@ -47,6 +63,9 @@ export interface Transform {
 export const NODE_HEIGHT = 28;
 /** The hub is a title rather than a box, so it needs room to sit taller. */
 export const HUB_HEIGHT = 36;
+/** The dot a note draws in radial mode, and the larger one the hub gets. */
+export const DOT_RADIUS = 6;
+export const HUB_DOT_RADIUS = 11;
 
 const PAD_X = 13;
 /** Breathing room on each side of the divider rule. */
@@ -55,6 +74,11 @@ const MIN_WIDTH = 52;
 /** The box's corner rounding; the child-ref area has to match it to seat cleanly. */
 export const CORNER_RADIUS = 6;
 const MAX_WIDTH = 240;
+/**
+ * The caption cap in radial mode. Tighter than a box's, because a ring is read
+ * at a glance and a long caption there eats angle its neighbours need.
+ */
+const MAX_CAPTION_WIDTH = 168;
 const ELLIPSIS = "…";
 
 /**
@@ -93,6 +117,24 @@ export function nodeBox(
     labelX: pad,
     suffixX: dividerX === null ? null : dividerX + DIVIDER_GAP,
     dividerX,
+  };
+}
+
+export function radialCaption(
+  label: string,
+  measure: Measure,
+  options: { suffix?: string | null } = {},
+): Caption {
+  const suffix = options.suffix === undefined || options.suffix === "" ? null : options.suffix;
+  const suffixWidth = suffix === null ? 0 : DIVIDER_GAP + measure(suffix);
+  const budget = MAX_CAPTION_WIDTH - suffixWidth;
+  const shown = measure(label) <= budget ? label : ellipsise(label, budget, measure);
+  const labelWidth = measure(shown);
+  return {
+    label: shown,
+    suffix,
+    width: labelWidth + suffixWidth,
+    suffixX: suffix === null ? null : labelWidth + DIVIDER_GAP,
   };
 }
 
