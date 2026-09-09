@@ -273,3 +273,45 @@ removal walks into the real `node_modules`.
 
 ## Windows worktree removal can hit file locks
 `git worktree remove` may fail with "Device or resource busy" while a node/claude child process lingers. `git worktree prune` clears the registration; the directory becomes deletable once the process exits. Never kill node.exe indiscriminately to free it — other sessions run on node too.
+
+## deploy.bat is inert through the Bash tool
+Running `deploy.bat` from the Bash tool silently no-ops — no output, no copy —
+even wrapped in `cmd /c`. It works from the PowerShell tool with a full path:
+```powershell
+cmd.exe /c "C:\work\creative-buddy\deploy.bat"
+```
+Failure is quiet, so a stale bundle in the vault looks like a deploy that
+worked. Confirm by the copy log and the build timestamps the script prints,
+never by the command returning cleanly.
+
+## A scripted rewrite of a source file turns it CRLF
+Any agent that rewrites a file wholesale from a script (mutation testing,
+codegen) writes CRLF line endings. `git diff` normalises them away and shows
+nothing, while `git status` keeps reporting the file modified — a state that
+reads as "no changes but dirty" and cannot be explained from the diff. Restore
+by deleting the file and checking it out again, then confirm by hashing the
+blob, not by re-reading the diff.
+
+## Reverting a mutation takes your uncommitted work with it
+Mutation testing means `git checkout -- <file>` to undo the deliberate
+breakage. If you are also editing that same file — adding the comment or the
+constant the mutation was testing — the checkout discards that too, silently.
+Commit or stash your own change before you start mutating, or mutate a file you
+are not editing.
+
+## A test that catches a bug against one implementation may catch nothing
+A collision test verified against a scratch implementation packed to radius
+1421, where captions overlapped. The real implementation lands at 1547 and the
+same test passes with the bug present. Its bite depended on a value each
+implementation chooses freely. Assert the invariant directly — the arc between
+neighbours against the width they reserved — rather than inferring it from
+where rendered rectangles land. A guard is only a guard once it has been seen
+to fail against the code it will actually protect.
+
+## Arc length cannot see the radial map's crowding scale
+`radialLayout` handles a ring that wants more than a full turn by multiplying
+every angle by `s` and dividing every radius by `s`. `arc = Δangle × radius` is
+therefore *invariant* under it, and arc is the natural unit here because the
+no-overlap contract is made of arcs. Removing the scale entirely left 536 tests
+green while putting three notes at ±120° on a 49px circle. Anything asserting
+that the scale ran must be phrased in angle and radius separately.
