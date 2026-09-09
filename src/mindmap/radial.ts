@@ -1,10 +1,18 @@
 /**
- * The map as rings around its hub.
+ * The map as bands around its hub.
  *
- * Nothing here is new geometry — it is the same `d3-flextree` pass the flat map
- * runs, with its axes read differently: x is an angle in radians and depth is a
- * radius. The one rule belonging to this shape alone is how much of a ring a
- * node reserves.
+ * Two questions, answered in that order: which way round the circle each note
+ * lies, and how far out. This file owns the first. It is the same `d3-flextree`
+ * pass the flat map runs, with its axes read differently — x is an angle in
+ * radians and depth is a radius — and the one rule belonging to this shape
+ * alone is how much of a circle a node reserves.
+ *
+ * The second question belongs to `bands.ts`. Reserving a share of a circle is
+ * not the same as needing it: two captions can be nearer each other than
+ * either reserved and still not touch, and one that cannot has a whole lane of
+ * radius to step into. So the circle worked out here is the loosest a
+ * generation ever gets, and the band it is actually drawn into is usually
+ * nearer the hub.
  *
  * Captions never rotate, so how much of a ring one takes up depends on where
  * on the circle it stands: at the top it lies flat across its ring and takes
@@ -19,13 +27,16 @@
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { radialCaption, CAPTION_HEIGHT, DOT_RADIUS, HUB_DOT_RADIUS } from "./geometry";
+import { placeBands } from "./bands";
+import type { Generation } from "./bands";
 import type { MindmapNode } from "./layout";
 import type { Bounds, Caption, Measure } from "./geometry";
 
 /**
- * The least room between one ring and the next. A ring with few notes on it
- * takes exactly this; a crowded one is sized by what stands on it and ignores
- * the gap entirely, which is why loosening it does nothing to a busy circle.
+ * The least room between one generation's circle and the next's. A generation
+ * with few notes on it takes exactly this; a crowded one is sized by what
+ * stands on it and ignores the gap entirely, which is why loosening it does
+ * nothing to a busy circle.
  */
 const RING_GAP = 170;
 
@@ -77,6 +88,12 @@ export interface RadialNode {
   /** Radians. Zero points straight up and the angle grows clockwise. */
   angle: number;
   radius: number;
+  /**
+   * Which lane of its generation's band the note stands in, counting outward
+   * from nought. Notes of one generation no longer share a radius; they share
+   * a band, and this says where in it.
+   */
+  lane: number;
   /** Cartesian, with the hub at the origin. */
   x: number;
   y: number;
@@ -90,6 +107,16 @@ export interface RadialLayout {
   nodes: RadialNode[];
   links: RadialLink[];
   bounds: Bounds;
+  /**
+   * The circle each generation's bearings were measured against, by depth.
+   *
+   * This is where the generation would stand with every note of it on one
+   * radius, and it is what every note's share of the circle was reserved on.
+   * The band it actually draws into is usually nearer the hub than this — see
+   * `bands.ts` — so `radius` on a node is not this number, and the arc a note
+   * was given is an angle times *this*, not times where it ended up.
+   */
+  rings: ReadonlyMap<number, number>;
 }
 
 export function radialLayout(
@@ -233,7 +260,7 @@ export function radialLayout(
       const radius = n.depth === 0 ? 0 : ringOf(n.depth) / scale;
       const x = radius * Math.sin(angle);
       const node: RadialNode = {
-        path: n.data.path, data: n.data, depth: n.depth, angle, radius, x,
+        path: n.data.path, data: n.data, depth: n.depth, angle, radius, lane: 0, x,
         y: -radius * Math.cos(angle),
         labelAnchor: x < 0 ? "end" : "start",
       };
@@ -241,6 +268,32 @@ export function radialLayout(
       byPath.set(node.path, node);
       bearing.set(node.path, angle);
     });
+  }
+
+  // The bearings are settled; the distances are not. Every generation has a
+  // ring it could have to itself, and `placeBands` decides how much nearer the
+  // hub it is worth drawing instead — see `bands.ts` for why that is a
+  // question worth asking.
+  const generations: Generation[] = [];
+  for (const depth of depths) {
+    const notes = nodes.filter((node) => node.depth === depth);
+    if (notes.length === 0) continue;
+    generations.push({
+      depth,
+      loosest: notes[0]!.radius,
+      notes: notes.map((node) => ({ path: node.path, angle: node.angle, reach: reachOf(node.data) })),
+    });
+  }
+  const reserved = new Map(generations.map((g) => [g.depth, g.loosest]));
+  const seats = placeBands(generations, reachOf(root), ringGap);
+  for (const node of nodes) {
+    const seat = seats.get(node.path);
+    if (seat === undefined) continue;
+    node.radius = seat.radius;
+    node.lane = seat.lane;
+    node.x = seat.radius * Math.sin(node.angle);
+    node.y = -seat.radius * Math.cos(node.angle);
+    node.labelAnchor = node.x < 0 ? "end" : "start";
   }
 
   const links: RadialLink[] = [];
@@ -251,7 +304,7 @@ export function radialLayout(
     if (source !== undefined && target !== undefined) links.push({ source, target });
   });
 
-  return { nodes, links, bounds: boundsOf(nodes, reachOf) };
+  return { nodes, links, bounds: boundsOf(nodes, reachOf), rings: reserved };
 }
 
 /**

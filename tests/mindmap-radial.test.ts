@@ -74,13 +74,31 @@ const variedReach = (root: MindmapNode, captions: number[]): ReachOf => {
 const ringAt = (layout: RadialLayout, depth: number): RadialNode[] =>
   layout.nodes.filter((n: RadialNode) => n.depth === depth).sort((a: RadialNode, b: RadialNode) => a.angle - b.angle);
 
-/** How much room each neighbouring pair on a ring actually got, in drawn pixels. */
-const arcSteps = (ring: RadialNode[]): number[] => {
+/**
+ * How much room each neighbouring pair of a generation was given, in pixels of
+ * the circle their bearings were reserved on.
+ *
+ * Not where they ended up. A generation reserves its share of a circle and is
+ * then drawn into a band nearer the hub, where the notes that no longer fit
+ * side by side step outward into a lane of their own. Measured on the band,
+ * two neighbours can be closer than either reserved and still not touch, so
+ * the band says nothing about whether the reservation was honoured — and
+ * honouring it is the whole of the mean-separation correction these tests are
+ * here to hold onto.
+ */
+const arcSteps = (ring: RadialNode[], on: number): number[] => {
   const steps: number[] = [];
   for (let i = 1; i < ring.length; i++) {
-    steps.push((ring[i]!.angle - ring[i - 1]!.angle) * ring[i]!.radius);
+    steps.push((ring[i]!.angle - ring[i - 1]!.angle) * on);
   }
   return steps;
+};
+
+/** The circle a generation's bearings were reserved on. */
+const ringOf = (layout: RadialLayout, depth: number): number => {
+  const on = layout.rings.get(depth);
+  expect(on, `the layout reports no reserved circle for depth ${depth}`).toBeDefined();
+  return on!;
 };
 
 /** The test's own model of a caption's height. */
@@ -404,7 +422,7 @@ describe("radialLayout: the circle closes and never wraps", () => {
     const layout = radialLayout(note("Hub", brood(60)), () => reach);
     const ring = ringAt(layout, 1);
     const carried = leastSteps(ring, () => reach).reduce((a: number, b: number) => a + b, 0);
-    expect(TAU * ring[0]!.radius).toBeGreaterThanOrEqual(carried - EPS);
+    expect(TAU * ringOf(layout, 1)).toBeGreaterThanOrEqual(carried - EPS);
   });
 });
 
@@ -412,9 +430,10 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
   it("gives every neighbouring pair at least the breadth it reserved, roomy or packed", () => {
     const reach: Reach = { dot: 6, caption: 90 };
     for (const count of [4, 12, 60]) {
-      const ring = ringAt(radialLayout(note("Hub", brood(count)), () => reach), 1);
+      const layout = radialLayout(note("Hub", brood(count)), () => reach);
+      const ring = ringAt(layout, 1);
       const least = leastSteps(ring, () => reach);
-      arcSteps(ring).forEach((step: number, i: number) => {
+      arcSteps(ring, ringOf(layout, 1)).forEach((step: number, i: number) => {
         expect(step).toBeGreaterThanOrEqual(least[i]! - EPS);
       });
     }
@@ -426,7 +445,7 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
     for (const depth of [1, 2]) {
       const ring = ringAt(layout, depth);
       const least = leastSteps(ring, () => reach);
-      arcSteps(ring).forEach((step: number, i: number) => {
+      arcSteps(ring, ringOf(layout, depth)).forEach((step: number, i: number) => {
         expect(step).toBeGreaterThanOrEqual(least[i]! - EPS);
       });
     }
@@ -441,11 +460,12 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
     // eighty pixels less than it needs beside its 8px neighbour.
     const root = note("Hub", brood(9, "k"));
     const reachOf = variedReach(root, [200, 190, 8, 6]);
-    const ring = ringAt(radialLayout(root, reachOf), 1);
+    const layout = radialLayout(root, reachOf);
+    const ring = ringAt(layout, 1);
     expect(ring).toHaveLength(9);
 
     let lopsidedPairs = 0;
-    arcSteps(ring).forEach((step: number, i: number) => {
+    arcSteps(ring, ringOf(layout, 1)).forEach((step: number, i: number) => {
       const before = ring[i]!;
       const after = ring[i + 1]!;
       const wantsBefore = leastBreadth(reachOf(before.data), before.angle);
@@ -489,7 +509,7 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
     let crossParentPairs = 0;
     for (const depth of [1, 2]) {
       const ring = ringAt(layout, depth);
-      arcSteps(ring).forEach((step: number, i: number) => {
+      arcSteps(ring, ringOf(layout, depth)).forEach((step: number, i: number) => {
         const before = ring[i]!;
         const after = ring[i + 1]!;
         const wantsBefore = leastBreadth(reachOf(before.data), before.angle);
@@ -580,9 +600,12 @@ describe("radialLayout: a small graph stays a fan", () => {
     // how busy a ring is.
     const reachOf = evenReach(70);
     const slack = (count: number): number => {
-      const ring = ringAt(radialLayout(note("Hub", brood(count)), reachOf), 1);
+      const layout = radialLayout(note("Hub", brood(count)), reachOf);
+      const ring = ringAt(layout, 1);
       const least = leastSteps(ring, reachOf);
-      return Math.max(...arcSteps(ring).map((step: number, i: number) => step - least[i]!));
+      return Math.max(
+        ...arcSteps(ring, ringOf(layout, 1)).map((step: number, i: number) => step - least[i]!),
+      );
     };
     expect(slack(3)).toBeLessThanOrEqual(slack(60) + EPS);
   });
@@ -623,9 +646,13 @@ describe("radialLayout: a small graph stays a fan", () => {
     // roomy graph into the whole circle passes this on whichever side of a
     // rounding error its two spans happen to land.
     const fan = (reachOf: ReachOf): { radius: number; span: number } => {
-      const ring = ringAt(radialLayout(note("Hub", brood(3)), reachOf), 1);
+      const layout = radialLayout(note("Hub", brood(3)), reachOf);
+      const ring = ringAt(layout, 1);
       expect(ring).toHaveLength(3);
-      return { radius: ring[0]!.radius, span: ring[2]!.angle - ring[0]!.angle };
+      // The circle the bearings were reserved on, not the band they were drawn
+      // into: a band comes in by however much its own captions allow, which is
+      // a fact about distance and has nothing to say about how wide the fan is.
+      return { radius: ringOf(layout, 1), span: ring[2]!.angle - ring[0]!.angle };
     };
     const small = fan(evenReach(10, 2));
     const wide = fan(evenReach(200, 6));
@@ -1045,7 +1072,7 @@ describe("radialLayout sizes each ring by its own crowding", () => {
     const layout = radialLayout(note("Hub", brood(40)), () => reach);
     const ring = ringAt(layout, 1);
     const needed = leastSteps(ring, () => reach).reduce((a: number, b: number) => a + b, 0);
-    expect(2 * Math.PI * ringRadius(layout, 1)).toBeGreaterThanOrEqual(needed);
+    expect(2 * Math.PI * ringOf(layout, 1)).toBeGreaterThanOrEqual(needed);
   });
 });
 
@@ -1073,9 +1100,10 @@ describe("radialLayout density", () => {
     const reach: Reach = { dot: 6, caption: 120 };
     const far = radialLayout(crowded, () => reach, { ringGap: 170 });
     const near = radialLayout(crowded, () => reach, { ringGap: 40 });
-    const at = (l: typeof far) => l.nodes.find((n) => n.depth === 1)!.radius;
-    // A ring of fifty notes is sized by its fifty notes, not by the gap.
-    expect(at(near)).toBeCloseTo(at(far), 6);
+    // A ring of fifty notes is sized by its fifty notes, not by the gap. Said
+    // of the circle they were reserved on: where the band is finally drawn is
+    // a separate question, and density is one of the things that answers it.
+    expect(ringOf(near, 1)).toBeCloseTo(ringOf(far, 1), 6);
   });
 
   it("uses the same spacing as before when no density is given", () => {

@@ -138,6 +138,30 @@ describe("placeBands: nothing is ever drawn on top of anything else", () => {
     expectNothingOverlaps([...one, ...two, ...three], placed);
   });
 
+  it("holds where an inner caption slants out into the band beyond it", () => {
+    // How far a band reaches straight outward is not how far its ink reaches.
+    // A caption is horizontal, so one on a slant runs off the corner of its own
+    // circle and finishes further from the hub than its bearing suggests — and
+    // level with a note much higher up on the band outside it, which is where
+    // the two meet. Clear the next band by the radial reckoning alone and it
+    // seats that note underneath the caption reaching across at it.
+    const inner: Seatable[] = [{ path: "inner.md", angle: (20 * Math.PI) / 180, reach: reach(220) }];
+    const outer: Seatable[] = [{ path: "outer.md", angle: (71 * Math.PI) / 180, reach: reach(200) }];
+    const placed = placeBands(
+      [generation(inner, 150, 1), generation(outer, 200, 2)],
+      reach(20, 11),
+      30,
+    );
+    expectNothingOverlaps([...inner, ...outer], placed);
+    // Not vacuous: these two do overlap at the radii a radial-only clearance
+    // leaves them at, which is what the check above is there to prevent.
+    const naive = new Map([
+      ["inner.md", { radius: 54, lane: 0 }],
+      ["outer.md", { radius: 154, lane: 0 }],
+    ]);
+    expect(() => expectNothingOverlaps([...inner, ...outer], naive)).toThrow();
+  });
+
   it("holds for two notes on almost the same bearing", () => {
     const notes = fannedAt([0, 0.001, 0.002], reach(150));
     const placed = placeBands([generation(notes, 300)], hub, 130);
@@ -207,23 +231,51 @@ describe("placeBands: a band comes in as far as it pays to", () => {
   });
 
   it("never stacks a band deeper than the circle it stands on", () => {
-    // Past that a generation stops reading as a ring around the hub and starts
-    // reading as a blob, however little room it saves.
-    for (const count of [12, 40, 90]) {
-      const notes = evenly(count, reach(150));
-      const placed = placeBands([generation(notes, 40 * count)], hub, 130);
-      const base = Math.min(...notes.map((n) => placed.get(n.path)!.radius));
-      const stack = Math.max(...notes.map((n) => placed.get(n.path)!.radius)) - base;
-      expect(stack, `${count} notes stacked ${stack.toFixed(0)} deep on a ${base.toFixed(0)} circle`)
-        .toBeLessThanOrEqual(base + EPS);
+    // Past that a generation stops reading as one ring around the hub and
+    // starts reading as a blob, however much room it saves.
+    //
+    // The band it is judged against has to be one the generation could really
+    // have been handed, so it is found rather than invented: the density is
+    // pinned so wide that there is nowhere to come in to, and the circle is
+    // opened until nothing has to step aside. That is the ring the bearing
+    // pass would have chosen.
+    const oneLaneRing = (notes: Seatable[]): number => {
+      for (let at = 200; at <= 200000; at = Math.round(at * 1.1)) {
+        const placed = placeBands([generation(notes, at)], hub, at);
+        if (notes.every((note) => placed.get(note.path)!.lane === 0)) return at;
+      }
+      throw new Error("no circle wide enough to seat this generation in one lane");
+    };
+
+    // Each of these is a crowd that would rather be a blob: measured with the
+    // rule taken out, every one stacks deeper than its own base, because doing
+    // so genuinely brings its far side nearer the hub. A gentler shape proves
+    // nothing — it keeps to a lane or two whether the rule is there or not.
+    for (const caption of [60, 100, 150]) {
+      const notes = evenly(90, reach(caption));
+      const placed = placeBands([generation(notes, oneLaneRing(notes))], hub, 130);
+      const radii = notes.map((note) => placed.get(note.path)!.radius);
+      const base = Math.min(...radii);
+      const stack = Math.max(...radii) - base;
+      expect(
+        stack,
+        `ninety ${caption}px notes stacked ${stack.toFixed(0)} deep on a ${base.toFixed(0)} circle`,
+      ).toBeLessThanOrEqual(base + EPS);
     }
   });
 
   it("never seats a band inside the hub's own caption", () => {
+    // The density has to be the smaller of the two claims on that room, or the
+    // hub's caption is not what is holding the band out and this proves
+    // nothing about the hub at all.
+    const longNamed = reach(300, 11);
+    const leastGap = 60;
+    expect(longNamed.dot + CAPTION_GAP + longNamed.caption).toBeGreaterThan(leastGap);
+
     const notes = evenly(8, reach(20));
-    const placed = placeBands([generation(notes, 500)], hub, 130);
+    const placed = placeBands([generation(notes, 500)], longNamed, leastGap);
     const nearest = Math.min(...notes.map((n) => placed.get(n.path)!.radius));
-    expect(nearest).toBeGreaterThan(hub.dot + CAPTION_GAP + hub.caption);
+    expect(nearest).toBeGreaterThan(longNamed.dot + CAPTION_GAP + longNamed.caption);
   });
 
   it("keeps each generation outside the one within it", () => {
