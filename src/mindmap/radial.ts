@@ -22,6 +22,13 @@ const RING_GAP = 170;
 const BREADTH_GAP = 14;
 /** The space between a dot and the caption beside it. */
 export const CAPTION_GAP = 7;
+/**
+ * The gap between a folded node's dot and the hidden-question ring drawn
+ * around it. Nothing at this seam reserves ring space for it — not
+ * `angularSize`, not `boundsOf` — so it must stay under CAPTION_GAP, the only
+ * slack this seam has to give.
+ */
+export const HIDDEN_RING_GAP = 3;
 const TAU = Math.PI * 2;
 
 export interface Reach { dot: number; caption: number; }

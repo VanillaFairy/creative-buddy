@@ -7,7 +7,7 @@ import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
 import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { Box, Bounds, Measure, childRegionPath, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
-import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP } from "./radial";
+import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP, HIDDEN_RING_GAP } from "./radial";
 import type { Reaching } from "./radial";
 import { heatClass } from "./heat";
 import { CollapseStore } from "./collapse-store";
@@ -522,7 +522,7 @@ export class MindmapView extends ItemView {
       if (node.collapsedChildren > 0 && this.heatmap) {
         g.append("circle")
           .attr("class", `cb-mm-dot-hidden ${heatClass(node.hiddenOpenQuestions)}`)
-          .attr("r", reach.dot + 3);
+          .attr("r", reach.dot + HIDDEN_RING_GAP);
       }
 
       const anchor = radialNode.labelAnchor;
