@@ -78,19 +78,24 @@ const MAX_WIDTH = 240;
  * The caption cap in radial mode. Tighter than a box's, because a ring is read
  * at a glance and a long caption there eats angle its neighbours need.
  *
- * This number sets how big the whole radial map is, and it is not a small
- * effect: because a caption near 12 o'clock lies flat across its ring, every
- * node reserves its full caption width as breadth, so the cap multiplies
- * through the entire circle. Measured on a 63-note project, the drawing needs
- * a 995x428 canvas for its dots and this cap grew it to 2851x2451 — seventeen
- * times the area, which the renderer pays for again on every pan and zoom.
+ * This number also sets how big the radial map is, and not by a little:
+ * because a caption near 12 o'clock lies flat across its ring, every node
+ * reserves its full caption width as breadth, so the cap multiplies through
+ * the whole circle. On a 63-note project the dots alone want a 995x428
+ * canvas and this cap grows it past 2700x2300.
  *
- * Coupled to `radial.ts`'s RING_GAP: a ring needs `DOT_RADIUS + CAPTION_GAP +
- * this` of clearance to the next ring out, or a caption near 3/9 o'clock
- * bleeds onto it. At 80 that is 93 against a gap of 170, so it clears — raise
- * this past about 155 and captions start crossing rings again.
+ * That is a size worth watching but not worth paying for in clipped names.
+ * A profile of panning that map put the cost in rasterising cross-link chords,
+ * not in the canvas — see `.cb-mm-crosslink-chord` in `styles.css`. Cutting
+ * this to 80 to shrink the map was tried and bought little except shorter
+ * titles.
+ *
+ * 155 is the largest value that stays inside `radial.ts`'s RING_GAP: a ring
+ * needs `DOT_RADIUS + CAPTION_GAP + this` of clearance to the next ring out,
+ * and 6 + 7 + 155 = 168 against a gap of 170. Past that, captions near 3 and 9
+ * o'clock begin crossing onto the ring outside them.
  */
-const MAX_CAPTION_WIDTH = 80;
+const MAX_CAPTION_WIDTH = 155;
 const ELLIPSIS = "…";
 
 /**
