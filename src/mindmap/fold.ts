@@ -17,3 +17,24 @@ export function foldMark(node: {
   if (node.collapsedChildren > 0) return "expand";
   return node.children.length > 0 ? "collapse" : null;
 }
+
+/**
+ * How many notes this node would hide if it were folded — which is the count
+ * its dot shows once it is.
+ *
+ * The radial map reserves room for this whether or not the node is folded, so
+ * that gaining a `+12` does not make a note wider than the ring gave it and
+ * shove its neighbours along. Folding must cost a gap, never everyone's place
+ * on the map.
+ */
+export function hiddenIfFolded(node: FoldCounts): number {
+  if (node.collapsedChildren > 0) return node.collapsedChildren;
+  let total = 0;
+  for (const child of node.children) total += 1 + hiddenIfFolded(child);
+  return total;
+}
+
+interface FoldCounts {
+  children: readonly FoldCounts[];
+  collapsedChildren: number;
+}
