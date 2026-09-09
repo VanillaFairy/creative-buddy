@@ -1417,11 +1417,17 @@
 }
 
 /* The name is the note's link — it takes the pointer and says so, while the dot
-   beside it stays the branch control. */
+   beside it stays the branch control.
+
+   `pointer-events` has to be stated, not merely left out: `.cb-mm-node text`
+   above turns it off for every label in the group, and that rule is (0,1,1),
+   the same weight as this one. Deleting the property here does not beat it, it
+   just declines to argue — and the caption goes back to being unclickable. */
 text.cb-mm-caption {
   fill: var(--cb-quiet);
   font-size: var(--font-ui-small);
   dominant-baseline: middle;
+  pointer-events: auto;
   cursor: pointer;
 }
 
