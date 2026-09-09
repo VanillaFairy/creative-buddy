@@ -12,8 +12,9 @@
 
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
+import { radialCaption, DOT_RADIUS, HUB_DOT_RADIUS } from "./geometry";
 import type { MindmapNode } from "./layout";
-import type { Bounds } from "./geometry";
+import type { Bounds, Caption, Measure } from "./geometry";
 
 /** How far apart two rings sit before a crowded graph pushes them out. */
 const RING_GAP = 170;
@@ -25,6 +26,18 @@ const TAU = Math.PI * 2;
 
 export interface Reach { dot: number; caption: number; }
 export type ReachOf = (node: MindmapNode) => Reach;
+
+export interface Reaching { reach: Reach; caption: Caption; }
+
+/**
+ * How a node becomes the `Reach` a ring reserves for it, and the `Caption`
+ * that reservation was measured against — one call so a view can draw the
+ * caption it already paid for instead of measuring the stem a second time.
+ */
+export function reachFor(stem: string, isHub: boolean, foldCount: number, measure: Measure): Reaching {
+  const caption = radialCaption(stem, measure, { suffix: foldCount > 0 ? `+${foldCount}` : null });
+  return { reach: { dot: isHub ? HUB_DOT_RADIUS : DOT_RADIUS, caption: caption.width }, caption };
+}
 
 export interface RadialNode {
   path: string;

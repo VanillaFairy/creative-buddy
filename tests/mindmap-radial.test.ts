@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { radialLayout, radialLinkPath, crossLinkPath, CAPTION_GAP } from "../src/mindmap/radial";
+import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP } from "../src/mindmap/radial";
 import type { Reach, ReachOf, RadialLayout, RadialLink, RadialNode } from "../src/mindmap/radial";
 import type { MindmapNode } from "../src/mindmap/layout";
+import { radialCaption, DOT_RADIUS, HUB_DOT_RADIUS } from "../src/mindmap/geometry";
+import type { Measure } from "../src/mindmap/geometry";
 
 /**
  * The radial map's promises, tested from the outside.
@@ -908,5 +910,35 @@ describe("crossLinkPath", () => {
     const ring = ringAt(radialLayout(note("Hub", brood(60)), reachOf), 1);
     const points = pointsIn(crossLinkPath(ring[0]!, ring[30]!));
     expect(points.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true);
+  });
+});
+
+describe("reachFor: the seam a node's dot and caption meet at", () => {
+  const measure: Measure = (text) => [...text].length * 6;
+
+  it("gives the hub the bigger dot and a plain note the smaller one", () => {
+    const hub = reachFor("Hub", true, 0, measure);
+    const plain = reachFor("Note", false, 0, measure);
+    expect(hub.reach.dot).toBe(HUB_DOT_RADIUS);
+    expect(plain.reach.dot).toBe(DOT_RADIUS);
+  });
+
+  it("reports the caption width radialCaption itself gives the same stem", () => {
+    const stem = "A rather long note name for one ring";
+    const { reach, caption } = reachFor(stem, false, 0, measure);
+    const expected = radialCaption(stem, measure);
+    expect(caption).toEqual(expected);
+    expect(reach.caption).toBe(expected.width);
+  });
+
+  it("reserves a fold count's own width too", () => {
+    const stem = "Folded branch";
+    const { reach, caption } = reachFor(stem, false, 3, measure);
+    const expected = radialCaption(stem, measure, { suffix: "+3" });
+    expect(caption).toEqual(expected);
+    expect(reach.caption).toBe(expected.width);
+    // Not vacuous: the count has to actually cost width, or this would pass
+    // even with the count silently dropped.
+    expect(expected.width).toBeGreaterThan(radialCaption(stem, measure).width);
   });
 });
