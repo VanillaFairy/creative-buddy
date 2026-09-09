@@ -1204,12 +1204,18 @@
   display: flex;
   flex-direction: column;
   gap: var(--size-2-3);
-  min-width: 11em;
+  min-width: 13em;
   padding: var(--size-4-2);
   border: 1px solid var(--cb-rail);
   border-radius: var(--radius-m);
   background-color: var(--background-primary);
   box-shadow: var(--shadow-s);
+}
+
+/* `display: flex` above beats the browser's own `[hidden] { display: none }`,
+   so the panel needs to say it again or it is never actually hidden. */
+.cb-mm-settings[hidden] {
+  display: none;
 }
 
 .cb-mm-setting {
@@ -1229,8 +1235,11 @@
   gap: var(--size-4-2);
 }
 
+/* Wide enough for the longest choice plus its arrow, so the row does not
+   change width as the choice does. */
 .cb-mm-setting-pick .cb-quiet-control {
   flex: none;
+  min-width: 7em;
 }
 
 .cb-mm-stats {

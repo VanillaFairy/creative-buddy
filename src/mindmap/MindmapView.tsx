@@ -28,7 +28,7 @@ const INSPECTOR_HINT = "Click a note to open it, a branch to fold it. Alt-click 
  */
 const DENSITY: ReadonlyArray<{ id: Density; label: string; ringGap: number }> = [
   { id: "near", label: "Near", ringGap: 90 },
-  { id: "mid", label: "Mid", ringGap: 130 },
+  { id: "mid", label: "Medium", ringGap: 130 },
   { id: "far", label: "Far", ringGap: 170 },
 ];
 
