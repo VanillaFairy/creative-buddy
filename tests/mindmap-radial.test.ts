@@ -265,14 +265,17 @@ describe("radialLayout: no two captions on a ring may collide", () => {
   });
 
   it("holds for a crowded ring whose captions alternate long and short", () => {
-    // The case that separates the two obvious ways to space a ring out. Giving
-    // a pair the mean of the two footprints — what a tidy-tree `nodeSize` hands
-    // you by default — is enough while every caption is the same width, because
-    // then the mean *is* the width. Here it is not: a caption hangs entirely off
-    // one side of its dot, so a note with a long name needs the whole of that
-    // name's width between it and its neighbour, not half of the pair's average.
-    // Split the difference and the long names get written over the short ones,
-    // right at the top of the ring where the drop between neighbours is smallest.
+    // A drawn-rectangle sanity check over the hardest ring there is to pack:
+    // alternating 200px and 4px names, the case where a layout that splits the
+    // difference between two neighbours writes the long names over the short.
+    //
+    // It is not the guard for that, and must not be taken for one. Whether two
+    // rectangles meet depends on how far out the ring sits, and at the radius
+    // this implementation happens to choose the vertical drop between
+    // neighbours clears a caption's height on every pair here even with the
+    // spacing correction pulled out. The guard is "keeps a long name's whole
+    // width between it and the note beside it" further down, which weighs arc
+    // against reach and so holds at whatever radius a layout picks.
     const children = brood(72, "k");
     const long = new Set(children.filter((_, i) => i % 2 === 0).map((child) => child.path));
     const reachOf: ReachOf = (node: MindmapNode) => ({ dot: 6, caption: long.has(node.path) ? 200 : 4 });
@@ -339,6 +342,55 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
         expect(step).toBeGreaterThanOrEqual(leastBreadth(reach) - EPS);
       }
     }
+  });
+
+  it("keeps a long name's whole width between it and the note beside it, whoever its parent is", () => {
+    // The claim the rectangle checks above only imply. Neighbours on a ring are
+    // held apart by an angle, and `d3-flextree` derives that angle from the MEAN
+    // of the pair's reserved breadths — right for a box centred on its own
+    // space, wrong for a caption that hangs off one side of its dot and needs
+    // the whole of its width toward whatever stands next to it. Take the
+    // correction out and a 200px name gets about 110px of clearance from its
+    // 6px neighbour.
+    //
+    // Put as arc against reach, this bites whatever radius the layout chooses.
+    // A rectangle check does not: it stops detecting anything the moment an
+    // implementation spreads the ring wide enough that the vertical drop
+    // between neighbours pulls the two lines of text apart on its own.
+    const root = note("Hub", Array.from({ length: 8 }, (_, i) => note(`p${i}`, brood(6, `p${i}-`))));
+    const reachOf = variedReach(root, [200, 190, 8, 6]);
+    const layout = radialLayout(root, reachOf);
+    const parentOf = new Map(layout.links.map((l: RadialLink) => [l.target.path, l.source.path]));
+
+    expect(ringAt(layout, 1)).toHaveLength(8);
+    expect(ringAt(layout, 2)).toHaveLength(48);
+
+    let lopsidedPairs = 0;
+    let crossParentPairs = 0;
+    for (const depth of [1, 2]) {
+      const ring = ringAt(layout, depth);
+      arcSteps(ring).forEach((step: number, i: number) => {
+        const before = ring[i]!;
+        const after = ring[i + 1]!;
+        const wantsBefore = leastBreadth(reachOf(before.data));
+        const wantsAfter = leastBreadth(reachOf(after.data));
+        const needed = Math.max(wantsBefore, wantsAfter);
+        if (Math.abs(wantsBefore - wantsAfter) > 100) lopsidedPairs++;
+        if (parentOf.get(before.path) !== parentOf.get(after.path)) crossParentPairs++;
+        expect(
+          step,
+          `${before.path} (${wantsBefore.toFixed(0)}px) and ${after.path} (${wantsAfter.toFixed(0)}px) ` +
+            `were given ${step.toFixed(2)}px of ring ${depth} between them, ` +
+            `and the wider of the two needs ${needed.toFixed(0)}px of it to itself`,
+        ).toBeGreaterThanOrEqual(needed - EPS);
+      });
+    }
+    // Not vacuous. The ring has to actually seat a wide name beside a narrow
+    // one, and has to seat children of different parents next to each other —
+    // a correction that only pushed siblings apart would sail past a ring cut
+    // from a single brood.
+    expect(lopsidedPairs).toBeGreaterThan(0);
+    expect(crossParentPairs).toBeGreaterThan(0);
   });
 
   it("pushes the first ring further out when sixty notes stand on it than when four do", () => {
