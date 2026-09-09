@@ -1252,6 +1252,25 @@
   opacity: 0.95;
 }
 
+/* Kept out of the drawing until a node calls for it, which is a performance
+   decision with a trace behind it. Chromium rasters in tiles, and a chord runs
+   the width of the circle, so it lands in nearly every tile the map has: on a
+   63-note project, 86% of all per-tile path crossings were chords — 34 of them
+   in an average tile against four tree edges. Panning re-rasters every visible
+   tile, and the profile showed 22.7 seconds of RasterTask over a 13-second
+   recording, four worker threads saturated, while our own scripting came to
+   116ms. `display: none` takes them out of the display list entirely rather
+   than merely painting them faintly, which is the difference between a tile
+   costing 3ms and costing very little. The flat map keeps its ambient mesh:
+   its cross-links run between neighbours, not across the whole drawing. */
+.cb-mm-crosslink-chord {
+  display: none;
+}
+
+.cb-mm-crosslink-chord.cb-mm-crosslink-live {
+  display: inline;
+}
+
 .cb-mm-node {
   cursor: pointer;
   outline: none;

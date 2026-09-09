@@ -504,7 +504,11 @@ export class MindmapView extends ItemView {
       const to = byPath.get(cross.to);
       if (from === undefined || to === undefined) continue;
       if (!shown(cross.from) || !shown(cross.to)) continue;
-      const path = canvas.append("path").attr("class", "cb-mm-crosslink").attr("d", crossLinkPath(from, to)).node();
+      const path = canvas
+        .append("path")
+        .attr("class", "cb-mm-crosslink cb-mm-crosslink-chord")
+        .attr("d", crossLinkPath(from, to))
+        .node();
       if (path === null) continue;
       for (const end of [cross.from, cross.to]) {
         const list = crossByPath.get(end) ?? [];
