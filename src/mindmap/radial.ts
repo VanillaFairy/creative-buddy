@@ -64,19 +64,17 @@ export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout 
   // off one side of its dot, which needs its full width toward a neighbour,
   // not half of it. `(a+b)/2 + |a-b|/2 = max(a,b)`, so adding the second
   // term as `spacing` on top of flextree's own mean turns the separation it
-  // enforces into the max the shape actually needs — confirmed to hold
-  // across subtree boundaries, not only within one, by measuring a fixture
-  // of several parents contributing wide-and-narrow children to one ring.
+  // enforces into the max the shape actually needs.
   const laid = flextree<MindmapNode>()
     .nodeSize((n) => [angularSize(n.depth, n.data), 1])
     .spacing((a, b) => Math.abs(angularSize(a.depth, a.data) - angularSize(b.depth, b.data)) / 2)(
     hierarchy(root, (d) => d.children),
   );
 
-  // flextree packs siblings as tightly as their sizes allow, which on a busy
-  // ring can want more than a full turn. Shrinking every angle and growing every
-  // radius by the same factor leaves each node exactly the arc it reserved and
-  // closes the circle. It only ever shrinks: a three-note graph stays a fan.
+  // Once every node has the full breadth it reserved, a busy ring can want
+  // more than a full turn. Shrinking every angle and growing every radius by
+  // the same factor leaves each node exactly the arc it reserved and closes
+  // the circle. It only ever shrinks: a three-note graph stays a fan.
   let left = Infinity;
   let right = -Infinity;
   laid.each((n) => {
@@ -148,16 +146,18 @@ export function radialLinkPath(source: RadialNode, target: RadialNode): string {
   return `M${at(source.angle, source.radius)}C${at(source.angle, middle)} ${at(target.angle, middle)} ${at(target.angle, target.radius)}`;
 }
 
-/** How far in a cross-link's chord is pulled toward the hub. */
-const CHORD_PULL = 0.4;
+/** Fraction of the chord midpoint's distance from the hub that survives the pull. */
+const CHORD_MIDPOINT_KEEP = 0.4;
 
 /**
- * A cross-link cuts across the circle rather than following it. Pulling the
- * curve most of the way in toward the hub keeps it off the ring it starts and
- * ends on — which is the ring it would otherwise be mistaken for.
+ * A cross-link cuts across the circle rather than following it. A quadratic
+ * Bezier's apex sits at half the control point's distance, so pulling the
+ * control in to 40% of the midpoint's distance puts the curve at 70% of it —
+ * pulled in by 30%, just enough to keep it off the ring it starts and ends
+ * on, which is the ring it would otherwise be mistaken for.
  */
 export function crossLinkPath(from: RadialNode, to: RadialNode): string {
-  const cx = ((from.x + to.x) / 2) * CHORD_PULL;
-  const cy = ((from.y + to.y) / 2) * CHORD_PULL;
+  const cx = ((from.x + to.x) / 2) * CHORD_MIDPOINT_KEEP;
+  const cy = ((from.y + to.y) / 2) * CHORD_MIDPOINT_KEEP;
   return `M${from.x},${from.y}Q${cx},${cy} ${to.x},${to.y}`;
 }
