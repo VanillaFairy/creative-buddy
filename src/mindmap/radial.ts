@@ -16,8 +16,17 @@ import { radialCaption, DOT_RADIUS, HUB_DOT_RADIUS } from "./geometry";
 import type { MindmapNode } from "./layout";
 import type { Bounds, Caption, Measure } from "./geometry";
 
-/** How far apart two rings sit before a crowded graph pushes them out. */
+/**
+ * The least room between one ring and the next. A ring with few notes on it
+ * takes exactly this; a crowded one is sized by what stands on it and ignores
+ * the gap entirely, which is why loosening it does nothing to a busy circle.
+ */
 const RING_GAP = 170;
+
+/** How the map is asked to space its rings. */
+export interface RadialOptions {
+  ringGap?: number;
+}
 /** Breathing room either side of what a node reserves on its ring. */
 const BREADTH_GAP = 14;
 /** The space between a dot and the caption beside it. */
@@ -68,7 +77,12 @@ export interface RadialLayout {
   bounds: Bounds;
 }
 
-export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout {
+export function radialLayout(
+  root: MindmapNode,
+  reachOf: ReachOf,
+  options: RadialOptions = {},
+): RadialLayout {
+  const ringGap = options.ringGap ?? RING_GAP;
   const breadthOf = (node: MindmapNode): number => {
     const reach = reachOf(node);
     return reach.dot * 2 + (reach.caption > 0 ? CAPTION_GAP + reach.caption : 0) + BREADTH_GAP;
@@ -96,7 +110,7 @@ export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout 
     const out = new Map<number, number>();
     let outward = 0;
     for (const depth of depths) {
-      outward = Math.max(outward + RING_GAP, want(depth));
+      outward = Math.max(outward + ringGap, want(depth));
       out.set(depth, outward);
     }
     return out;
@@ -106,7 +120,7 @@ export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout 
 
   // The hub sits at the origin and has no ring; it borrows the first one's gap
   // purely to have a radius to divide by.
-  const ringOf = (depth: number): number => rings.get(depth) ?? RING_GAP;
+  const ringOf = (depth: number): number => rings.get(depth) ?? ringGap;
   const angularSize = (depth: number, node: MindmapNode): number =>
     breadthOf(node) / ringOf(depth);
 
@@ -142,7 +156,7 @@ export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout 
   rings = ringsFrom((depth) => {
     const at = used.get(depth);
     const span = at === undefined ? 0 : at.high - at.low;
-    return (rings.get(depth) ?? RING_GAP) * Math.max(1, span / TAU);
+    return (rings.get(depth) ?? ringGap) * Math.max(1, span / TAU);
   });
 
   const laid = pack();

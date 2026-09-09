@@ -981,3 +981,39 @@ describe("radialLayout sizes each ring by its own crowding", () => {
     expect(2 * Math.PI * ringRadius(layout, 1)).toBeGreaterThanOrEqual(needed);
   });
 });
+
+describe("radialLayout density", () => {
+  const chain = note("Hub", [note("a", [note("b", [note("c")])])]);
+
+  it("draws the rings closer together when asked for a tighter density", () => {
+    const far = radialLayout(chain, evenReach(60), { ringGap: 170 });
+    const near = radialLayout(chain, evenReach(60), { ringGap: 90 });
+    for (const depth of [1, 2, 3]) {
+      const at = (l: typeof far) => l.nodes.find((n) => n.depth === depth)!.radius;
+      expect(at(near)).toBeLessThan(at(far));
+    }
+  });
+
+  it("keeps the rings in order however tight the density", () => {
+    const near = radialLayout(chain, evenReach(60), { ringGap: 40 });
+    const radii = [1, 2, 3].map((d) => near.nodes.find((n) => n.depth === d)!.radius);
+    expect(radii[1]!).toBeGreaterThan(radii[0]!);
+    expect(radii[2]!).toBeGreaterThan(radii[1]!);
+  });
+
+  it("cannot pull a crowded ring in past what stands on it", () => {
+    const crowded = note("Hub", brood(50));
+    const reach: Reach = { dot: 6, caption: 120 };
+    const far = radialLayout(crowded, () => reach, { ringGap: 170 });
+    const near = radialLayout(crowded, () => reach, { ringGap: 40 });
+    const at = (l: typeof far) => l.nodes.find((n) => n.depth === 1)!.radius;
+    // A ring of fifty notes is sized by its fifty notes, not by the gap.
+    expect(at(near)).toBeCloseTo(at(far), 6);
+  });
+
+  it("uses the same spacing as before when no density is given", () => {
+    const withDefault = radialLayout(chain, evenReach(60));
+    const explicit = radialLayout(chain, evenReach(60), { ringGap: 170 });
+    expect(withDefault.nodes.map((n) => n.radius)).toEqual(explicit.nodes.map((n) => n.radius));
+  });
+});

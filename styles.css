@@ -1177,19 +1177,17 @@
 }
 
 /* Sits before the stats, which keep the right edge via their auto margin. */
-.cb-mm-heat-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--size-2-2);
+/* The map's own settings, behind one button rather than a row of checkboxes:
+   the header has a project name to fit and these are read rarely. */
+.cb-mm-header .cb-mm-gear {
+  flex: none;
+  margin-left: auto;
+  padding: var(--size-2-2);
   color: var(--cb-quiet);
-  font-family: var(--cb-hand);
-  font-size: var(--font-ui-smaller);
-  white-space: nowrap;
-  cursor: pointer;
 }
 
-.cb-mm-heat-toggle input {
-  margin: 0;
+.cb-mm-header .cb-mm-gear:hover {
+  color: var(--cb-ink);
 }
 
 .cb-mm-stats {

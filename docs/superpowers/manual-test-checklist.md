@@ -520,3 +520,22 @@ session with the original knowledge-graph skill on the same graph.
       item is one line plus two timestamps; no note bodies are stored.
 - [ ] The vault copy diff (any diff tool) shows only notes you expected the
       sessions to touch.
+
+### Map settings, behind the gear
+
+- [ ] The header shows a gear where the Radial and Heat checkboxes used to be.
+      Click it → a menu with **Radial** and **Heat**, each ticked when it is on.
+- [ ] Toggle Radial from the menu → the map changes shape and refits, exactly as
+      the checkbox did. Toggle Heat → the colours come and go.
+- [ ] With Radial **off**, the menu shows no Density — a flat map has no rings
+      to space.
+- [ ] With Radial **on**, the menu grows a separator and **Density: Near / Mid /
+      Far**, with the current one ticked.
+- [ ] Pick Near → the inner rings come in. Pick Far → they go back out.
+- [ ] On a crowded project the change is mostly in the **inner** rings, and a
+      ring carrying a lot of notes barely moves. That is correct: a busy ring is
+      sized by what stands on it and cannot come in past that, whatever the
+      density says.
+- [ ] Set a density, close the map tab, reopen it → the setting is where you
+      left it. Restart Obsidian → still there.
+- [ ] A map saved before this existed opens at **Mid** rather than blank.

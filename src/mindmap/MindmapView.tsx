@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, Menu, setIcon } from "obsidian";
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
@@ -21,10 +21,24 @@ const H_GAP = 48;
 const ROW_GAP = 8;
 const INSPECTOR_HINT = "Click a note to open it, a branch to fold it. Alt-click always opens.";
 
+/**
+ * How close the rings sit. Only the least room between rings is being set here:
+ * a crowded ring is sized by what stands on it and will not come in past that,
+ * so on a busy circle the tighter settings show mostly in the inner rings.
+ */
+const DENSITY: ReadonlyArray<{ id: Density; label: string; ringGap: number }> = [
+  { id: "near", label: "Near", ringGap: 90 },
+  { id: "mid", label: "Mid", ringGap: 130 },
+  { id: "far", label: "Far", ringGap: 170 },
+];
+
+export type Density = "near" | "mid" | "far";
+
 export class MindmapView extends ItemView {
   private graphDir: string | null = null;
   private heatmap = false;
   private radial = false;
+  private density: Density = "mid";
   private collapse = new CollapseStore();
   private offChange: (() => void) | null = null;
   private redrawTimer: number | null = null;
@@ -39,7 +53,7 @@ export class MindmapView extends ItemView {
   getIcon(): string { return "git-fork"; }
 
   getState(): Record<string, unknown> {
-    return { graphDir: this.graphDir, collapse: this.collapse.toJSON(), heatmap: this.heatmap, radial: this.radial };
+    return { graphDir: this.graphDir, collapse: this.collapse.toJSON(), heatmap: this.heatmap, radial: this.radial, density: this.density };
   }
 
   async setState(state: unknown, result: unknown): Promise<void> {
@@ -48,10 +62,12 @@ export class MindmapView extends ItemView {
       collapse?: Record<string, string[]>;
       heatmap?: boolean;
       radial?: boolean;
+      density?: Density;
     };
     this.graphDir = s.graphDir ?? null;
     this.heatmap = s.heatmap === true;
     this.radial = s.radial === true;
+    this.density = DENSITY.some((d) => d.id === s.density) ? s.density! : "mid";
     this.collapse = CollapseStore.fromJSON(s.collapse);
     this.redraw();
     await super.setState(state as never, result as never);
@@ -136,16 +152,67 @@ export class MindmapView extends ItemView {
     this.redrawTimer = window.setTimeout(() => this.redraw(), 300);
   }
 
-  private headerToggle(host: HTMLElement, label: string, on: boolean, set: (value: boolean) => void): void {
-    const toggle = host.createEl("label", { cls: "cb-mm-heat-toggle" });
-    const input = toggle.createEl("input", { type: "checkbox" });
-    input.checked = on;
-    toggle.createSpan({ text: label });
-    input.addEventListener("change", () => {
-      set(input.checked);
+  /**
+   * How the map is read, behind one button. These settings belong beside the
+   * map rather than in the vault's settings pane — they are ways of looking at
+   * a graph, not facts about the plugin — but there are enough of them now that
+   * a row of checkboxes was eating the header a project name has to fit in.
+   *
+   * Density is offered only in radial mode, because it is the only shape with
+   * rings to space.
+   */
+  private settingsMenu(host: HTMLElement): void {
+    const gear = host.createEl("button", {
+      cls: "cb-mm-gear clickable-icon",
+      attr: { "aria-label": "Map settings" },
+    });
+    setIcon(gear, "settings-2");
+
+    const apply = (change: () => void): void => {
+      change();
       this.app.workspace.requestSaveLayout();
       this.redraw();
-    });
+    };
+
+    gear.onclick = (event) => {
+      const menu = new Menu();
+      menu.addItem((item) =>
+        item
+          .setTitle("Radial")
+          .setChecked(this.radial)
+          .onClick(() =>
+            apply(() => {
+              this.radial = !this.radial;
+              // The stored pan and zoom belong to whichever shape was on
+              // screen; the other would open somewhere off in the white.
+              this.lastTransform = null;
+            }),
+          ),
+      );
+      menu.addItem((item) =>
+        item
+          .setTitle("Heat")
+          .setChecked(this.heatmap)
+          .onClick(() => apply(() => { this.heatmap = !this.heatmap; })),
+      );
+
+      if (this.radial) {
+        menu.addSeparator();
+        for (const step of DENSITY) {
+          menu.addItem((item) =>
+            item
+              .setTitle(`Density: ${step.label}`)
+              .setChecked(this.density === step.id)
+              .onClick(() => apply(() => { this.density = step.id; })),
+          );
+        }
+      }
+      menu.showAtMouseEvent(event);
+    };
+  }
+
+  private ringGap(): number {
+    return DENSITY.find((step) => step.id === this.density)!.ringGap;
   }
 
   private redraw(): void {
@@ -192,15 +259,7 @@ export class MindmapView extends ItemView {
     // Radial and Heat are ways of reading the map, not facts about the graph,
     // so both switches ride in the header beside the project picker rather
     // than in plugin settings.
-    this.headerToggle(header, "Radial", this.radial, (value) => {
-      this.radial = value;
-      // The stored pan and zoom belong to whichever shape was on screen; the
-      // other shape would open somewhere off in the white with it.
-      this.lastTransform = null;
-    });
-    this.headerToggle(header, "Heat", this.heatmap, (value) => {
-      this.heatmap = value;
-    });
+    this.settingsMenu(header);
 
     // Stage first, then the inspector below it, then the dock inside the stage:
     // the readout has to exist before the tree can wire hover into it.
@@ -481,7 +540,7 @@ export class MindmapView extends ItemView {
       return computed.reach;
     };
 
-    const layout = radialLayout(data.root!, reachOf);
+    const layout = radialLayout(data.root!, reachOf, { ringGap: this.ringGap() });
     const byPath = new Map(layout.nodes.map((n) => [n.path, n] as const));
 
     // Everything below asks this before it draws. The layout holds every note
