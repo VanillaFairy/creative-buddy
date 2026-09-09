@@ -9,7 +9,7 @@ import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { Box, Bounds, Measure, childRegionPath, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
 import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP, HIDDEN_RING_GAP } from "./radial";
 import type { Reaching } from "./radial";
-import { foldMark } from "./fold";
+import { foldMark, hiddenIfFolded } from "./fold";
 import { heatClass } from "./heat";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
@@ -177,7 +177,12 @@ export class MindmapView extends ItemView {
     selector.value = this.graphDir;
     selector.onchange = () => this.showGraph(selector.value);
 
-    const data = buildMindmapData(model, this.graphDir, this.collapse.collapsedSet(this.graphDir));
+    // The circle asks for the whole tree and draws part of it. Pruning would
+    // repack the ring on every fold and throw the reader's place away; laid out
+    // whole, a fold leaves a gap exactly where the branch was and moves nothing.
+    const data = buildMindmapData(model, this.graphDir, this.collapse.collapsedSet(this.graphDir), {
+      prune: !this.radial,
+    });
     const stats = data.stats;
     header.createSpan({
       cls: "cb-mm-stats",
@@ -467,7 +472,11 @@ export class MindmapView extends ItemView {
       const cached = reaching.get(node.path);
       if (cached !== undefined) return cached.reach;
       const isHub = node.path === hubPath;
-      const computed = reachFor(node.stem, isHub, node.collapsedChildren, isHub ? measure.hub : measure.node);
+      // Measured against the count this note would show if it were folded, not
+      // the one it shows now: a note that widens by a `+12` the moment you fold
+      // it would shove its whole ring along, which is the jumping this mode
+      // exists to avoid. The count is reserved always and drawn only when real.
+      const computed = reachFor(node.stem, isHub, hiddenIfFolded(node), isHub ? measure.hub : measure.node);
       reaching.set(node.path, computed);
       return computed.reach;
     };
@@ -475,9 +484,14 @@ export class MindmapView extends ItemView {
     const layout = radialLayout(data.root!, reachOf);
     const byPath = new Map(layout.nodes.map((n) => [n.path, n] as const));
 
+    // Everything below asks this before it draws. The layout holds every note
+    // so that folding moves nothing; what a fold hides simply goes undrawn.
+    const shown = (path: string): boolean => !data.hiddenPaths.has(path);
+
     // Edges under nodes: parent edges first, then cross-links, then the dots
     // and captions drawn on top of both.
     for (const link of layout.links) {
+      if (!shown(link.target.path)) continue;
       canvas
         .append("path")
         .attr("class", "cb-mm-edge")
@@ -489,6 +503,7 @@ export class MindmapView extends ItemView {
       const from = byPath.get(cross.from);
       const to = byPath.get(cross.to);
       if (from === undefined || to === undefined) continue;
+      if (!shown(cross.from) || !shown(cross.to)) continue;
       const path = canvas.append("path").attr("class", "cb-mm-crosslink").attr("d", crossLinkPath(from, to)).node();
       if (path === null) continue;
       for (const end of [cross.from, cross.to]) {
@@ -499,6 +514,7 @@ export class MindmapView extends ItemView {
     }
 
     for (const radialNode of layout.nodes) {
+      if (!shown(radialNode.path)) continue;
       const node = radialNode.data;
       const isHub = radialNode.path === hubPath;
       const { reach, caption } = reaching.get(radialNode.path)!;
@@ -555,7 +571,9 @@ export class MindmapView extends ItemView {
           event.stopPropagation();
           this.openNote(node.path);
         });
-      if (caption.suffix !== null && caption.suffixX !== null) {
+      // The count's room is always reserved; it is drawn only once the fold is
+      // real, so an open branch does not advertise a number it is not hiding.
+      if (node.collapsedChildren > 0 && caption.suffix !== null && caption.suffixX !== null) {
         const suffixX = anchor === "start" ? captionX + caption.suffixX : captionX - caption.suffixX;
         g.append("text")
           .attr("class", "cb-mm-caption cb-mm-fold")
