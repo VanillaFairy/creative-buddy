@@ -572,27 +572,42 @@ describe("radialLayout: a small graph stays a fan", () => {
     // Spreading three notes 120 degrees apart reads as a bug. Arc is the honest
     // measure: crowding shrinks angles and grows radii together, so the room a
     // note gets should not depend on how empty the graph is.
+    //
+    // What it does depend on is where a note stands, and three notes stand
+    // nowhere near where sixty do — so two rings' raw steps are not comparable.
+    // Their *slack* is: the room a pair was handed over and above what the two
+    // of them reserved is the module's own padding, and padding does not care
+    // how busy a ring is.
     const reachOf = evenReach(70);
-    const fanStep = Math.max(...arcSteps(ringAt(radialLayout(note("Hub", brood(3)), reachOf), 1)));
-    const packedStep = Math.max(...arcSteps(ringAt(radialLayout(note("Hub", brood(60)), reachOf), 1)));
-    expect(fanStep).toBeLessThanOrEqual(packedStep + EPS);
+    const slack = (count: number): number => {
+      const ring = ringAt(radialLayout(note("Hub", brood(count)), reachOf), 1);
+      const least = leastSteps(ring, reachOf);
+      return Math.max(...arcSteps(ring).map((step: number, i: number) => step - least[i]!));
+    };
+    expect(slack(3)).toBeLessThanOrEqual(slack(60) + EPS);
   });
 
-  it("leaves three notes on the ring one note sits on, at the angle six notes get", () => {
+  it("leaves three notes on the ring one note sits on, at the angle seven notes get", () => {
     // The claim above is arc, and arc cannot see this: the shrink multiplies
     // every angle and divides every radius by the same factor, so it leaves
     // arc untouched. Read apart, the two halves are plain. A ring only ever
     // moves outward under crowding, so three notes sit exactly where one does;
-    // and until a ring is full every note gets the same slice of it, so three
-    // notes are spread no wider than six.
+    // and until a ring is full a note is given the slice it asked for rather
+    // than a share of the circle, so three notes are spread no wider than seven.
+    //
+    // Seven and not six. A fan is centred, so an odd one seats a note at twelve
+    // o'clock, where a caption lies flat across its ring and costs the most of
+    // it, and an even one straddles that spot and never pays full price. The
+    // widest step in a fan is the one beside its middle note, so the two fans
+    // have to be odd together or they are not being asked the same question.
     const reachOf = evenReach(70);
     const ringOf = (count: number): RadialNode[] => ringAt(radialLayout(note("Hub", brood(count)), reachOf), 1);
     const lone = ringOf(1);
     const fan = ringOf(3);
-    const more = ringOf(6);
+    const more = ringOf(7);
     expect(lone).toHaveLength(1);
     expect(fan).toHaveLength(3);
-    expect(more).toHaveLength(6);
+    expect(more).toHaveLength(7);
     expect(fan[0]!.radius).toBeCloseTo(lone[0]!.radius, 6);
     const widestStep = (ring: RadialNode[]): number =>
       Math.max(...ring.slice(1).map((n: RadialNode, i: number) => n.angle - ring[i]!.angle));

@@ -66,6 +66,15 @@ export const HUB_HEIGHT = 36;
 /** The dot a note draws in radial mode, and the larger one the hub gets. */
 export const DOT_RADIUS = 6;
 export const HUB_DOT_RADIUS = 11;
+/**
+ * A caption's line box, at the `--font-ui-small` the stylesheet sets it in.
+ *
+ * The radial map reserves by it. A caption pointing straight out of its ring
+ * takes none of that ring's width, but it is still a line of text: two of them
+ * side by side out at three o'clock are stacked one above the other, and they
+ * need this much of the ring between them however narrow their words are.
+ */
+export const CAPTION_HEIGHT = 16;
 
 const PAD_X = 13;
 /** Breathing room on each side of the divider rule. */
@@ -78,11 +87,11 @@ const MAX_WIDTH = 240;
  * The caption cap in radial mode. Tighter than a box's, because a ring is read
  * at a glance and a long caption there eats angle its neighbours need.
  *
- * This number also sets how big the radial map is, and not by a little:
- * because a caption near 12 o'clock lies flat across its ring, every node
- * reserves its full caption width as breadth, so the cap multiplies through
- * the whole circle. On a 63-note project the dots alone want a 995x428
- * canvas and this cap grows it past 2700x2300.
+ * This number also sets how big the radial map is. A caption near 12 o'clock
+ * lies flat across its ring and takes its whole width out of it, so the cap
+ * multiplies through every ring — less than it once did, now that a caption
+ * out at 3 o'clock is charged for the nothing it takes across its ring rather
+ * than for the worst case, but it is still the largest single term.
  *
  * That is a size worth watching but not worth paying for in clipped names.
  * A profile of panning that map put the cost in rasterising cross-link chords,
