@@ -1352,8 +1352,11 @@
    applies. This compound (0,2,0) beats that regardless of source order — and,
    carrying `.cb-mm-caption`, it cannot match the cartesian fold count, which
    has only `.cb-mm-fold`. */
+/* The count of what a fold hides is metadata about the note, not its name, so
+   it stays out of the link: no pointer, and no underline running under it. */
 .cb-mm-caption.cb-mm-fold {
   font-size: var(--font-ui-smaller);
+  pointer-events: none;
 }
 
 /* The hub carries the charter and is what everything else hangs off, so it is
@@ -1413,11 +1416,17 @@
   stroke: var(--cb-heat-line, transparent);
 }
 
+/* The name is the note's link — it takes the pointer and says so, while the dot
+   beside it stays the branch control. */
 text.cb-mm-caption {
   fill: var(--cb-quiet);
   font-size: var(--font-ui-small);
   dominant-baseline: middle;
-  pointer-events: none;
+  cursor: pointer;
+}
+
+text.cb-mm-caption:hover {
+  text-decoration: underline;
 }
 
 .cb-mm-node:hover .cb-mm-caption,

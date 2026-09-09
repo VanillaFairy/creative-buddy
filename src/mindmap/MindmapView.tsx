@@ -527,11 +527,18 @@ export class MindmapView extends ItemView {
 
       const anchor = radialNode.labelAnchor;
       const captionX = anchor === "start" ? reach.dot + CAPTION_GAP : -(reach.dot + CAPTION_GAP);
+      // The dot is the branch control and the name is the note: clicking the
+      // name opens it whether or not the branch would have folded. Stopping the
+      // event here is what keeps a foldable node from doing both at once.
       g.append("text")
         .attr("class", "cb-mm-caption")
         .attr("text-anchor", anchor)
         .attr("x", captionX)
-        .text(caption.label);
+        .text(caption.label)
+        .on("click", (event: MouseEvent) => {
+          event.stopPropagation();
+          this.openNote(node.path);
+        });
       if (caption.suffix !== null && caption.suffixX !== null) {
         const suffixX = anchor === "start" ? captionX + caption.suffixX : captionX - caption.suffixX;
         g.append("text")
