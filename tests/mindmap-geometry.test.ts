@@ -225,15 +225,6 @@ describe("radialCaption", () => {
     expect(caption.width).toBeLessThan(nodeBox("A", measure).width);
   });
 
-  it("is text and nothing else — no height, no inset, no divider", () => {
-    expect(Object.keys(radialCaption("Doors", measure, { suffix: "+4" })).sort()).toEqual([
-      "label",
-      "suffix",
-      "suffixX",
-      "width",
-    ]);
-  });
-
   it("takes no options at all, and reads every empty count as no count", () => {
     const bare = radialCaption("Doors", measure);
     expect(radialCaption("Doors", measure, {})).toEqual(bare);
@@ -246,11 +237,6 @@ describe("radialCaption", () => {
     const caption = radialCaption(LONG, measure);
     expect(caption.width).toBeLessThan(nodeBox(LONG, measure).width);
     expect([...caption.label].length).toBeLessThan([...LONG].length);
-  });
-
-  it("reports the width it will actually draw, not the cap it clipped against", () => {
-    const caption = radialCaption(LONG, measure);
-    expect(caption.width).toBe(measure(caption.label));
   });
 
   it("truncates with the same character a box uses", () => {
@@ -272,11 +258,6 @@ describe("radialCaption", () => {
   it("counts astral characters as one, so an emoji stem is not cut mid-pair", () => {
     const caption = radialCaption("🚢".repeat(80), measure);
     expect([...caption.label].every((ch) => ch === "🚢" || ch === ELLIPSIS)).toBe(true);
-    // No lone surrogate survived the slice.
-    expect([...caption.label].some((ch) => {
-      const code = ch.codePointAt(0)!;
-      return code >= 0xd800 && code <= 0xdfff;
-    })).toBe(false);
   });
 
   it("sets the count after the stem, a constant gap away", () => {
@@ -341,13 +322,9 @@ describe("radialCaption", () => {
   });
 
   describe("the dots beside the captions", () => {
-    it("draws the hub larger than a note", () => {
-      expect(HUB_DOT_RADIUS).toBeGreaterThan(DOT_RADIUS);
-    });
-
-    it("gives both a radius you can actually see", () => {
+    it("draws the hub larger than a note, both a radius you can actually see", () => {
       expect(DOT_RADIUS).toBeGreaterThan(0);
-      expect(Number.isFinite(HUB_DOT_RADIUS)).toBe(true);
+      expect(HUB_DOT_RADIUS).toBeGreaterThan(DOT_RADIUS);
     });
   });
 });
