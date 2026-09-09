@@ -78,11 +78,13 @@ const MAX_WIDTH = 240;
  * The caption cap in radial mode. Tighter than a box's, because a ring is read
  * at a glance and a long caption there eats angle its neighbours need.
  *
- * Coupled to `radial.ts`'s RING_GAP: a ring must be spaced out past
- * `DOT_RADIUS + CAPTION_GAP + this` or a caption near 3/9 o'clock bleeds onto
- * the next ring out. Today's values clear it by 11px — accepted by design,
- * since crowding that pushes a node toward 3/9 o'clock widens RING_GAP too.
- * Raising this cap narrows that margin without anything else noticing.
+ * Coupled to `radial.ts`'s RING_GAP: a ring needs `DOT_RADIUS + CAPTION_GAP +
+ * this` of clearance to the next ring out, or a caption near 3/9 o'clock
+ * bleeds onto it. RING_GAP (170) is 11px short of that (27 for the hub's
+ * bigger dot) — accepted by design, because a node only points its caption
+ * that far outward under crowding, and crowding widens RING_GAP right along
+ * with it; the two nearly cancel, so the shortfall is reachable only in an
+ * uncrowded fan. Raising this cap widens the shortfall.
  */
 const MAX_CAPTION_WIDTH = 168;
 const ELLIPSIS = "…";
