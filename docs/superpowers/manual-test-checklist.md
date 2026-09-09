@@ -449,8 +449,14 @@ older than the code.
       map is growing to fit rather than squeezing.
 - [ ] A project of three notes draws as a fan, not as three notes spread round
       a full circle with a great gap in it.
-- [ ] Click a branch → it folds and the ring closes up. Click a leaf → the
-      note opens. Alt-click a branch → the note opens too.
+- [ ] Click a branch's **dot** → it folds and the ring closes up. Click a
+      leaf's dot → the note opens. Alt-click a branch's dot → the note opens too.
+- [ ] Click a note's **name** → the note opens in the editor, and the branch
+      does **not** fold underneath it. The dot is the branch control; the name
+      is the note.
+- [ ] Hover a name → it underlines, and only that one does. Hover the `+N`
+      beside a folded name → no underline, and clicking it does nothing; the
+      count is metadata, not part of the link.
 - [ ] Tab to a dot → Enter opens the note, Space folds the branch, same as
       the flat map.
 - [ ] Turn Heat on with Radial on → dots take colour by their own open
