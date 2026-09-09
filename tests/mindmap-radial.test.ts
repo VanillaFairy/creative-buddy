@@ -83,15 +83,38 @@ const arcSteps = (ring: RadialNode[]): number[] => {
   return steps;
 };
 
-/**
- * The least breadth the spec says a node takes up: its dot, the gap and its
- * whole caption. The real reservation may be more generous — padding is the
- * module's business — so every check here is a floor, never an equality.
- */
-const leastBreadth = (reach: Reach): number => reach.dot + CAPTION_GAP + reach.caption;
-
-/** The test's own model of a caption's height. The layout only promises breadth. */
+/** The test's own model of a caption's height. */
 const CAPTION_HALF_HEIGHT = 7;
+
+/**
+ * The least room a node takes along its own ring.
+ *
+ * A caption is horizontal and a ring is not, so how much of one lies *across*
+ * its ring depends on where on the circle it stands: one at the top lies flat
+ * across the ring and takes its whole width out of it, one at three o'clock
+ * points straight down its own radius and takes none of it. It is still a line
+ * of text either way, so it never takes less than its own height.
+ *
+ * The real reservation may be more generous — padding is the module's
+ * business — so every check here is a floor, never an equality.
+ */
+const leastBreadth = (reach: Reach, angle: number): number =>
+  Math.max(reach.dot, CAPTION_HALF_HEIGHT) +
+  Math.abs(Math.cos(angle)) * (reach.caption > 0 ? CAPTION_GAP + reach.caption : 0);
+
+/**
+ * What each neighbouring pair on a ring must have between them, lined up
+ * index-for-index with `arcSteps`. A caption hangs off one side of its dot, so
+ * either of a pair may be the one reaching toward the other: the wider claim
+ * wins.
+ */
+const leastSteps = (ring: RadialNode[], reachOf: ReachOf): number[] =>
+  ring.slice(1).map((node: RadialNode, i: number) =>
+    Math.max(
+      leastBreadth(reachOf(ring[i]!.data), ring[i]!.angle),
+      leastBreadth(reachOf(node.data), node.angle),
+    ),
+  );
 
 interface Rect {
   left: number;
@@ -380,7 +403,8 @@ describe("radialLayout: the circle closes and never wraps", () => {
     const reach: Reach = { dot: 6, caption: 120 };
     const layout = radialLayout(note("Hub", brood(60)), () => reach);
     const ring = ringAt(layout, 1);
-    expect(TAU * ring[0]!.radius).toBeGreaterThanOrEqual((ring.length - 1) * leastBreadth(reach) - EPS);
+    const carried = leastSteps(ring, () => reach).reduce((a: number, b: number) => a + b, 0);
+    expect(TAU * ring[0]!.radius).toBeGreaterThanOrEqual(carried - EPS);
   });
 });
 
@@ -388,10 +412,11 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
   it("gives every neighbouring pair at least the breadth it reserved, roomy or packed", () => {
     const reach: Reach = { dot: 6, caption: 90 };
     for (const count of [4, 12, 60]) {
-      const layout = radialLayout(note("Hub", brood(count)), () => reach);
-      for (const step of arcSteps(ringAt(layout, 1))) {
-        expect(step).toBeGreaterThanOrEqual(leastBreadth(reach) - EPS);
-      }
+      const ring = ringAt(radialLayout(note("Hub", brood(count)), () => reach), 1);
+      const least = leastSteps(ring, () => reach);
+      arcSteps(ring).forEach((step: number, i: number) => {
+        expect(step).toBeGreaterThanOrEqual(least[i]! - EPS);
+      });
     }
   });
 
@@ -399,9 +424,11 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
     const reach: Reach = { dot: 5, caption: 100 };
     const layout = radialLayout(note("Hub", nested(7, 2)), () => reach);
     for (const depth of [1, 2]) {
-      for (const step of arcSteps(ringAt(layout, depth))) {
-        expect(step).toBeGreaterThanOrEqual(leastBreadth(reach) - EPS);
-      }
+      const ring = ringAt(layout, depth);
+      const least = leastSteps(ring, () => reach);
+      arcSteps(ring).forEach((step: number, i: number) => {
+        expect(step).toBeGreaterThanOrEqual(least[i]! - EPS);
+      });
     }
   });
 
@@ -421,8 +448,8 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
     arcSteps(ring).forEach((step: number, i: number) => {
       const before = ring[i]!;
       const after = ring[i + 1]!;
-      const wantsBefore = leastBreadth(reachOf(before.data));
-      const wantsAfter = leastBreadth(reachOf(after.data));
+      const wantsBefore = leastBreadth(reachOf(before.data), before.angle);
+      const wantsAfter = leastBreadth(reachOf(after.data), after.angle);
       const needed = Math.max(wantsBefore, wantsAfter);
       if (Math.abs(wantsBefore - wantsAfter) > 100) lopsidedPairs++;
       expect(
@@ -465,8 +492,8 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
       arcSteps(ring).forEach((step: number, i: number) => {
         const before = ring[i]!;
         const after = ring[i + 1]!;
-        const wantsBefore = leastBreadth(reachOf(before.data));
-        const wantsAfter = leastBreadth(reachOf(after.data));
+        const wantsBefore = leastBreadth(reachOf(before.data), before.angle);
+        const wantsAfter = leastBreadth(reachOf(after.data), after.angle);
         const needed = Math.max(wantsBefore, wantsAfter);
         if (Math.abs(wantsBefore - wantsAfter) > 100) lopsidedPairs++;
         if (parentOf.get(before.path) !== parentOf.get(after.path)) crossParentPairs++;
@@ -493,12 +520,37 @@ describe("radialLayout: crowding grows the circle instead of squeezing the notes
     expect(ringAt(packed, 1)[0]!.radius).toBeGreaterThan(ringAt(roomy, 1)[0]!.radius);
   });
 
-  it("reserves a wider caption's whole extra width, not a share of it", () => {
-    const narrow: Reach = { dot: 6, caption: 40 };
-    const wide: Reach = { dot: 6, caption: 160 };
-    const stepOf = (reach: Reach): number =>
-      Math.min(...arcSteps(ringAt(radialLayout(note("Hub", brood(8)), () => reach), 1)));
-    expect(stepOf(wide)).toBeGreaterThanOrEqual(stepOf(narrow) + (wide.caption - narrow.caption) - EPS);
+  it("does not grow a full ring by the whole width of every caption on it", () => {
+    // A caption is horizontal and a ring is not. Reserving every caption's full
+    // width across every ring — the worst case, which only a note at the top or
+    // the bottom of the circle actually meets — is what left the hub sitting
+    // alone in an empty disc. Once a ring goes right round, its notes point
+    // every which way, and the ones out at three and nine o'clock lie along
+    // their own radius and cost the ring nothing across it.
+    const count = 60;
+    const width = 150;
+    const ringRadius = (caption: number): number => {
+      const ring = ringAt(radialLayout(note("Hub", brood(count)), evenReach(caption)), 1);
+      expect(ring).toHaveLength(count);
+      // Only a full turn puts captions at every bearing; a fan is all one way.
+      expect(ring[ring.length - 1]!.angle - ring[0]!.angle).toBeGreaterThan(Math.PI);
+      return ring[0]!.radius;
+    };
+    const grown = ringRadius(width) - ringRadius(0);
+    // Wide names still cost the ring room — this is not a licence to ignore them.
+    expect(grown).toBeGreaterThan(0);
+    expect(grown).toBeLessThan((count * width) / TAU);
+  });
+
+  it("keeps every caption on a ring that has been pulled in off every other one", () => {
+    // The room the test above says the layout may reclaim, spent: the same
+    // rings, checked as drawn rectangles. Nothing else here would notice a
+    // reclamation that went one step too far.
+    for (const width of [60, 150, 240]) {
+      const reachOf = evenReach(width);
+      const layout = radialLayout(note("Hub", brood(60)), reachOf);
+      expectNoCollisions(ringAt(layout, 1), reachOf);
+    }
   });
 
   it("spends less of the circle on narrow notes than on wide ones", () => {
@@ -976,8 +1028,8 @@ describe("radialLayout sizes each ring by its own crowding", () => {
   it("gives a ring room for everything standing on it", () => {
     const reach: Reach = { dot: 6, caption: 120 };
     const layout = radialLayout(note("Hub", brood(40)), () => reach);
-    const ring = layout.nodes.filter((n) => n.depth === 1);
-    const needed = ring.length * (reach.dot + CAPTION_GAP + reach.caption);
+    const ring = ringAt(layout, 1);
+    const needed = leastSteps(ring, () => reach).reduce((a: number, b: number) => a + b, 0);
     expect(2 * Math.PI * ringRadius(layout, 1)).toBeGreaterThanOrEqual(needed);
   });
 });
