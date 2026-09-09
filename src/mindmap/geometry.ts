@@ -77,6 +77,12 @@ const MAX_WIDTH = 240;
 /**
  * The caption cap in radial mode. Tighter than a box's, because a ring is read
  * at a glance and a long caption there eats angle its neighbours need.
+ *
+ * Coupled to `radial.ts`'s RING_GAP: a ring must be spaced out past
+ * `DOT_RADIUS + CAPTION_GAP + this` or a caption near 3/9 o'clock bleeds onto
+ * the next ring out. Today's values clear it by 11px — accepted by design,
+ * since crowding that pushes a node toward 3/9 o'clock widens RING_GAP too.
+ * Raising this cap narrows that margin without anything else noticing.
  */
 const MAX_CAPTION_WIDTH = 168;
 const ELLIPSIS = "…";

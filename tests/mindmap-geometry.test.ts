@@ -274,6 +274,14 @@ describe("radialCaption", () => {
     expect(radialCaption("Doors", measure, { suffix: "+4" }).label).toBe("Doors");
   });
 
+  it("puts the same gap between stem and count that a box puts either side of its rule", () => {
+    const box = nodeBox("References", measure, { suffix: "+7" });
+    const boxGap = box.suffixX! - box.dividerX!;
+    const caption = radialCaption("References", measure, { suffix: "+7" });
+    const captionGap = caption.suffixX! - measure(caption.label);
+    expect(captionGap).toBe(boxGap);
+  });
+
   it("adds up, in every shape a caption comes in", () => {
     for (const caption of [
       radialCaption("", measure),
