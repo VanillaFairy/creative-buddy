@@ -69,13 +69,46 @@ export interface RadialLayout {
 }
 
 export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout {
-  const ringOf = (depth: number): number => Math.max(1, depth) * RING_GAP;
-  const angularSize = (depth: number, node: MindmapNode): number => {
+  const breadthOf = (node: MindmapNode): number => {
     const reach = reachOf(node);
-    const breadth =
-      reach.dot * 2 + (reach.caption > 0 ? CAPTION_GAP + reach.caption : 0) + BREADTH_GAP;
-    return breadth / ringOf(depth);
+    return reach.dot * 2 + (reach.caption > 0 ? CAPTION_GAP + reach.caption : 0) + BREADTH_GAP;
   };
+
+  // Every note's breadth is known before anything is placed, so each ring can be
+  // sized to what actually stands on it rather than to the busiest ring in the
+  // graph. Sizing the whole circle from its worst ring is the obvious thing to
+  // do and it is badly wrong on a real project: one ring of forty-four notes
+  // held a ring of eight three and a half times further out than eight notes
+  // need, and a ring of ten beyond it more than five times further.
+  //
+  // Each ring still has to clear the one inside it, so the radii are walked
+  // outward and never allowed to fall back — a ring sized purely by its own
+  // crowding can otherwise land inside a busier ring it is supposed to enclose.
+  const needed = new Map<number, number>();
+  const collect = (node: MindmapNode, depth: number): void => {
+    if (depth > 0) needed.set(depth, (needed.get(depth) ?? 0) + breadthOf(node));
+    for (const child of node.children) collect(child, depth + 1);
+  };
+  collect(root, 0);
+
+  const depths = [...needed.keys()].sort((a, b) => a - b);
+  const ringsFrom = (want: (depth: number) => number): Map<number, number> => {
+    const out = new Map<number, number>();
+    let outward = 0;
+    for (const depth of depths) {
+      outward = Math.max(outward + RING_GAP, want(depth));
+      out.set(depth, outward);
+    }
+    return out;
+  };
+
+  let rings = ringsFrom((depth) => needed.get(depth)! / TAU);
+
+  // The hub sits at the origin and has no ring; it borrows the first one's gap
+  // purely to have a radius to divide by.
+  const ringOf = (depth: number): number => rings.get(depth) ?? RING_GAP;
+  const angularSize = (depth: number, node: MindmapNode): number =>
+    breadthOf(node) / ringOf(depth);
 
   // flextree's contour-tracing pass separates any two nodes it finds
   // adjacent — cousins from different parents included, not only siblings —
@@ -85,11 +118,34 @@ export function radialLayout(root: MindmapNode, reachOf: ReachOf): RadialLayout 
   // not half of it. `(a+b)/2 + |a-b|/2 = max(a,b)`, so adding the second
   // term as `spacing` on top of flextree's own mean turns the separation it
   // enforces into the max the shape actually needs.
-  const laid = flextree<MindmapNode>()
-    .nodeSize((n) => [angularSize(n.depth, n.data), 1])
-    .spacing((a, b) => Math.abs(angularSize(a.depth, a.data) - angularSize(b.depth, b.data)) / 2)(
-    hierarchy(root, (d) => d.children),
-  );
+  const pack = () =>
+    flextree<MindmapNode>()
+      .nodeSize((n) => [angularSize(n.depth, n.data), 1])
+      .spacing((a, b) => Math.abs(angularSize(a.depth, a.data) - angularSize(b.depth, b.data)) / 2)(
+      hierarchy(root, (d) => d.children),
+    );
+
+  // Summing breadths underestimates a ring, because that same max-separation
+  // rule spaces neighbours by the wider of the two rather than their average.
+  // Left there, the first pass overruns a turn, the whole circle grows to
+  // absorb it, and the per-ring sizing above is undone — a quiet ring gets
+  // dragged out by a busy one after all. So the rings are measured against what
+  // they actually packed into and sized again from that. Angles go as
+  // 1/radius, so a single correction lands it.
+  const used = new Map<number, { low: number; high: number }>();
+  pack().each((n) => {
+    if (n.depth === 0) return;
+    const half = angularSize(n.depth, n.data) / 2;
+    const at = used.get(n.depth) ?? { low: Infinity, high: -Infinity };
+    used.set(n.depth, { low: Math.min(at.low, n.x - half), high: Math.max(at.high, n.x + half) });
+  });
+  rings = ringsFrom((depth) => {
+    const at = used.get(depth);
+    const span = at === undefined ? 0 : at.high - at.low;
+    return (rings.get(depth) ?? RING_GAP) * Math.max(1, span / TAU);
+  });
+
+  const laid = pack();
 
   // Once every node has the full breadth it reserved, a busy ring can want
   // more than a full turn. Shrinking every angle and growing every radius by

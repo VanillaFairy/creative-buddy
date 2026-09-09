@@ -942,3 +942,42 @@ describe("reachFor: the seam a node's dot and caption meet at", () => {
     expect(expected.width).toBeGreaterThan(radialCaption(stem, measure).width);
   });
 });
+
+/**
+ * A ring is sized by what stands on it. Sizing the whole circle from its
+ * busiest ring drags the quiet ones out with it — on a real project ring 1 held
+ * eight notes and sat three and a half times further out than eight notes need,
+ * because a ring further out held forty-four.
+ */
+describe("radialLayout sizes each ring by its own crowding", () => {
+  const ringRadius = (layout: ReturnType<typeof radialLayout>, depth: number): number =>
+    layout.nodes.find((n) => n.depth === depth)!.radius;
+
+  it("does not push a quiet ring out because a busier one lies beyond it", () => {
+    const quietBeyond = note("Hub", [note("a", [note("x"), note("y")]), note("b"), note("c")]);
+    const busyBeyond = note("Hub", [note("a", brood(60, "k")), note("b"), note("c")]);
+    const reach = evenReach(120);
+
+    const quiet = radialLayout(quietBeyond, reach);
+    const busy = radialLayout(busyBeyond, reach);
+
+    // Ring 1 carries the same three notes in both, so it must land in the same
+    // place in both. Only ring 2 differs.
+    expect(ringRadius(busy, 1)).toBeCloseTo(ringRadius(quiet, 1), 6);
+    expect(ringRadius(busy, 2)).toBeGreaterThan(ringRadius(quiet, 2));
+  });
+
+  it("keeps a quiet ring beyond a crowded one outside it all the same", () => {
+    const layout = radialLayout(note("Hub", [note("a", brood(40, "k").map((k) => note(k.stem, [note("leaf")])))]), evenReach(120));
+    expect(ringRadius(layout, 2)).toBeGreaterThan(ringRadius(layout, 1));
+    expect(ringRadius(layout, 3)).toBeGreaterThan(ringRadius(layout, 2));
+  });
+
+  it("gives a ring room for everything standing on it", () => {
+    const reach: Reach = { dot: 6, caption: 120 };
+    const layout = radialLayout(note("Hub", brood(40)), () => reach);
+    const ring = layout.nodes.filter((n) => n.depth === 1);
+    const needed = ring.length * (reach.dot + CAPTION_GAP + reach.caption);
+    expect(2 * Math.PI * ringRadius(layout, 1)).toBeGreaterThanOrEqual(needed);
+  });
+});
