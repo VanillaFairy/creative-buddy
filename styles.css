@@ -1365,11 +1365,16 @@
   fill: var(--cb-broken);
 }
 
+.cb-mm-hub:hover text,
+.cb-mm-hub:focus-visible text {
+  fill: var(--cb-live);
+}
+
 /* Radial mode. The dot's fill is the note's own heat and the ring outside it is
    the heat of whatever a collapse is hiding — the two areas the box splits at
    its divider, in the only shape a circle has for them. */
 .cb-mm-dot {
-  fill: var(--cb-heat-fill, var(--background-modifier-border));
+  fill: var(--cb-heat-fill, var(--cb-rail));
   stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
   stroke-width: 1.5;
   transition: fill 120ms ease, stroke 120ms ease;
@@ -1383,11 +1388,11 @@
 
 .cb-mm-node:hover .cb-mm-dot,
 .cb-mm-node:focus-visible .cb-mm-dot {
-  stroke: var(--text-accent);
+  stroke: var(--cb-live);
 }
 
 .cb-mm-dot.cb-mm-problem {
-  stroke: var(--text-error);
+  stroke: var(--cb-broken);
   stroke-dasharray: 3 2;
 }
 
@@ -1395,12 +1400,12 @@
    fallback rather than an override — otherwise the one note that carries the
    charter would be the one note whose questions the map does not colour. */
 .cb-mm-hub-dot {
-  fill: var(--cb-heat-fill, var(--text-accent));
+  fill: var(--cb-heat-fill, var(--cb-live));
   stroke: var(--cb-heat-line, transparent);
 }
 
-.cb-mm-caption {
-  fill: var(--text-muted);
+text.cb-mm-caption {
+  fill: var(--cb-quiet);
   font-size: var(--font-ui-small);
   dominant-baseline: middle;
   pointer-events: none;
@@ -1408,18 +1413,13 @@
 
 .cb-mm-node:hover .cb-mm-caption,
 .cb-mm-node:focus-visible .cb-mm-caption {
-  fill: var(--text-normal);
+  fill: var(--cb-ink);
 }
 
 .cb-mm-hub .cb-mm-caption {
-  fill: var(--text-normal);
+  fill: var(--cb-ink);
   font-size: var(--font-ui-medium);
   font-weight: 600;
-}
-
-.cb-mm-hub:hover text,
-.cb-mm-hub:focus-visible text {
-  fill: var(--cb-live);
 }
 
 /* One fixed readout beats a tooltip that moves with a pannable canvas — and it
