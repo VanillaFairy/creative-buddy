@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, Menu, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, setIcon } from "obsidian";
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
@@ -39,6 +39,9 @@ export class MindmapView extends ItemView {
   private heatmap = false;
   private radial = false;
   private density: Density = "mid";
+  /** Whether the settings panel is up. A view's mood, not a saved preference. */
+  private settingsOpen = false;
+  private settingsRoot: HTMLElement | null = null;
   private collapse = new CollapseStore();
   private offChange: (() => void) | null = null;
   private redrawTimer: number | null = null;
@@ -83,6 +86,17 @@ export class MindmapView extends ItemView {
         this.redraw();
       }),
     );
+    this.registerDomEvent(document, "pointerdown", (event) => {
+      if (!this.settingsOpen || this.settingsRoot === null) return;
+      if (this.settingsRoot.contains(event.target as Node)) return;
+      this.settingsOpen = false;
+      this.redraw();
+    });
+    this.registerDomEvent(document, "keydown", (event) => {
+      if (event.key !== "Escape" || !this.settingsOpen) return;
+      this.settingsOpen = false;
+      this.redraw();
+    });
     this.redraw();
   }
 
@@ -161,54 +175,70 @@ export class MindmapView extends ItemView {
    * Density is offered only in radial mode, because it is the only shape with
    * rings to space.
    */
+  /**
+   * How the map is read, behind one button. These settings belong beside the
+   * map rather than in the vault's settings pane — they are ways of looking at
+   * a graph, not facts about the plugin — but there are enough of them now that
+   * a row of controls was eating the header a project name has to fit in.
+   *
+   * A panel rather than an Obsidian `Menu`, because Density is a choice among
+   * three and reads as a dropdown; a menu can only offer it as three ticks, and
+   * this Obsidian's `Menu` has no submenus to nest it in either.
+   */
   private settingsMenu(host: HTMLElement): void {
-    const gear = host.createEl("button", {
+    const anchor = host.createDiv({ cls: "cb-mm-settings-anchor" });
+    const gear = anchor.createEl("button", {
       cls: "cb-mm-gear clickable-icon",
-      attr: { "aria-label": "Map settings" },
+      attr: { "aria-label": "Map settings", "aria-expanded": String(this.settingsOpen) },
     });
     setIcon(gear, "settings-2");
 
+    const panel = anchor.createDiv({ cls: "cb-mm-settings" });
+    this.settingsRoot = anchor;
+    panel.hidden = !this.settingsOpen;
+
+    // A redraw rebuilds this whole header, so the panel has to be told to come
+    // back up — otherwise changing one setting closes the panel you were about
+    // to change the next one in.
     const apply = (change: () => void): void => {
       change();
       this.app.workspace.requestSaveLayout();
       this.redraw();
     };
 
-    gear.onclick = (event) => {
-      const menu = new Menu();
-      menu.addItem((item) =>
-        item
-          .setTitle("Radial")
-          .setChecked(this.radial)
-          .onClick(() =>
-            apply(() => {
-              this.radial = !this.radial;
-              // The stored pan and zoom belong to whichever shape was on
-              // screen; the other would open somewhere off in the white.
-              this.lastTransform = null;
-            }),
-          ),
-      );
-      menu.addItem((item) =>
-        item
-          .setTitle("Heat")
-          .setChecked(this.heatmap)
-          .onClick(() => apply(() => { this.heatmap = !this.heatmap; })),
-      );
-
-      if (this.radial) {
-        menu.addSeparator();
-        for (const step of DENSITY) {
-          menu.addItem((item) =>
-            item
-              .setTitle(`Density: ${step.label}`)
-              .setChecked(this.density === step.id)
-              .onClick(() => apply(() => { this.density = step.id; })),
-          );
-        }
-      }
-      menu.showAtMouseEvent(event);
+    gear.onclick = () => {
+      this.settingsOpen = !this.settingsOpen;
+      panel.hidden = !this.settingsOpen;
+      gear.setAttr("aria-expanded", String(this.settingsOpen));
     };
+
+    const check = (label: string, on: boolean, set: (value: boolean) => void): void => {
+      const row = panel.createEl("label", { cls: "cb-mm-setting" });
+      const input = row.createEl("input", { type: "checkbox" });
+      input.checked = on;
+      row.createSpan({ text: label });
+      input.addEventListener("change", () => apply(() => set(input.checked)));
+    };
+
+    check("Radial", this.radial, (on) => {
+      this.radial = on;
+      // The stored pan and zoom belong to whichever shape was on screen; the
+      // other would open somewhere off in the white with it.
+      this.lastTransform = null;
+    });
+    check("Heat", this.heatmap, (on) => { this.heatmap = on; });
+
+    // Only the radial map has rings to space.
+    if (!this.radial) return;
+    const row = panel.createEl("label", { cls: "cb-mm-setting cb-mm-setting-pick" });
+    row.createSpan({ text: "Density" });
+    const select = row.createEl("select", { cls: "cb-quiet-control" });
+    for (const step of DENSITY) {
+      const option = select.createEl("option", { text: step.label });
+      option.value = step.id;
+    }
+    select.value = this.density;
+    select.addEventListener("change", () => apply(() => { this.density = select.value as Density; }));
   }
 
   private ringGap(): number {

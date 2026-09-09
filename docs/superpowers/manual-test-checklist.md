@@ -524,13 +524,16 @@ session with the original knowledge-graph skill on the same graph.
 ### Map settings, behind the gear
 
 - [ ] The header shows a gear where the Radial and Heat checkboxes used to be.
-      Click it → a menu with **Radial** and **Heat**, each ticked when it is on.
-- [ ] Toggle Radial from the menu → the map changes shape and refits, exactly as
-      the checkbox did. Toggle Heat → the colours come and go.
-- [ ] With Radial **off**, the menu shows no Density — a flat map has no rings
-      to space.
-- [ ] With Radial **on**, the menu grows a separator and **Density: Near / Mid /
-      Far**, with the current one ticked.
+      Click it → a panel drops beneath it with **Radial** and **Heat**
+      checkboxes, ticked when they are on.
+- [ ] Toggle Radial in the panel → the map changes shape and refits, and **the
+      panel stays open**. Toggle Heat → the colours come and go, panel still up.
+- [ ] With Radial **off**, the panel shows no Density row — a flat map has no
+      rings to space. Tick Radial → the row appears without reopening.
+- [ ] With Radial **on**, the panel carries a **Density** row with a real
+      dropdown reading Near / Mid / Far, showing the current one.
+- [ ] Click anywhere outside the panel → it closes. Press Escape → it closes.
+      Click the gear again → it toggles.
 - [ ] Pick Near → the inner rings come in. Pick Far → they go back out.
 - [ ] On a crowded project the change is mostly in the **inner** rings, and a
       ring carrying a lot of notes barely moves. That is correct: a busy ring is
