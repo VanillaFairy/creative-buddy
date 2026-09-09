@@ -166,6 +166,23 @@ since, in order:
   level you chose, so moving back off Haiku restores it. The live session owns
   the coupled pair: `setModel` and `setEffort` both re-answer what this model
   may be told. Design: `docs/superpowers/specs/2026-09-05-effort-setting-design.md`.
+- **The map reads as rings** — a Radial switch beside Heat redraws the graph
+  with the hub at the centre and each generation on its own ring, which is
+  what makes a project of more than twenty notes legible in a sidebar. Notes
+  become dots with horizontal captions; the box's divider has no meaning on a
+  circle, so a collapse's hidden heat becomes a ring outside the dot instead.
+  The layout is the same `d3-flextree` pass the flat map already runs, read
+  with x as an angle and depth as a radius — no new dependency. Its one rule
+  of its own: because captions never rotate, one at the top of the circle
+  lies flat across its ring and takes its full width in breadth, so every
+  node reserves that worst case; flextree separates neighbours by the *mean*
+  of their sizes, which is wrong for a caption hanging off one side of its
+  dot, so a `.spacing()` accessor corrects it to the *max*, using
+  `(a+b)/2 + |a−b|/2 = max(a,b)`. When a packed ring wants more than a full
+  turn, angles shrink and radii grow by the same factor, so every node keeps
+  the arc it reserved and the circle closes instead of wrapping — it only
+  ever shrinks, so a small graph stays a fan (`15ad75d`, `cb69124`, `a5bb8ec`,
+  `8100aeb`).
 
 ## Suite state
 

@@ -434,6 +434,47 @@ older than the code.
       Fold and unfold a few branches quickly → no flicker, no stray outline
       left behind at the divider.
 
+### Radial
+
+- [ ] The header carries a **Radial** switch beside Heat, off when the map
+      first opens. Off, the map is the left-to-right tree it has always been.
+- [ ] Turn Radial on → the hub sits in the middle, its children on a ring
+      around it, and their children on a ring outside that one.
+- [ ] Every caption reads left to right, whatever side of the circle it sits
+      on. None of them is upside down or on its side.
+- [ ] Captions on the left half of the circle end at their dot; captions on
+      the right half start at theirs. No caption crosses its own dot.
+- [ ] On a project of forty-odd notes, no two captions on the same ring
+      overlap, and the rings sit further apart than on a small project — the
+      map is growing to fit rather than squeezing.
+- [ ] A project of three notes draws as a fan, not as three notes spread round
+      a full circle with a great gap in it.
+- [ ] Click a branch → it folds and the ring closes up. Click a leaf → the
+      note opens. Alt-click a branch → the note opens too.
+- [ ] Tab to a dot → Enter opens the note, Space folds the branch, same as
+      the flat map.
+- [ ] Turn Heat on with Radial on → dots take colour by their own open
+      questions, and a folded dot grows a coloured ring for what it is
+      hiding. Check the hub's dot too — it is not exempt.
+- [ ] A note with a validation problem keeps a red dashed ring around its dot.
+- [ ] Hover a dot → its cross-links light up as chords across the circle, not
+      as arcs lying along a ring.
+- [ ] A folded node's `+N` sits after the name on the outward side, reads
+      smaller and quieter than the name, and never lands between the dot and
+      the name.
+- [ ] Flip Radial, close the map tab, reopen it → the switch is where you
+      left it, and the map opens fitted rather than on somebody else's pan.
+      Flip between the two shapes a few times → each redraw fits the whole
+      graph; neither inherits the other's zoom.
+- [ ] A long note name near 3 or 9 o'clock can clip up to about 11px of a dot
+      on the next ring out; a long hub name can clip about 27px, because the
+      hub's dot is bigger. This is by design — the per-ring no-overlap
+      guarantee does not extend between rings. An audit of 4000 random
+      graphs (224,102 notes) found zero real occurrences, because a caption
+      only points that far outward under crowding, and crowding widens the
+      rings right along with it. Worth a look, not worth a bug report unless
+      it is obviously worse than described.
+
 ## 3 — Vault copy: parity with the CLI skill
 
 Work on a **copy** of the real vault. The reference is a Claude Code CLI
