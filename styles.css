@@ -1347,6 +1347,15 @@
   font-size: var(--font-ui-smaller);
 }
 
+/* In radial mode the fold count carries both classes, so `text.cb-mm-caption`
+   (0,1,1) outranks plain `.cb-mm-fold` (0,1,0) and its smaller size never
+   applies. This compound (0,2,0) beats that regardless of source order — and,
+   carrying `.cb-mm-caption`, it cannot match the cartesian fold count, which
+   has only `.cb-mm-fold`. */
+.cb-mm-caption.cb-mm-fold {
+  font-size: var(--font-ui-smaller);
+}
+
 /* The hub carries the charter and is what everything else hangs off, so it is
    a title with a spine rather than another box in the row of boxes. */
 .cb-mm-hub text {
