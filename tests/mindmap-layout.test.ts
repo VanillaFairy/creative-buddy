@@ -196,3 +196,217 @@ describe("folding a branch on the radial map", () => {
     expect({ x: after.x, y: after.y }).toEqual({ x: before.x, y: before.y });
   });
 });
+
+/**
+ * A colour reaches the note that asks for it and everything below that note in
+ * the tree — and the tree is the folder tree, so a plain folder is not a
+ * generation and the notes inside it pass up to the branch above. What a node
+ * carries is the *effective* colour: nothing downstream walks upward looking
+ * for one.
+ */
+describe("colour down a branch", () => {
+  type MapNode = import("../src/mindmap/layout").MindmapNode;
+
+  const CHARTER = "## Charter\n\nA noir game.\n";
+  const PLAIN = "Body.\n";
+  const coloured = (colour: string, body: string = PLAIN): string =>
+    `---\ncolor: "${colour}"\n---\n\n${body}`;
+
+  const HUB = "Noir game/Noir game.md";
+  const CAST = "Noir game/Cast/Cast.md";
+  const VILLAINS = "Noir game/Cast/Villains/Villains.md";
+  const WITNESS = "Noir game/Cast/Witness.md";
+  const GOON = "Noir game/Cast/Villains/Henchmen/Goon.md";
+  const DOODLE = "Noir game/Cast/Sketches/Doodle.md";
+
+  /**
+   * Cast is coloured and Villains recolours itself from there down. The rest
+   * are the awkward shapes: Suspects is a branch note with no colour of its
+   * own, so a colour has to cross it; Sketches is a plain folder, so Doodle
+   * reaches Cast by passing up through it; Understudy asks for a value that is
+   * not a colour; Witness sorts *after* Villains, so a colour smeared sideways
+   * along a brood instead of carried down lands on it. Places and Props are
+   * the control limbs.
+   */
+  const graph = (): GraphModel =>
+    new GraphModel(
+      "Vault",
+      new Map([
+        [HUB, CHARTER],
+        [CAST, coloured("#C94F7C")],
+        ["Noir game/Cast/Detective.md", PLAIN],
+        [DOODLE, PLAIN],
+        ["Noir game/Cast/Suspects/Suspects.md", PLAIN],
+        ["Noir game/Cast/Suspects/Butler.md", PLAIN],
+        ["Noir game/Cast/Understudy.md", coloured("#12345")],
+        [VILLAINS, coloured("teal")],
+        ["Noir game/Cast/Villains/Kingpin.md", PLAIN],
+        ["Noir game/Cast/Villains/Henchmen/Henchmen.md", PLAIN],
+        [GOON, PLAIN],
+        [WITNESS, PLAIN],
+        ["Noir game/Places/Places.md", PLAIN],
+        ["Noir game/Places/Docks.md", PLAIN],
+        ["Noir game/Props/Props.md", PLAIN],
+        ["Noir game/Props/Knife.md", coloured("gold")],
+        ["Noir game/Props/Rope.md", PLAIN],
+      ]),
+    );
+
+  const built = (collapsed: string[] = [], options?: { prune: boolean }) =>
+    buildMindmapData(graph(), "Noir game", new Set(collapsed), options);
+
+  function nodeFor(data: ReturnType<typeof buildMindmapData>, stem: string): MapNode {
+    const hit = findNode(data.root!, stem);
+    expect(hit, `${stem} is not on the tree`).not.toBeNull();
+    return hit!;
+  }
+
+  const colourOf = (data: ReturnType<typeof buildMindmapData>, stem: string): string | null =>
+    nodeFor(data, stem).color;
+
+  /** Every drawn note's effective colour, by path. */
+  function coloursIn(data: ReturnType<typeof buildMindmapData>): Map<string, string | null> {
+    const out = new Map<string, string | null>();
+    const walk = (node: MapNode): void => {
+      out.set(node.path, node.color);
+      for (const kid of node.children) walk(kid);
+    };
+    walk(data.root!);
+    return out;
+  }
+
+  it("paints the note that asks for it", () => {
+    expect(colourOf(built(), "Cast")).toBe("#c94f7c");
+  });
+
+  it("reaches a child, and a grandchild through a branch note with no colour of its own", () => {
+    const data = built();
+    expect(colourOf(data, "Detective")).toBe("#c94f7c");
+    expect(colourOf(data, "Suspects")).toBe("#c94f7c");
+    expect(colourOf(data, "Butler")).toBe("#c94f7c");
+  });
+
+  it("reaches a note that a plain folder handed up to the branch", () => {
+    const data = built();
+    expect(findNode(data.root!, "Sketches"), "Sketches speaks for nothing").toBeNull();
+    expect(colourOf(data, "Doodle")).toBe("#c94f7c");
+  });
+
+  it("a nearer colour takes over from its own note all the way down", () => {
+    const data = built();
+    for (const stem of ["Villains", "Kingpin", "Henchmen", "Goon"]) {
+      expect(colourOf(data, stem), stem).toBe("teal");
+    }
+  });
+
+  it("carries a colour down, never sideways to a later sibling", () => {
+    // Witness comes after Villains in its brood and is no relation of it.
+    const data = built();
+    expect(colourOf(data, "Witness")).toBe("#c94f7c");
+    expect(colourOf(data, "Places")).toBeNull();
+    expect(colourOf(data, "Props")).toBeNull();
+  });
+
+  it("leaves the rest of the graph alone, above and beside", () => {
+    const data = built();
+    for (const stem of ["Noir game", "Places", "Docks", "Props", "Rope"]) {
+      expect(colourOf(data, stem), stem).toBeNull();
+    }
+  });
+
+  it("a value it cannot read is no colour at all, so the branch above still reaches", () => {
+    expect(colourOf(built(), "Understudy")).toBe("#c94f7c");
+  });
+
+  it("a colour on a leaf paints that one dot and nothing around it", () => {
+    const data = built();
+    expect(nodeFor(data, "Knife").children, "Knife is meant to be a leaf").toEqual([]);
+    expect(colourOf(data, "Knife")).toBe("gold");
+    expect(colourOf(data, "Props")).toBeNull();
+    expect(colourOf(data, "Rope")).toBeNull();
+  });
+
+  it("says what colour every node is, and invents none", () => {
+    const model = graph();
+    const asked = new Set(
+      model.notes("Noir game").map((n) => n.color).filter((c): c is string => c !== null),
+    );
+    expect(asked.size).toBeGreaterThan(0);
+    for (const [path, colour] of coloursIn(buildMindmapData(model, "Noir game", new Set()))) {
+      expect(colour === null || asked.has(colour), `${path} was painted ${String(colour)}`).toBe(true);
+    }
+  });
+
+  it("a colour on the hub paints the whole graph, until a nearer one takes over", () => {
+    const model = new GraphModel(
+      "Vault",
+      new Map([
+        [HUB, coloured("teal", CHARTER)],
+        ["Noir game/Places/Places.md", PLAIN],
+        ["Noir game/Places/Docks.md", PLAIN],
+        [CAST, coloured("#c94f7c")],
+        ["Noir game/Cast/Detective.md", PLAIN],
+      ]),
+    );
+    const data = buildMindmapData(model, "Noir game", new Set());
+    for (const stem of ["Noir game", "Places", "Docks"]) {
+      expect(colourOf(data, stem), stem).toBe("teal");
+    }
+    for (const stem of ["Cast", "Detective"]) {
+      expect(colourOf(data, stem), stem).toBe("#c94f7c");
+    }
+  });
+
+  it("a colour inside a plain folder paints nobody else in that folder", () => {
+    // Scraps speaks for nothing, so both of these hang off the hub as
+    // siblings — sharing a folder is not a relation.
+    const model = new GraphModel(
+      "Vault",
+      new Map([
+        [HUB, CHARTER],
+        ["Noir game/Scraps/Bright.md", coloured("gold")],
+        ["Noir game/Scraps/Plain.md", PLAIN],
+      ]),
+    );
+    const data = buildMindmapData(model, "Noir game", new Set());
+    expect(data.root!.children.map((c) => c.stem)).toEqual(["Bright", "Plain"]);
+    expect(colourOf(data, "Bright")).toBe("gold");
+    expect(colourOf(data, "Plain")).toBeNull();
+    expect(colourOf(data, "Noir game")).toBeNull();
+  });
+
+  it("a branch note beside its folder reaches into it, and no further", () => {
+    const model = new GraphModel(
+      "Vault",
+      new Map([
+        [HUB, CHARTER],
+        ["Noir game/Relics.md", coloured("gold")],
+        ["Noir game/Relics/Amulet.md", PLAIN],
+        ["Noir game/Sundries.md", PLAIN],
+      ]),
+    );
+    const data = buildMindmapData(model, "Noir game", new Set());
+    expect(nodeFor(data, "Relics").children.map((c) => c.stem)).toEqual(["Amulet"]);
+    expect(colourOf(data, "Relics")).toBe("gold");
+    expect(colourOf(data, "Amulet")).toBe("gold");
+    expect(colourOf(data, "Sundries")).toBeNull();
+  });
+
+  it("a fold changes which notes are in the tree, never what colour one is", () => {
+    const open = coloursIn(built());
+    const folded = coloursIn(built([VILLAINS]));
+    expect(folded.get(WITNESS)).toBe("#c94f7c");
+    expect(folded.get(VILLAINS)).toBe("teal");
+    expect(folded.size).toBeLessThan(open.size);
+    for (const [path, colour] of folded) expect(colour, path).toBe(open.get(path));
+  });
+
+  it("a fold does not wash the colour out of what it hides", () => {
+    // The circle asks for the whole tree and draws part of it, so a folded
+    // note is still built — and still has to know what colour it is.
+    const folded = coloursIn(built([CAST], { prune: false }));
+    expect(folded.get(DOODLE)).toBe("#c94f7c");
+    expect(folded.get(GOON)).toBe("teal");
+    expect(folded).toEqual(coloursIn(built([], { prune: false })));
+  });
+});
