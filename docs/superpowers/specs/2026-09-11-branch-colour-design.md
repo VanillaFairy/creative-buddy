@@ -70,9 +70,11 @@ field is documented.
 Legal values are `#rgb`, `#rrggbb`, or a CSS colour name (`teal`). The four- and
 eight-digit hex forms are rejected: the fill derives its own transparency from
 the value, and a half-transparent outline would fight it. Anything else — a
-malformed hex, a word that is not a colour, a list, a number — is ignored, and
-the note falls back to the default palette. A value that does not parse never
-reaches the DOM.
+malformed hex, a word that is not a colour, a number, a date, a map — is
+ignored: the note is read as asking for no colour at all, which means it takes
+whatever colour stands over it, exactly like a note with no `color:` line. A
+typo does not punch a grey hole in a coloured branch, and `Note` needs no third
+state to say so. A value that does not parse never reaches the DOM.
 
 A colour applies to the note that carries it and to everything below that note
 in the tree. The nearest ancestor carrying one wins; a descendant carrying its
@@ -163,7 +165,7 @@ every decision belongs in a pure module beside the view shell rather than in it.
 A. Yes. It paints that note and its subtree like any other; on a leaf the subtree is empty. The alternative — ignoring it — adds a silent failure with nothing to explain it.
 
 **Q. What is a legal colour value?**
-A. `#rgb`, `#rrggbb`, or a CSS colour name, validated in TypeScript. A closed named palette in `styles.css` would guarantee both themes read well, but it would also be the plugin choosing the user's colours for them, and the derived-transparency fill already answers the theme problem.
+A. `#rgb`, `#rrggbb`, or a CSS colour name, validated in TypeScript. A closed named palette in `styles.css` would guarantee both themes read well, but it would also be the plugin choosing the user's colours for them. The derived-transparency fill answers compositing, not near-background colours: `white` on the light theme and `black` on the dark one still read as "the field did not work". Rejecting them would be the plugin choosing again, so they stand.
 
 **Q. Heat is on and a note has a colour — which wins?**
 A. Heat, everywhere, until it is switched off. It is a reading mode; a colour left standing under Heat would make "where does this graph owe me thinking?" a partial answer.

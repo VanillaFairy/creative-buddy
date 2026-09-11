@@ -8,11 +8,13 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 
 - `src/graph/` — deterministic core, **no Obsidian imports, no AI**. A line-faithful
   TypeScript port of the vendored Python in `oracle/`. `hierarchy.ts` is the
-  load-bearing one: **the folder tree is the hierarchy**. A folder speaks
-  through a note of its own name, inside it or beside it, and everything in
-  that folder hangs off that note. Nothing reads a `parent:` field; there is no
-  second opinion to reconcile, so nothing can be orphaned, cycle, or be
-  misfiled, and two notes may share a name in different folders.
+  load-bearing one: **the folder tree is the hierarchy**. A folder holding a
+  note of its own name is a **branch** and that note is its **branch note**;
+  everything in the folder hangs off it, and a folder without one is a plain
+  folder whose notes pass up to the nearest branch above. Nothing reads a
+  `parent:` field; there is no second opinion to reconcile, so nothing can be
+  orphaned, cycle, or be misfiled, and two notes may share a name in different
+  folders.
 - `src/agent/` — Claude Agent SDK boundary: permission table (`permissions.ts`),
   prompt stitching, `AgentService`. Fail-closed by design.
 - `src/chat/`, `src/mindmap/` — thin `ItemView` shells + React. **Manual-test only,

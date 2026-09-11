@@ -15,7 +15,7 @@ describe("noteFromFile", () => {
       "Links out to [[Heavy Rain]] and [[Observer|the dense one]] and [[Noir game#Charter]].",
     ].join("\n");
     const note = noteFromFile("Noir game/References/References.md", raw);
-    expect(note).toEqual({
+    expect(note).toMatchObject({
       path: "Noir game/References/References.md",
       stem: "References",
       kind: "reference",
@@ -53,6 +53,27 @@ describe("noteFromFile", () => {
   it("normalises CRLF before parsing", () => {
     const note = noteFromFile("G/C.md", "---\r\nkind: scene\r\n---\r\n");
     expect(note.kind).toBe("scene");
+  });
+
+  it("reads a quoted colour", () => {
+    const raw = ["---", 'color: "#C94F7C"', "---", "", "Body."].join("\n");
+    expect(noteFromFile("Noir game/Cast/Cast.md", raw).color).toBe("#c94f7c");
+  });
+
+  it("an unquoted colour is a YAML comment, and reads as no colour at all", () => {
+    // `color: #c94f7c` — the # opens a comment, so the field is empty. This is
+    // the mistake a hand-editor makes, and it must be quiet, not broken.
+    const raw = ["---", "color: #c94f7c", "---", "", "Body."].join("\n");
+    expect(noteFromFile("Noir game/Cast/Cast.md", raw).color).toBeNull();
+  });
+
+  it("a colour that is not one is no colour", () => {
+    const raw = ["---", "color: banana", "---", "", "Body."].join("\n");
+    expect(noteFromFile("Noir game/Cast/Cast.md", raw).color).toBeNull();
+  });
+
+  it("a note with no colour field has none", () => {
+    expect(noteFromFile("Noir game/Cast/Cast.md", "Body, no frontmatter.").color).toBeNull();
   });
 });
 

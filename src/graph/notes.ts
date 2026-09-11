@@ -1,6 +1,7 @@
 import { parseFrontmatter, innermostScalar, stripFrontmatterBlock } from "./frontmatter";
 import { normalizeContent, stripBom } from "./reader";
 import { casefold, pyStr } from "./py-compat";
+import { parseColor } from "./color";
 import { stemOf } from "./types";
 
 export interface Note {
@@ -9,6 +10,8 @@ export interface Note {
   aliases: string[];
   kind: string | null;
   status: string | null;
+  /** The colour this note asks for. Null when absent or unreadable. */
+  color: string | null;
   links: string[];
 }
 
@@ -58,6 +61,7 @@ export function noteFromFile(path: string, rawContent: string): Note {
     aliases: aliasesOf(fm["aliases"]),
     kind: scalarOrNull(fm["kind"]),
     status: scalarOrNull(fm["status"]),
+    color: parseColor(scalarOrNull(fm["color"])),
     links: extractLinks(body),
   };
 }

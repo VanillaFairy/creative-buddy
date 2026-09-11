@@ -478,6 +478,10 @@ export class MindmapView extends ItemView {
         .attr("role", "button")
         .attr("aria-label", facts ?? node.stem);
 
+      // The colour is a fact about the graph; Heat is a way of reading it. The
+      // stylesheet keeps them in that order, so nothing here asks which is on.
+      if (node.color !== null) g.style("--cb-tint", node.color);
+
       // A node's colour is its own questions; the child-ref area behind the
       // divider carries what a collapse is hiding. Off, both classes are absent
       // and every colour falls back to the flat palette.
@@ -616,6 +620,8 @@ export class MindmapView extends ItemView {
         .attr("tabindex", 0)
         .attr("role", "button")
         .attr("aria-label", facts ?? node.stem);
+
+      if (node.color !== null) g.style("--cb-tint", node.color);
 
       const ownHeat = this.heatmap ? ` ${heatClass(node.openQuestions)}` : "";
       const base = "cb-mm-dot";
