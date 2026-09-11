@@ -132,9 +132,12 @@ rather than a change of view.
 
 ## Tests
 
-`tests/color.test.ts` — the parser: the accepted forms, the rejected ones, a
-word that is not a colour, and the quoted-hash case that proves an unquoted `#`
-arrives as nothing.
+`tests/color.test.ts` — the parser: the accepted forms, the rejected ones, and a
+word that is not a colour.
+
+`tests/notes.test.ts` — the frontmatter boundary, where the quoting rule lives:
+a quoted colour arrives, and an unquoted one arrives as nothing, because by the
+time the parser sees it YAML has already eaten it as a comment.
 
 `tests/mindmap-layout.test.ts` — inheritance: a colour reaching a grandchild, a
 nested colour taking over from its own note down, a sibling outside the branch
