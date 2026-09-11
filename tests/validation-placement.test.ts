@@ -13,15 +13,27 @@ function setup(fixture: string, graphDir: string) {
 
 describe("duplicateNames", () => {
   it("reports one problem per shared stem, first occurrence named", () => {
+    // `Echo` twice under `Tangle`. One of them sits in a folder of its own
+    // name, so neither is misfiled — the only thing wrong is the name.
     const { view, notes } = setup("problems", "Tangle");
-    expect(duplicateNames(notes, view.rootName)).toEqual([
-      {
-        kind: "duplicate-name",
-        note: "Twin.md",
-        detail: "name is shared by Tangle/Twin.md",
-      },
-    ]);
+    const reported = duplicateNames(notes, view.rootName);
+    expect(reported).toHaveLength(1);
+    expect(reported[0]!.kind).toBe("duplicate-name");
+    expect(reported[0]!.note).toBe("Echo.md");
+    expect(reported[0]!.detail).toContain("Echo.md");
   });
+
+  it("leaves namesakes under different parents alone", () => {
+    // Two notes called `Twin`, one under `Tangle` and one under `Deep`. People
+    // share names; a tree says which is which by the branch it hangs off, so
+    // this is a shape the graph can represent and not a mistake to report.
+    const { view, notes } = setup("problems", "Tangle");
+    const twins = notes.filter((n) => n.stem === "Twin");
+    expect(twins).toHaveLength(2);
+    expect(new Set(twins.map((n) => n.parent)).size).toBe(2);
+    expect(duplicateNames(notes, view.rootName).map((p) => p.note)).not.toContain("Twin.md");
+  });
+
   it("clean graph has none", () => {
     const { view, notes } = setup("simple", "Noir game");
     expect(duplicateNames(notes, view.rootName)).toEqual([]);
