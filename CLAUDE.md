@@ -7,14 +7,19 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 ## Architecture (one direction of truth: files are the state)
 
 - `src/graph/` — deterministic core, **no Obsidian imports, no AI**. A line-faithful
-  TypeScript port of the two vendored Python scripts in `oracle/`.
+  TypeScript port of the vendored Python in `oracle/`. `hierarchy.ts` is the
+  load-bearing one: **the folder tree is the hierarchy**. A folder speaks
+  through a note of its own name, inside it or beside it, and everything in
+  that folder hangs off that note. Nothing reads a `parent:` field; there is no
+  second opinion to reconcile, so nothing can be orphaned, cycle, or be
+  misfiled, and two notes may share a name in different folders.
 - `src/agent/` — Claude Agent SDK boundary: permission table (`permissions.ts`),
   prompt stitching, `AgentService`. Fail-closed by design.
 - `src/chat/`, `src/mindmap/` — thin `ItemView` shells + React. **Manual-test only,
   by design** — every decision belongs in a pure TDD'd module beside the shell,
   never in the shell. Chat has `transcript.ts`, `sessions.ts`, `queue.ts`,
   `activity-groups.ts`, `links.ts`, `composer-size.ts`, `scroll-anchor.ts`; the
-  map has `layout.ts`, `geometry.ts`, `heat.ts`. When a view grows a new rule,
+  map has `layout.ts`, `geometry.ts`, `heat.ts`, `radial.ts`, `bands.ts`. When a view grows a new rule,
   the rule gets its own module and its own test — that is the pattern, not a
   historical accident.
 - `assets/prompts/` — the interviewer's behaviour: `system.md` + `grill.md` +
@@ -26,7 +31,11 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 
 ## The oracle discipline (load-bearing)
 
-- `oracle/*.py` is the behavioral contract; `tests/expected/*.json` are machine-generated.
+- `oracle/graph_check.py` is the behavioral contract; `tests/expected/*.json` are
+  machine-generated. It draws a graph's shape rather than checking it — the five
+  structural checks it used to run cannot be expressed once folders are the
+  hierarchy — so what the fixtures pin is the **tree both implementations must
+  agree on**, ordering included. Change the Python first, then the TypeScript.
 - `npm run oracle && git diff --exit-code tests/expected` must stay clean.
 - Do NOT "fix" Python-parity oddities (casefolded Windows sorts, BOM asymmetry,
   `pyStrip` char set, code-point compares) without checking the Python first —
@@ -39,7 +48,8 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 - `deploy.bat [target]` — copy `main.js` + `manifest.json` + `styles.css` into
   the vault's plugin folder, overwriting. Prints build timestamps; never
   touches `data.json`. Build first — it refuses to deploy a missing bundle.
-- `npm run oracle` — regenerate expected JSON (needs `python`, 3.14 with pyyaml)
+- `npm run oracle` — regenerate expected JSON (needs `python`; no third-party
+  packages since the checks went)
 - `npm run test:live` — one REAL subscription session, costs a few cents. Run it
   after any change to `src/agent/agent-service.ts` options or `permissions.ts`
   decisions — unit fakes have repeatedly missed real CLI behavior there.

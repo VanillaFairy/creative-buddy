@@ -56,7 +56,7 @@ Every other `## ` heading in a note is the user's content and you name it from
 what it says: "The forest", "How it starts". Never coin a fifth reserved name,
 never spell one of the four differently, and never put one where the table says
 it does not go. A group node in particular does not get a `## Shape` — its
-children are already in `parent:` and in the folder, and a hand-kept list of
+children are already in the folder, and a hand-kept list of
 them is an index that goes stale the first time you are not looking.
 
 **The words.** Where two could name one thing, this is the one:
@@ -146,10 +146,10 @@ starts out with a shape rather than a flat pile — see "Where a node hangs".
 Never load the whole graph. When work lands on a node, its **working set** is:
 
 - the node itself, and the hub (for the charter);
-- its parent, from `parent:` in frontmatter;
+- its parent — the note that speaks for the folder this one sits in;
 - the notes it links out to;
-- its children — find them with one search for `parent:` mentioning this node.
-  Read bodies when there are a handful; otherwise titles are enough.
+- its children — the notes in its own folder. Read bodies when there are a
+  handful; otherwise titles are enough.
 
 That is one hop in every direction. Beyond it, use `Grep` on names and aliases,
 or dispatch the `kg-scout` subagent with a single question when a wide look is
@@ -157,8 +157,9 @@ worth paying for. Never widen by loading more notes into this conversation.
 
 ## What a node looks like
 
-Frontmatter carries `parent:` — every node has one; only the hub goes without —
-and `aliases:` when a title hides a name. Nothing else is required. `kind:` and
+Frontmatter carries `aliases:` when a title hides a name. Nothing else is
+required — and nothing in it says where the node sits, because that is what its
+folder says. `kind:` and
 `status:` exist only where the charter defines them, and they behave
 differently. A **kind** is your filing decision, made against the charter's
 list; when nothing on the list fits, ask, because extending the list is
@@ -228,19 +229,26 @@ Noir game/
   Log/
 ```
 
-`parent:` is the truth; the folders are a mirror of it. Where the two disagree,
-`parent:` wins and the file moves. The mirror is also allowed to be **shallower**
-than what it reflects: when nesting one level deeper would push a path past what
-the filesystem will take, stop nesting and leave the note in its nearest
-ancestor's folder. Nothing is lost, because the hierarchy never lived in the path.
+The folders are not a mirror of the tree — they **are** the tree, and there is
+no second opinion to keep them in step with. A folder speaks through a note
+carrying its own name, sitting either inside it (`References/References.md`) or
+beside it (`References.md` next to `References/`), and everything in that folder
+hangs off that note. A folder nobody speaks for is a filing convenience rather
+than a generation: its notes pass up to the nearest folder that does speak.
 
-Two things follow, and both matter more than they look.
+Three things follow, and they are why it is done this way.
 
-**No two notes may share a name**, anywhere in the graph. `parent:` and
-Obsidian's own links both resolve by bare name, so a second `Overview` in another
-folder is not a second address — it is one address with two answers. Separate
-folders make this easy to do by accident, which is why the plugin's structure
-check refuses it.
+**Moving a note re-parents it.** There is nothing else to edit and nothing that
+can drift out of step, but it also means a drag in the file explorer is a
+change to the graph. Move deliberately.
+
+**A note gains children by becoming a folder.** Promotion is a file move:
+make `X/`, put `X.md` inside it, and the new children go in beside it.
+
+**Two notes may share a name** when they sit in different folders — one
+`Images` under every chapter is a shape the graph can hold, because a path is
+unique. What stays ambiguous is a bare `[[wikilink]]` to such a name, which
+Obsidian resolves however it likes; write those with the full path.
 
 **A node that gains its first child becomes a folder.** That is a file move, and
 it is silent: the tree did not change, only its reflection. Moving a note is not
@@ -494,6 +502,6 @@ produced is right, four lines is noise.
 - **The plugin is watching the files.** Structure checks run continuously in the
   plugin and reach you in the session preamble; never try to run scripts or
   shell commands yourself — you have Read, Write, Edit, Glob, Grep and the
-  kg-scout scout only. An unresolved parent, a duplicate name or a misfiled note
-  is fixed as part of ordinary work, not announced as a task of its own: an
-  unresolved parent usually means a title lost a character to the filesystem.
+  kg-scout scout only. There is no structure check to answer to any more: a
+  note cannot be orphaned, cannot name a parent that is not there, and cannot
+  be misfiled, because its folder is where it lives and where it belongs.
