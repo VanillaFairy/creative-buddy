@@ -6,7 +6,8 @@ import type { Selection } from "d3-selection";
 import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
 import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
-import { Box, Bounds, Measure, childRegionPath, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
+import { Box, Bounds, Measure, DOT_RADIUS, childRegionPath, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
+import { isService, serviceBox } from "./service";
 import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP, HIDDEN_RING_GAP } from "./radial";
 import type { Reaching } from "./radial";
 import { foldMark, hiddenIfFolded } from "./fold";
@@ -418,10 +419,13 @@ export class MindmapView extends ItemView {
       const cached = boxes.get(node.path);
       if (cached !== undefined) return cached;
       const isHub = node.path === hubPath;
-      const box = nodeBox(node.stem, isHub ? measure.hub : measure.node, {
-        isHub,
-        suffix: node.collapsedChildren > 0 ? `+${node.collapsedChildren}` : null,
-      });
+      const suffix = node.collapsedChildren > 0 ? `+${node.collapsedChildren}` : null;
+      // However it is filed, the hub carries the charter and is never drawn as
+      // something you file past.
+      const box =
+        !isHub && isService(node.kind)
+          ? serviceBox(node.stem, measure.node, { suffix })
+          : nodeBox(node.stem, isHub ? measure.hub : measure.node, { isHub, suffix });
       boxes.set(node.path, box);
       return box;
     };
@@ -510,6 +514,15 @@ export class MindmapView extends ItemView {
             .attr("height", 2.5)
             .attr("rx", 1.25);
         }
+      } else if (isService(node.kind)) {
+        // Infrastructure rather than content: it takes the radial map's shape in
+        // the flat tree too, so it reads as a note you file past rather than one
+        // you stop and read. `serviceBox` already left the room for it.
+        g.append("circle")
+          .attr("class", `cb-mm-dot cb-mm-service${ownHeat}`)
+          .attr("cx", DOT_RADIUS)
+          .attr("cy", 0)
+          .attr("r", DOT_RADIUS);
       } else {
         g.append("rect")
           .attr("class", `cb-mm-box${ownHeat}`)
@@ -635,8 +648,9 @@ export class MindmapView extends ItemView {
           .attr("class", `cb-mm-dot-hidden ${heatClass(node.hiddenOpenQuestions)}`)
           .attr("r", reach.dot + HIDDEN_RING_GAP);
       }
+      const service = !isHub && isService(node.kind) ? " cb-mm-service" : "";
       g.append("circle")
-        .attr("class", isHub ? `${base} cb-mm-hub-dot${ownHeat}` : `${base}${ownHeat}`)
+        .attr("class", isHub ? `${base} cb-mm-hub-dot${ownHeat}` : `${base}${service}${ownHeat}`)
         .attr("r", reach.dot);
 
       // Under the pointer, the dot says which way it goes: a minus over a

@@ -1457,6 +1457,14 @@
   transition: fill 120ms ease, stroke 120ms ease;
 }
 
+/* A service node — infrastructure rather than content, `kind: service`. It is a
+   dot in both views, and the dashes are all that says so. They carry no colour
+   of their own, so heat and tint still set the stroke underneath them and the
+   two readings stack instead of arguing. */
+.cb-mm-service {
+  stroke-dasharray: 2 2;
+}
+
 .cb-mm-dot-hidden {
   fill: none;
   stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
