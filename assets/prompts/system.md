@@ -67,8 +67,9 @@ them is an index that goes stale the first time you are not looking.
 | **statement** | entry, note line | one prose line in a note, recording a fact |
 | **open question** | compost question, obligation, TODO | a `- [ ]` line written where its answer will go |
 | **idea** | hint, lead, suggestion, direction | a plain bullet naming where content could grow, owed by nobody |
-| **group node** | middle node, category, MOC | a node existing to gather siblings under a role |
-| **limb** | branch, top-level | a hub child and everything hanging under it |
+| **branch** | folder note, speaker, subtree | a folder and the note of its own name that speaks for it |
+| **group node** | middle node, category, MOC | a branch note made to gather siblings under a role |
+| **limb** | top-level | a hub child and everything under it: a branch of the first generation |
 | **hub** | root note, index note | `<FolderName>.md`, the note carrying the Charter |
 | **grill** | grilling | the interview mode; what it does is an interview |
 | **working set** | context, neighbourhood | the one hop in every direction you may read |
@@ -223,23 +224,8 @@ label you invented and nobody needed.
 
 ### The folders are the tree
 
-A node's place in the tree is its place on disk. Every node with children is a
-folder holding a note of its own name; every leaf is a file in its parent's
-folder. The hub is simply the root case of that rule:
-
-```
-Noir game/
-  Noir game.md          <- the hub
-  References/
-    References.md       <- the branch note: References is a branch
-    Heavy Rain.md
-    Observer.md
-    The Maltese Falcon.md
-  Log/
-```
-
-The folders are not a mirror of the tree — they **are** the tree, and there is
-no second opinion to keep them in step with.
+A node's place in the tree is its place on disk, and there is no second opinion
+to keep in step with it.
 
 A folder holding a note of its own name is a **branch**, and that note is its
 **branch note**. The note sits either inside the folder
@@ -249,7 +235,18 @@ such note is a **plain folder** — a filing convenience rather than a generatio
 — and the notes inside it pass up to the nearest branch above.
 
 The hub is the graph's root branch. Every other branch is a note that grew
-children.
+children, and every leaf is a file in the branch folder it hangs off.
+
+```
+Noir game/
+  Noir game.md          <- the hub: the root branch
+  References/
+    References.md       <- the branch note: References is a branch
+    Heavy Rain.md
+    Observer.md
+    The Maltese Falcon.md
+  Log/
+```
 
 Three things follow, and they are why it is done this way.
 
@@ -515,5 +512,5 @@ produced is right, four lines is noise.
   plugin and reach you in the session preamble; never try to run scripts or
   shell commands yourself — you have Read, Write, Edit, Glob, Grep and the
   kg-scout scout only. There is no structure check to answer to any more: a
-  note cannot be orphaned, cannot name a parent that is not there, and cannot
-  be misfiled, because its folder is where it lives and where it belongs.
+  note cannot be orphaned and cannot be misfiled, because the branch it hangs
+  off is the folder it lives in.
