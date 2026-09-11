@@ -1324,11 +1324,22 @@
 .cb-mm-node {
   cursor: pointer;
   outline: none;
+  /* A node's effective colour arrives as `--cb-tint`, set inline by the
+     painters. Lines take it whole and areas take it at a fraction, so one
+     value in a note's frontmatter paints both and composites over whichever
+     theme is loaded.
+
+     The trap: where no note above set a tint, this `var()` cannot resolve,
+     which makes `--cb-tint-fill` the guaranteed-invalid value — and that is
+     precisely what makes `var(--cb-tint-fill, X)` below fall through to X.
+     An uncoloured node keeps the flat palette because of this line, not
+     despite it. */
+  --cb-tint-fill: color-mix(in srgb, var(--cb-tint) 22%, transparent);
 }
 
 .cb-mm-box {
-  fill: var(--cb-heat-fill, var(--background-secondary));
-  stroke: var(--cb-heat-line, var(--cb-rail));
+  fill: var(--cb-heat-fill, var(--cb-tint-fill, var(--background-secondary)));
+  stroke: var(--cb-heat-line, var(--cb-tint, var(--cb-rail)));
   stroke-width: 1px;
   transition: stroke 100ms ease, fill 100ms ease;
 }
@@ -1339,7 +1350,7 @@
 .cb-mm-node:focus-visible .cb-mm-box,
 .cb-mm-node:hover .cb-mm-child-region,
 .cb-mm-node:focus-visible .cb-mm-child-region {
-  fill: var(--cb-heat-fill, var(--background-modifier-hover));
+  fill: var(--cb-heat-fill, var(--cb-tint-fill, var(--background-modifier-hover)));
   stroke: var(--cb-live);
   stroke-width: 1.5px;
 }
@@ -1352,8 +1363,8 @@
    right-hand outline and, where it closes, draws the divider — so the rule and
    the border can never disagree about where the two areas meet. */
 .cb-mm-child-region {
-  fill: var(--cb-heat-fill, var(--background-secondary));
-  stroke: var(--cb-heat-line, var(--cb-rail));
+  fill: var(--cb-heat-fill, var(--cb-tint-fill, var(--background-secondary)));
+  stroke: var(--cb-heat-line, var(--cb-tint, var(--cb-rail)));
   stroke-width: 1px;
   transition: stroke 100ms ease, fill 100ms ease;
 }
@@ -1432,7 +1443,7 @@
 /* A 2.5px bar is too thin to read an unsaturated fill on, so the spine takes
    the bright line colour where a box would take the fill. */
 .cb-mm-hub-spine {
-  fill: var(--cb-heat-line, var(--cb-live));
+  fill: var(--cb-heat-line, var(--cb-tint, var(--cb-live)));
 }
 
 .cb-mm-hub:hover text,
@@ -1444,8 +1455,8 @@
    the heat of whatever a collapse is hiding — the two areas the box splits at
    its divider, in the only shape a circle has for them. */
 .cb-mm-dot {
-  fill: var(--cb-heat-fill, var(--cb-rail));
-  stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
+  fill: var(--cb-heat-fill, var(--cb-tint-fill, var(--cb-rail)));
+  stroke: var(--cb-heat-line, var(--cb-tint, var(--background-modifier-border-hover)));
   stroke-width: 1.5;
   transition: fill 120ms ease, stroke 120ms ease;
 }
@@ -1465,8 +1476,8 @@
    fallback rather than an override — otherwise the one note that carries the
    charter would be the one note whose questions the map does not colour. */
 .cb-mm-hub-dot {
-  fill: var(--cb-heat-fill, var(--cb-live));
-  stroke: var(--cb-heat-line, transparent);
+  fill: var(--cb-heat-fill, var(--cb-tint-fill, var(--cb-live)));
+  stroke: var(--cb-heat-line, var(--cb-tint, transparent));
 }
 
 /* Under the pointer, a branch's dot shows which way it goes. It takes the dot's
@@ -1480,7 +1491,7 @@
 .cb-mm-fold-mark {
   pointer-events: none;
   opacity: 0;
-  stroke: var(--cb-heat-line, var(--cb-ink));
+  stroke: var(--cb-heat-line, var(--cb-tint, var(--cb-ink)));
   stroke-width: 1.5;
   stroke-linecap: round;
   transition: opacity 100ms ease;
