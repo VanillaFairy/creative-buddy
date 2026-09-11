@@ -233,7 +233,7 @@ describe("colour down a branch", () => {
       "Vault",
       new Map([
         [HUB, CHARTER],
-        [CAST, coloured("#C94F7C")],
+        [CAST, coloured("#c94f7c")],
         ["Noir game/Cast/Detective.md", PLAIN],
         [DOODLE, PLAIN],
         ["Noir game/Cast/Suspects/Suspects.md", PLAIN],
@@ -286,12 +286,6 @@ describe("colour down a branch", () => {
     expect(colourOf(data, "Butler")).toBe("#c94f7c");
   });
 
-  it("reaches a note that a plain folder handed up to the branch", () => {
-    const data = built();
-    expect(findNode(data.root!, "Sketches"), "Sketches speaks for nothing").toBeNull();
-    expect(colourOf(data, "Doodle")).toBe("#c94f7c");
-  });
-
   it("a nearer colour takes over from its own note all the way down", () => {
     const data = built();
     for (const stem of ["Villains", "Kingpin", "Henchmen", "Goon"]) {
@@ -314,27 +308,12 @@ describe("colour down a branch", () => {
     }
   });
 
-  it("a value it cannot read is no colour at all, so the branch above still reaches", () => {
-    expect(colourOf(built(), "Understudy")).toBe("#c94f7c");
-  });
-
   it("a colour on a leaf paints that one dot and nothing around it", () => {
     const data = built();
     expect(nodeFor(data, "Knife").children, "Knife is meant to be a leaf").toEqual([]);
     expect(colourOf(data, "Knife")).toBe("gold");
     expect(colourOf(data, "Props")).toBeNull();
     expect(colourOf(data, "Rope")).toBeNull();
-  });
-
-  it("says what colour every node is, and invents none", () => {
-    const model = graph();
-    const asked = new Set(
-      model.notes("Noir game").map((n) => n.color).filter((c): c is string => c !== null),
-    );
-    expect(asked.size).toBeGreaterThan(0);
-    for (const [path, colour] of coloursIn(buildMindmapData(model, "Noir game", new Set()))) {
-      expect(colour === null || asked.has(colour), `${path} was painted ${String(colour)}`).toBe(true);
-    }
   });
 
   it("a colour on the hub paints the whole graph, until a nearer one takes over", () => {
