@@ -63,18 +63,3 @@ export function innermostScalar(value: unknown): unknown {
   }
   return value;
 }
-
-/** Normalise a `parent:` value to a bare note name, or null if there isn't one. */
-export function parentName(raw: unknown): string | null {
-  const value = innermostScalar(raw);
-  if (value === null || value === undefined) return null;
-  let text = pyStr(value).trim();
-  for (const quote of ['"', "'"]) {
-    if (text.length >= 2 && text.startsWith(quote) && text.endsWith(quote)) {
-      text = text.slice(1, -1).trim();
-    }
-  }
-  if (text.startsWith("[[") && text.endsWith("]]")) text = text.slice(2, -2);
-  text = text.split("|", 1)[0]!.split("#", 1)[0]!.trim();
-  return text === "" ? null : text;
-}

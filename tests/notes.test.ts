@@ -18,7 +18,6 @@ describe("noteFromFile", () => {
     expect(note).toEqual({
       path: "Noir game/References/References.md",
       stem: "References",
-      parent: "References",
       kind: "reference",
       status: "rot",
       aliases: ["the shelf"],
@@ -28,7 +27,6 @@ describe("noteFromFile", () => {
 
   it("absent metadata reads as null/empty, never defaults", () => {
     const note = noteFromFile("G/Plain.md", "no frontmatter at all");
-    expect(note.parent).toBeNull();
     expect(note.kind).toBeNull();
     expect(note.status).toBeNull();
     expect(note.aliases).toEqual([]);
@@ -40,19 +38,21 @@ describe("noteFromFile", () => {
     expect(note.aliases).toEqual(["solo"]);
   });
 
-  it("a nested-list alias item digs to its innermost scalar, like parent: does", () => {
+  it("a nested-list alias item digs to its innermost scalar", () => {
     const note = noteFromFile("G/A.md", "---\naliases:\n  - [[nested]]\n---\n");
     expect(note.aliases).toEqual(["nested"]);
   });
 
-  it("BOM hides frontmatter from parent (validation semantics)", () => {
-    const note = noteFromFile("G/B.md", '\uFEFF---\nparent: "[[G]]"\n---\n');
-    expect(note.parent).toBeNull();
+  it("a BOM hides the frontmatter block entirely", () => {
+    // Python's str.strip() leaves U+FEFF alone, so a BOM'd `---` is not a
+    // delimiter and the note reads as carrying no frontmatter at all.
+    const note = noteFromFile("G/B.md", "﻿---\nkind: scene\n---\n");
+    expect(note.kind).toBeNull();
   });
 
   it("normalises CRLF before parsing", () => {
-    const note = noteFromFile("G/C.md", "---\r\nparent: X\r\n---\r\n");
-    expect(note.parent).toBe("X");
+    const note = noteFromFile("G/C.md", "---\r\nkind: scene\r\n---\r\n");
+    expect(note.kind).toBe("scene");
   });
 });
 

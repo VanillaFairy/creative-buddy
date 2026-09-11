@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFrontmatter, innermostScalar, parentName, stripFrontmatterBlock } from "../src/graph/frontmatter";
+import { parseFrontmatter, innermostScalar, stripFrontmatterBlock } from "../src/graph/frontmatter";
 
 describe("parseFrontmatter", () => {
   it("reads a simple mapping", () => {
@@ -31,22 +31,6 @@ describe("innermostScalar", () => {
   it("digs through nested lists", () => expect(innermostScalar([["Sample"]])).toBe("Sample"));
   it("empty list is null", () => expect(innermostScalar([])).toBeNull());
   it("scalar passes through", () => expect(innermostScalar("x")).toBe("x"));
-});
-
-describe("parentName", () => {
-  it("normalises the unquoted wikilink (nested list) form", () => expect(parentName([["Sample"]])).toBe("Sample"));
-  it("strips [[ ]] and quotes", () => expect(parentName('"[[Sample]]"')).toBe("Sample"));
-  it("drops |alias and #heading tails", () => {
-    expect(parentName("[[Sample|the s]]")).toBe("Sample");
-    expect(parentName("[[Sample#Part]]")).toBe("Sample");
-  });
-  it("empty and missing mean no parent", () => {
-    expect(parentName(undefined)).toBeNull();
-    expect(parentName(null)).toBeNull();
-    expect(parentName("")).toBeNull();
-    expect(parentName("   ")).toBeNull();
-  });
-  it("plain names pass through trimmed", () => expect(parentName("  Noir game  ")).toBe("Noir game"));
 });
 
 describe("pyStrip semantics via parseFrontmatter", () => {

@@ -1,4 +1,4 @@
-import { parseFrontmatter, parentName, innermostScalar, stripFrontmatterBlock } from "./frontmatter";
+import { parseFrontmatter, innermostScalar, stripFrontmatterBlock } from "./frontmatter";
 import { normalizeContent, stripBom } from "./reader";
 import { casefold, pyStr } from "./py-compat";
 import { stemOf } from "./types";
@@ -6,7 +6,6 @@ import { stemOf } from "./types";
 export interface Note {
   path: string;
   stem: string;
-  parent: string | null;
   aliases: string[];
   kind: string | null;
   status: string | null;
@@ -45,9 +44,9 @@ function aliasesOf(raw: unknown): string[] {
 }
 
 /**
- * One index row. `parent` follows graph_check.py semantics (no BOM strip, so a
- * BOM'd note reads as parentless); the body-level fields use the forgiving
- * BOM-stripped text.
+ * One index row. Where a note sits in the tree is a fact about its folder, not
+ * about its frontmatter — see `hierarchy.ts` — so nothing here reads a
+ * `parent:` claim. The body-level fields use the forgiving BOM-stripped text.
  */
 export function noteFromFile(path: string, rawContent: string): Note {
   const text = normalizeContent(rawContent);
@@ -56,7 +55,6 @@ export function noteFromFile(path: string, rawContent: string): Note {
   return {
     path,
     stem: stemOf(path),
-    parent: parentName(fm["parent"]),
     aliases: aliasesOf(fm["aliases"]),
     kind: scalarOrNull(fm["kind"]),
     status: scalarOrNull(fm["status"]),
