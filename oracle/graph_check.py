@@ -183,7 +183,13 @@ def find_graphs(root: Path) -> list[Path]:
 
 
 def collect_notes(graph_dir: Path) -> list[Note]:
-    """Every node in the graph, subfolders included. `Log/` is the one exclusion."""
+    """Every node in the graph, subfolders included.
+
+    `Log/` is excluded because session logs are not nodes, and SKIP_DIRS
+    because `.claude/` and its like hold somebody's tooling rather than
+    somebody's notes. Skipping those only while *hunting* for graphs, as this
+    once did, let a scratch file under `.claude/` arrive as a node.
+    """
     notes: list[Note] = []
     pending = [graph_dir]
     while pending:
@@ -195,7 +201,7 @@ def collect_notes(graph_dir: Path) -> list[Note]:
         for entry in entries:
             path = Path(entry.path)
             if entry.is_dir():
-                if entry.name.casefold() != LOG_DIR:
+                if entry.name.casefold() != LOG_DIR and entry.name not in SKIP_DIRS:
                     pending.append(path)
             elif path.suffix.lower() == ".md":
                 notes.append(load_note(path))

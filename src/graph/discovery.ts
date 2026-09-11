@@ -71,13 +71,17 @@ function isMarkdown(path: string): boolean {
   return i > 0 && casefold(b.slice(i)) === ".md";
 }
 
-/** graph_check.py collect_notes: everything under the graph, only Log/ excluded. */
+/**
+ * graph_check.py collect_notes: everything under the graph, bar `Log/` — which
+ * holds session logs rather than nodes — and SKIP_DIRS, which hold somebody's
+ * tooling rather than somebody's notes.
+ */
 export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
   const out: string[] = [];
   const pending: string[] = [graphDir];
   while (pending.length > 0) {
     const dir = pending.pop()!;
-    for (const child of childDirectories(view, dir, null)) {
+    for (const child of childDirectories(view, dir, SKIP_DIRS)) {
       if (casefold(baseName(child)) !== LOG_DIR) pending.push(child);
     }
     for (const file of filesDirectlyIn(view, dir)) {

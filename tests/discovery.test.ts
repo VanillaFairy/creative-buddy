@@ -20,7 +20,25 @@ describe("findGraphs", () => {
   });
 });
 
-describe("collectNoteFiles (validation walk)", () => {
+describe("collectNoteFiles (the graph's notes)", () => {
+  it("leaves out the folders that are somebody's tooling, not somebody's notes", () => {
+    // `.claude/`, `.obsidian/` and the rest are already skipped when hunting
+    // for graphs. They were not skipped when listing a graph's notes, so a
+    // scratch file under `.claude/` arrived as a node — and now that the
+    // folder tree *is* the hierarchy, it would arrive as a whole branch.
+    const files = new Map<string, string>([
+      ["G/G.md", "## Charter\n"],
+      ["G/Real.md", ""],
+      ["G/.claude/todo/scratch.md", ""],
+      ["G/.obsidian/plugins/notes.md", ""],
+      ["G/node_modules/pkg/readme.md", ""],
+    ]);
+    expect(collectNoteFiles(new VaultView({ rootName: "V", files }), "G")).toEqual([
+      "G/G.md",
+      "G/Real.md",
+    ]);
+  });
+
   it("includes subfolders, excludes Log/ case-insensitively, sorts Windows-style", () => {
     const files = collectNoteFiles(view("simple"), "Noir game");
     expect(files).toEqual([
