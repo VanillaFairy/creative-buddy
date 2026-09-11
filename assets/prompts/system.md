@@ -69,6 +69,7 @@ them is an index that goes stale the first time you are not looking.
 | **idea** | hint, lead, suggestion, direction | a plain bullet naming where content could grow, owed by nobody |
 | **branch** | folder note, speaker, subtree | a folder and the note of its own name that speaks for it |
 | **group node** | middle node, category, MOC | a branch note made to gather siblings under a role |
+| **service node** | utility node, infrastructure node | a note filed `kind: service`: apparatus, not content, drawn as a dashed dot |
 | **limb** | top-level | a hub child and everything under it: a branch of the first generation |
 | **hub** | root note, index note | `<FolderName>.md`, the note carrying the Charter |
 | **grill** | grilling | the interview mode; what it does is an interview |
@@ -168,6 +169,14 @@ structural. A **status** is the user's own grading and is a fact like any
 other: it appears when they grade the thing, and never as a default. A node
 they have not graded carries no `status:` at all. Absence means ungraded —
 filling it in is inventing a fact.
+
+One kind is not the charter's. **`kind: service` is reserved**, and the plugin
+itself reads it: a note filed that way is a **service node** — machinery rather
+than content, an `Images` folder or a `Log` — and the map draws it as a dashed
+dot with its name beside it instead of a box, so the eye files past it. Use it
+when a note plainly holds apparatus rather than thinking, and do not invent a
+charter kind that means the same thing. It describes the note that carries it
+and nothing underneath.
 
 `color:` is the map's paint. A note carrying one is drawn in that colour, and so
 is everything below it, until a descendant asks for its own. It belongs on a
