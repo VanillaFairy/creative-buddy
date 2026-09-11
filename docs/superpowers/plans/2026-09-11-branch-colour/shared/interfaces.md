@@ -21,6 +21,35 @@ export function parseColor(value: string | null): string | null;
 - Rejects everything else, including `#rgba`/`#rrggbbaa`, `transparent` and
   `currentcolor`.
 
+### Settled while writing the tests
+
+T01a's author surfaced five cases the design left open. They are decided here,
+once, so no implementer decides them quietly:
+
+1. **System colours are not named colours.** The table is CSS Color 4 §6.1
+   `<named-color>` only — `canvastext`, `accentcolor`, `buttonface` and the rest
+   of §6.3 are rejected. They resolve against the OS theme, so honouring one
+   would put a colour on the map that neither the note nor the Obsidian theme
+   chose.
+2. **Plain `String.trim()`.** It strips NBSP and BOM as well as spaces, and that
+   is the wanted behaviour: this is a hand-edited field, and invisible whitespace
+   should not cost someone their colour. The deliberate BOM asymmetry in
+   `frontmatter.ts` is a Python-parity obligation and does not reach here.
+3. **`toLowerCase()`, never `toLocaleLowerCase()`.** Under a Turkish locale the
+   latter turns `INDIGO` into `ındıgo` and rejects it. No test can catch this on
+   a machine in another locale, so it is a contract line instead.
+4. **A value still wearing quotes is malformed.** `scalarOrNull` hands over
+   YAML's parsed scalar, so the quotes are long gone by the time this function
+   runs. `'"#f80"'` is not a colour.
+5. **No synonym folding.** `grey` and `gray` both come back as written, as do
+   `cyan`/`aqua` and `magenta`/`fuchsia`. "One spelling per colour" means one
+   *casing*, not one of each pair of aliases — folding would rewrite what the
+   user typed into something they did not.
+
+**The name table must be a `Set`, not an object literal.** A plain-object lookup
+answers to `__proto__`, `constructor` and `toString`, so a note asking for
+`color: constructor` would get a truthy hit. T01a pins this.
+
 ## `src/graph/notes.ts` (modified by T02)
 
 ```ts
