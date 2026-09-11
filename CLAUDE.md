@@ -81,6 +81,8 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 ## Deeper context
 
 - `.claude/knowledge/` — project KB (commands, conventions, gotchas).
+- `docs/GLOSSARY.md` — what the project's words mean and which module decides:
+  branch, limb, group node, heat, fold, band, reach, service node.
 - `docs/TODO.md` — feature backlog: wanted but not yet planned.
 - `plans/progress/…checkpoint.md` — **the living status doc.** Task ledger, what
   has shipped since the plan finished, and the defects still open. Start here.
