@@ -1355,10 +1355,6 @@
   stroke-width: 1.5px;
 }
 
-/* Dashed as well as red, so "this note is broken" survives a reader who
-   cannot tell the red from the border grey. Declared after the heat areas so a
-   broken note keeps its alarm border and shows its heat in the fill — a colour
-
 /* What a collapsed node is hiding. One path fills the area, carries the box's
    right-hand outline and, where it closes, draws the divider — so the rule and
    the border can never disagree about where the two areas meet. */
@@ -1554,10 +1550,6 @@ text.cb-mm-caption:hover {
 .cb-mm-inspector-idle {
   color: var(--cb-faint);
 }
-
-/* Both panels start closed and carry their count in the summary, so a graph
-   with loose notes says so in one line instead of opening a list over the map.
-   Stacked in one column, they also cannot land on top of each other the way
 
 .cb-mm-empty {
   margin: 0;
