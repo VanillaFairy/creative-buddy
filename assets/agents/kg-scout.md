@@ -13,9 +13,10 @@ A question and a folder. Sometimes a note to treat as the starting point.
 ## How to read
 
 Grep first on the names, aliases and distinctive phrases in the question. Read
-the notes that come back, then follow their `parent:` and wikilinks one hop if
-the question needs it. Read whole notes — they are small. Stop when further
-reading stops changing your answer.
+the notes that come back, then go one hop if the question needs it: out along
+their wikilinks, or up to the branch note of the folder they sit in — the note
+carrying that folder's own name. Read whole notes — they are small. Stop when
+further reading stops changing your answer.
 
 You are spending your own context so the main conversation doesn't have to.
 Reading forty notes here is fine; returning forty notes is not.
