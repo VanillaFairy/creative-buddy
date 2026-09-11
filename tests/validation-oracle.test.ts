@@ -22,6 +22,6 @@ describe("graphStats", () => {
     const view = new VaultView(loadFixtureVault("problems"));
     const stats = graphStats(view, "Tangle");
     expect(stats).not.toBeNull();
-    expect(stats!.hubChildren).toBe(4); // Twin, Deep, Lost, Bad Date
+    expect(stats!.hubChildren).toBe(6); // Twin, Deep, Lost, Bad Date, and both Echos
   });
 });

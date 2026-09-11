@@ -10,13 +10,16 @@ Five things get reported, and nothing else:
   unresolved-parent   a `parent:` value naming no note in the same graph
   orphan-root         a note other than the hub with no `parent:` at all
   cycle               a ring of notes that are each other's ancestors
-  duplicate-name      two notes with the same name, so links are ambiguous
+  duplicate-name      two notes with one name under one parent
   misfiled            a note in a folder that is not one of its ancestors
 
 The last two exist because the folder tree mirrors the parent tree. `parent:` is
 the truth and the folders reflect it, so the reflection can drift; and once notes
-live in separate folders, nothing stops two of them being given the same name,
-which quietly breaks every link to either.
+live in separate folders, nothing stops two of them being given the same name.
+Sharing a name is only reported when they also share a parent, because that is
+when nothing is left to tell them apart — under different parents the branch a
+note hangs off says which one is meant, and a graph is allowed a namesake per
+branch.
 
 A folder that is not a graph is simply not a graph — there is nothing to
 complain about, so it is passed over in silence.
@@ -286,18 +289,24 @@ def cycle_problem(ring: list[Note]) -> dict:
 
 
 def duplicate_names(notes: list[Note]) -> list[dict]:
-    """Notes sharing a name, which the graph cannot tell apart.
+    """Notes that share a name *and* a parent, which nothing can tell apart.
 
     Both `parent:` resolution here and Obsidian's own `[[wikilinks]]` match on
-    the bare name, so two notes called the same thing in different folders are
-    not two addresses — they are one address with two possible answers, and
-    which one you get is an accident of walk order. Harmless while every note
-    sits in one folder; a real hazard once the tree is mirrored into subfolders,
-    which is exactly when the temptation to write a second `Overview` arrives.
+    the bare name, so two notes called the same thing are one address with two
+    possible answers. Under different parents that is still a shape the graph
+    can hold and a reader can follow: people share names, and the branch a note
+    hangs off says which one is meant. It is also the only way to give every
+    chapter a child called `Images`. Under the *same* parent there is nothing
+    left to tell them apart by at all, and that is what gets reported.
+
+    What the weaker rule gives up is the warning that a bare `[[wikilink]]`
+    stays ambiguous either way. That is a cost of writing the link by bare
+    name, not of the graph's shape, so it is left to whoever writes the link.
     """
-    seen: dict[str, list[Note]] = {}
+    seen: dict[tuple[str, str], list[Note]] = {}
     for note in notes:
-        seen.setdefault(note.stem.casefold(), []).append(note)
+        key = (note.stem.casefold(), (note.parent or "").casefold())
+        seen.setdefault(key, []).append(note)
     return [{
         "kind": "duplicate-name",
         "note": group[0].filename,

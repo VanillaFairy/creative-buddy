@@ -6,7 +6,7 @@
       "graph": "Tangle",
       "path": "Tangle",
       "counts": {
-        "notes": 11,
+        "notes": 13,
         "problems": 5
       },
       "problems": [
@@ -27,8 +27,8 @@
         },
         {
           "kind": "duplicate-name",
-          "note": "Twin.md",
-          "detail": "name is shared by Tangle/Twin.md"
+          "note": "Echo.md",
+          "detail": "name is shared by Echo/Echo.md"
         },
         {
           "kind": "misfiled",

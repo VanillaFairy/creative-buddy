@@ -103,17 +103,38 @@ function parentDirDisplay(path: string, rootName: string): string {
   return dir === "" ? rootName : baseName(dir);
 }
 
-/** Notes sharing a stem — one address with two answers. */
+/**
+ * Notes sharing a stem *and* a parent — one address with two answers.
+ *
+ * A bare name is how both `parent:` and Obsidian's `[[wikilinks]]` find a
+ * note, so two notes called the same thing are one address with two possible
+ * answers. Under different parents that is still a shape the graph can hold
+ * and a reader can follow: people share names, and the branch a note hangs off
+ * says which one is meant. It is also the only way to give every chapter a
+ * child called `Images`. Under the same parent there is nothing left to tell
+ * them apart by, and that is what gets reported.
+ *
+ * Grouped as a map of maps rather than by a joined key: a stem and a parent
+ * can each hold any character, and the one separator that could not turn up
+ * inside them is a NUL, which would make git treat this file as binary.
+ */
 export function duplicateNames(notes: Note[], rootName: string): Problem[] {
-  const seen = new Map<string, Note[]>();
+  const seen = new Map<string, Map<string, Note[]>>();
+  const order: Note[][] = [];
   for (const note of notes) {
-    const key = casefold(note.stem);
-    const group = seen.get(key);
+    const byParent = seen.get(casefold(note.stem)) ?? new Map<string, Note[]>();
+    seen.set(casefold(note.stem), byParent);
+    const key = casefold(note.parent ?? "");
+    const group = byParent.get(key);
     if (group !== undefined) group.push(note);
-    else seen.set(key, [note]);
+    else {
+      const started = [note];
+      byParent.set(key, started);
+      order.push(started);
+    }
   }
   const problems: Problem[] = [];
-  for (const group of seen.values()) {
+  for (const group of order) {
     if (group.length < 2) continue;
     const rest = group
       .slice(1)
