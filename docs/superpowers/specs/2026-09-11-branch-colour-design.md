@@ -70,9 +70,11 @@ field is documented.
 Legal values are `#rgb`, `#rrggbb`, or a CSS colour name (`teal`). The four- and
 eight-digit hex forms are rejected: the fill derives its own transparency from
 the value, and a half-transparent outline would fight it. Anything else — a
-malformed hex, a word that is not a colour, a list, a number — is ignored, and
-the note falls back to the default palette. A value that does not parse never
-reaches the DOM.
+malformed hex, a word that is not a colour, a list, a number — is ignored: the
+note is read as asking for no colour at all, which means it takes whatever
+colour stands over it, exactly like a note with no `color:` line. A typo does
+not punch a grey hole in a coloured branch, and `Note` needs no third state to
+say so. A value that does not parse never reaches the DOM.
 
 A colour applies to the note that carries it and to everything below that note
 in the tree. The nearest ancestor carrying one wins; a descendant carrying its

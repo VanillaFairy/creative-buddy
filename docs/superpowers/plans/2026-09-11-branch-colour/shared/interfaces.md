@@ -46,6 +46,26 @@ once, so no implementer decides them quietly:
    *casing*, not one of each pair of aliases — folding would rewrite what the
    user typed into something they did not.
 
+### Settled while writing the inheritance tests
+
+T03a's author surfaced five more. Decided here, once:
+
+6. **An unreadable `color:` inherits.** A note whose value does not parse is
+   read as asking for no colour at all, so it takes whatever stands over it —
+   identical to a note with no `color:` line. Anything else would need `Note` to
+   distinguish "absent" from "present but bad", which means re-reading
+   frontmatter in the view layer: a second source of truth, and the thing this
+   architecture exists to avoid. The design doc's wording was amended to match.
+7. **Cross-links take no colour.** `crossLinks` are arcs between notes, not
+   notes. Nothing tints them.
+8. **A colour cannot reach into a graph from outside it.** `buildMindmapData`
+   only ever sees notes inside `graphDir`, and a graph is self-contained by
+   doctrine. Intended, not an oversight.
+9. **`layout.ts` knows nothing about Heat.** Precedence lives entirely in the
+   stylesheet. The effective colour is never suppressed in the data.
+10. **Two notes sharing a stem** in different folders is legal and nothing about
+    colour turns on it. No test needed.
+
 **The name table must be a `Set`, not an object literal.** A plain-object lookup
 answers to `__proto__`, `constructor` and `toString`, so a note asking for
 `color: constructor` would get a truthy hit. T01a pins this.
