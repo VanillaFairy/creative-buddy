@@ -22,9 +22,40 @@ Spec decisions settled mid-flight are in the plan's `shared/interfaces.md`, unde
 the two "Settled while…" headings — ten cases the design left open, each raised
 by a test author rather than guessed at by an implementer.
 
+## The audits
+
+Both triads were audited by a third agent that had seen neither the author's nor
+the implementer's reasoning. Both implementations survived; every finding was on
+the test side.
+
+**The parser** (`T01c`): built 13 mutant implementations and found **9 survived**
+the suite. Three settled decisions had no test at all — system colours, the
+NBSP/BOM half of the trim rule, and a newline inside a hex, which was the one way
+a non-colour could have reached `style.setProperty`. It also cross-checked the
+148-name table entry-for-entry against `mdn-data`, `@csstools/color-helpers`,
+`@asamuzakjp/css-color` and `d3-color`: all four agree exactly, nothing missing,
+extra, misspelled or out of order. And it found a literal NUL byte in
+`tests/color.test.ts` that had already made the file binary to ripgrep.
+
+**The inheritance walk** (`T03c`): 11 mutations, 4000 fuzzed graph shapes, eight
+hand-built awkward shapes. Nothing escaped. Three tests, though, were never the
+unique catcher and asserted what another tier already guarantees — those are
+gone (`865b35d`).
+
+Acted on in `bc9f833` and `865b35d`. Two findings were out of scope and are
+queued as separate work: the dead `drawn` cycle guard, and `stats()` recomputing
+the hierarchy every redraw.
+
+**Declined:** adding `mdn-data` as a devDependency so the name table could be
+compared against the spec's own data. The CSS named-colour list has been frozen
+since `rebeccapurple` in 2014, so the dependency would guard against an edit
+nobody is going to make. The comment in `tests/color.test.ts` now says plainly
+that the table is not protected at this tier, and records the cross-check date.
+
 ## Verification
 
-- `npx vitest run` — 634 passed, 38 files.
+- `npx vitest run` — 630 passed, 38 files. (Down from 634: four tests that could
+  not fail were deleted, three added that pin decisions nothing was holding.)
 - `npm run build` — clean (`tsc --noEmit` included).
 - `npm run oracle && git diff --exit-code tests/expected` — clean. Nothing here
   touches tree shape.
@@ -37,9 +68,20 @@ by a test author rather than guessed at by an implementer.
 - **The manual visual pass.** Six checks, listed in
   `docs/superpowers/plans/2026-09-11-branch-colour/tasks/T04-paint.md`, Step 5.
   Nobody has run them. No agent can — the map has to be looked at.
-- **T01c and T03c**, the two adversarial audits, were still running when this
-  was written. Their findings become new `red` tasks, never inline patches.
 - **The branch is unmerged and unpushed.**
+
+## A process lesson, recorded because it cost an audit to find
+
+`T03b`'s task file contained the implementation verbatim — signature, body, call
+site, even the comment. The implementer's only independent act was *deleting*
+that comment, which was correct. But it means both artifacts descended from the
+same plan, and the tests never got to constrain a differently-minded
+implementer. They were good tests regardless (11 of 11 mutations caught), but
+the pair's independence was thinner than the triad shape suggested.
+
+Next time: a `green` task states the rule and the files, not the diff. A `red`
+task may carry a proposed test file, because its author is told to treat it as a
+floor and attack it — that asymmetry is fine.
 
 ## Noticed, not acted on
 
