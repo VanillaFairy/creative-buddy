@@ -6,10 +6,9 @@ export interface Vault {
   files: Map<string, string>;
 }
 
-export interface Problem {
-  kind: string;
-  note: string;
-  detail: string;
+/** Path equality with the filesystem's own case rules (the oracle runs on NTFS). */
+export function samePath(a: string, b: string): boolean {
+  return casefold(a) === casefold(b);
 }
 
 export function baseName(p: string): string {

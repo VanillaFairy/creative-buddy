@@ -1,15 +1,20 @@
 {
-  "ok": true,
   "root": ".",
   "graphs": [
     {
       "graph": "Noir game",
       "path": "Noir game",
       "counts": {
-        "notes": 5,
-        "problems": 0
+        "notes": 4,
+        "hubChildren": 3
       },
-      "problems": []
+      "tree": [
+        "Noir game",
+        "├── Heavy Rain",
+        "├── References",
+        "│   └── Observer",
+        "└── Мысли"
+      ]
     }
   ]
 }

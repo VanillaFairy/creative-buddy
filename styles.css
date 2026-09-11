@@ -1347,12 +1347,6 @@
 /* Dashed as well as red, so "this note is broken" survives a reader who
    cannot tell the red from the border grey. Declared after the heat areas so a
    broken note keeps its alarm border and shows its heat in the fill — a colour
-   scale must not quietly cost the map a correctness signal. */
-.cb-mm-problem {
-  stroke: var(--cb-broken);
-  stroke-width: 2px;
-  stroke-dasharray: 5 3;
-}
 
 /* What a collapsed node is hiding. One path fills the area, carries the box's
    right-hand outline and, where it closes, draws the divider — so the rule and
@@ -1441,11 +1435,6 @@
   fill: var(--cb-heat-line, var(--cb-live));
 }
 
-/* The hub has no box to redden, so its spine carries the alarm. */
-.cb-mm-hub-spine-problem {
-  fill: var(--cb-broken);
-}
-
 .cb-mm-hub:hover text,
 .cb-mm-hub:focus-visible text {
   fill: var(--cb-live);
@@ -1470,11 +1459,6 @@
 .cb-mm-node:hover .cb-mm-dot,
 .cb-mm-node:focus-visible .cb-mm-dot {
   stroke: var(--cb-live);
-}
-
-.cb-mm-dot.cb-mm-problem {
-  stroke: var(--cb-broken);
-  stroke-dasharray: 3 2;
 }
 
 /* The hub's dot answers to Heat like every other, so its accent colour is the
@@ -1563,93 +1547,6 @@ text.cb-mm-caption:hover {
 /* Both panels start closed and carry their count in the summary, so a graph
    with loose notes says so in one line instead of opening a list over the map.
    Stacked in one column, they also cannot land on top of each other the way
-   two separately-pinned panels did. */
-.cb-mm-dock {
-  position: absolute;
-  right: var(--size-4-3);
-  top: var(--size-4-2);
-  bottom: var(--size-4-2);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--size-4-2);
-  width: min(45%, 20em);
-  pointer-events: none;
-}
-
-.cb-mm-dock .cb-mm-panel {
-  pointer-events: auto;
-  flex: 0 1 auto;
-  min-height: 0;
-  max-width: 100%;
-  padding: var(--size-4-1) var(--size-4-2);
-  border: 1px solid var(--cb-rail);
-  border-radius: var(--radius-s);
-  background-color: var(--background-primary);
-  box-shadow: var(--shadow-s);
-  font-family: var(--cb-hand);
-  font-size: var(--font-ui-smaller);
-}
-
-.cb-mm-dock .cb-mm-panel[open] {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.cb-mm-dock .cb-mm-panel summary {
-  color: var(--cb-quiet);
-  font-weight: 500;
-  cursor: pointer;
-  list-style: none;
-  /* Wraps rather than clips: a narrow pane used to cut the heading mid-word. */
-  overflow-wrap: anywhere;
-}
-
-/* Notes the hub cannot reach are the map's own bad news, so the closed bar
-   says it in the colour this plugin uses for everything owed. */
-.cb-mm-dock .cb-mm-panel-alert summary {
-  color: var(--cb-owed);
-}
-
-.cb-mm-dock .cb-mm-panel summary::-webkit-details-marker {
-  display: none;
-}
-
-.cb-mm-dock .cb-mm-panel summary:hover {
-  color: var(--cb-ink);
-}
-
-.cb-mm-dock .cb-mm-panel summary::before {
-  content: "▸";
-  display: inline-block;
-  width: 0.9em;
-  opacity: 0.75;
-  transition: transform 120ms ease;
-}
-
-.cb-mm-dock .cb-mm-panel[open] summary::before {
-  transform: rotate(90deg);
-}
-
-.cb-mm-panel-body {
-  min-height: 0;
-  overflow: auto;
-  margin-top: var(--size-4-1);
-  padding-top: var(--size-4-1);
-  border-top: 1px solid var(--cb-rail);
-}
-
-.cb-mm-tray-row {
-  padding: 1px 0;
-  color: var(--cb-quiet);
-  overflow-wrap: anywhere;
-}
-
-.cb-mm-tray-row a {
-  color: var(--cb-ink);
-  cursor: pointer;
-}
 
 .cb-mm-empty {
   margin: 0;
@@ -1669,9 +1566,6 @@ text.cb-mm-caption:hover {
   .cb-mm-box,
   .cb-mm-crosslink,
   .cb-picker-graphs .cb-picker-graph,
-  .cb-mm-dock .cb-mm-panel summary::before {
-    transition: none;
-  }
 
   .cb-activity-running .cb-activity-label,
   .cb-chat-status,

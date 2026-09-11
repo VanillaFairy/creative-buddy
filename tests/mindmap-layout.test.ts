@@ -6,6 +6,11 @@ import { CollapseStore } from "../src/mindmap/collapse-store";
 import { radialLayout, reachFor } from "../src/mindmap/radial";
 import { hiddenIfFolded } from "../src/mindmap/fold";
 
+/** `References`, found by name: it is no longer the hub's first child. */
+function refsIn(data: ReturnType<typeof dataFor>) {
+  return data.root!.children.find((c) => c.stem === "References")!;
+}
+
 function dataFor(fixture: string, graphDir: string, collapsed: string[] = []) {
   const vault = loadFixtureVault(fixture);
   const model = new GraphModel(vault.rootName, vault.files);
@@ -13,27 +18,31 @@ function dataFor(fixture: string, graphDir: string, collapsed: string[] = []) {
 }
 
 describe("buildMindmapData", () => {
-  it("builds the tree from parent edges, hub at the root, children in normcase order", () => {
+  it("builds the tree from the folders, hub at the root, children in normcase order", () => {
+    // `Heavy Rain.md` sits in the graph's own folder, so it hangs off the hub —
+    // the `parent: References` it used to carry moved it a level down, and a
+    // folder cannot say that. `Observer.md` is in `References/`, so it does.
     const data = dataFor("simple", "Noir game");
     expect(data.root!.stem).toBe("Noir game");
-    expect(data.root!.children.map((c) => c.stem)).toEqual(["References", "Мысли"]);
-    const refs = data.root!.children[0]!;
-    expect(refs.children.map((c) => c.stem)).toEqual(["Heavy Rain", "Observer"]);
+    expect(data.root!.children.map((c) => c.stem)).toEqual(["Heavy Rain", "References", "Мысли"]);
+    expect(refsIn(data).children.map((c) => c.stem)).toEqual(["Observer"]);
   });
 
   it("collapse hides children but flags them", () => {
     const data = dataFor("simple", "Noir game", ["Noir game/References/References.md"]);
-    const refs = data.root!.children[0]!;
+    const refs = refsIn(data);
     expect(refs.children).toEqual([]);
-    expect(refs.collapsedChildren).toBe(2);
+    expect(refs.collapsedChildren).toBe(1);
   });
 
-  it("unreachable notes land in the tray with their parent claim", () => {
+  it("draws every note, because a folder always leads back to the hub", () => {
+    // These five used to sit in a tray: an orphan, a note claiming a parent
+    // that was not there, and a ring of three. None of those shapes can be
+    // built out of folders, so all five are simply on the tree.
     const data = dataFor("problems", "Tangle");
-    const stems = data.unreachable.map((u) => u.stem).sort();
-    expect(stems).toEqual(["Ghost", "Loop A", "Loop B", "Loop C", "Orphan"]);
-    expect(data.unreachable.find((u) => u.stem === "Ghost")!.parent).toBe("Nobody");
-    expect(data.unreachable.find((u) => u.stem === "Orphan")!.parent).toBeNull();
+    for (const stem of ["Ghost", "Loop A", "Loop B", "Loop C", "Orphan"]) {
+      expect(findNode(data.root!, stem), `${stem} is not on the tree`).not.toBeNull();
+    }
   });
 
   it("cross-links are non-parent wikilinks resolved inside the graph", () => {
@@ -44,16 +53,17 @@ describe("buildMindmapData", () => {
     expect(data.crossLinks).toContainEqual({ from: "Noir game/Noir game.md", to: "Noir game/Heavy Rain.md" });
   });
 
-  it("badges carry the validation kinds, and stay empty for a clean note", () => {
+  it("hands a note in a folder nobody speaks for up to the one who does", () => {
+    // `Lost` sits in `Misplaced/`, which has no note of its own. That used to
+    // be a complaint; now the folder is simply passed through.
     const data = dataFor("problems", "Tangle");
-    expect(findNode(data.root!, "Lost")!.problemKinds).toContain("misfiled");
-    const tangle = dataFor("simple", "Noir game");
-    expect(findNode(tangle.root!, "Observer")!.problemKinds).toEqual([]);
+    expect(findNode(data.root!, "Lost")).not.toBeNull();
+    expect(data.root!.children.some((c) => c.stem === "Lost")).toBe(true);
   });
 
   it("stats ride along for the hub badge", () => {
     const data = dataFor("simple", "Noir game");
-    expect(data.stats).toEqual({ nodes: 4, hubChildren: 2 });
+    expect(data.stats).toEqual({ nodes: 4, hubChildren: 3 });
   });
 
   it("missing graph directory yields a null root and null stats", () => {
@@ -110,14 +120,14 @@ describe("buildMindmapData, laying out the whole tree", () => {
 
   it("names the notes a fold is hiding, so the map can skip drawing them", () => {
     const folded = wholeTree([refs]);
-    const open = folded.root!.children[0]!;
-    expect(open.stem).toBe("References");
+    const open = folded.root!.children.find((c) => c.stem === "References")!;
     expect([...folded.hiddenPaths].sort()).toEqual(open.children.map((c) => c.path).sort());
-    expect(folded.hiddenPaths.size).toBe(2);
+    expect(folded.hiddenPaths.size).toBe(1);
   });
 
   it("still counts what the fold hides, so the dot can say how much", () => {
-    expect(wholeTree([refs]).root!.children[0]!.collapsedChildren).toBe(2);
+    const open = wholeTree([refs]).root!.children.find((c) => c.stem === "References")!;
+    expect(open.collapsedChildren).toBe(1);
   });
 
   it("hides nothing when nothing is folded", () => {

@@ -92,3 +92,14 @@ export function hierarchyOf(
 
   return { parentOf, childrenOf };
 }
+
+export interface GraphStats {
+  nodes: number;
+  hubChildren: number;
+}
+
+/** How big a graph is and how wide its first generation, for the session preamble. */
+export function statsOf(notePaths: readonly string[], graphDir: string, hub: string): GraphStats {
+  const { childrenOf } = hierarchyOf(notePaths, graphDir, hub);
+  return { nodes: notePaths.length - 1, hubChildren: (childrenOf.get(hub) ?? []).length };
+}

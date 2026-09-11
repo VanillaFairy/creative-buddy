@@ -250,14 +250,12 @@ export function inspectorLine(node: {
   stem: string;
   kind: string | null;
   status: string | null;
-  problemKinds: string[];
   collapsedChildren: number;
 }): string | null {
   const facts = [
     node.kind,
     node.status,
     node.collapsedChildren > 0 ? `${node.collapsedChildren} hidden` : null,
-    ...node.problemKinds,
   ].filter((fact): fact is string => fact !== null && fact !== "");
   return facts.length === 0 ? null : `${node.stem} · ${facts.join(" · ")}`;
 }

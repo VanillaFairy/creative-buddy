@@ -24,7 +24,6 @@ const note = (stem: string, children: MindmapNode[] = []): MindmapNode => ({
   stem,
   kind: null,
   status: null,
-  problemKinds: [],
   children,
   collapsedChildren: 0,
   openQuestions: 0,

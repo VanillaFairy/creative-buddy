@@ -191,7 +191,6 @@ describe("buildSessionPreamble", () => {
     hubPath: "Noir game/Noir game.md",
     todayIso: "2026-08-11",
     stats: { nodes: 4, hubChildren: 2 },
-    problems: [],
   };
 
   it("names the hub, the date and the shape", () => {
@@ -199,27 +198,6 @@ describe("buildSessionPreamble", () => {
     expect(preamble).toContain("Noir game/Noir game.md");
     expect(preamble).toContain("2026-08-11");
     expect(preamble).toContain("4 nodes, 2 of them hanging directly off the hub");
-  });
-
-  /**
-   * The structure check used to be a notice printed to the user after wrap-up.
-   * It rides in the preamble now, so the model is the one who acts on it.
-   */
-  it("says so plainly when the graph is clean", () => {
-    expect(buildSessionPreamble(base)).toContain("Structure check: clean.");
-  });
-
-  it("lists each problem as kind, note and detail", () => {
-    const preamble = buildSessionPreamble({
-      ...base,
-      problems: [
-        { kind: "unresolved-parent", note: "Heavy Rain.md", detail: "parent 'References' names no note in this graph" },
-        { kind: "duplicate-name", note: "Observer.md", detail: "name is shared by References/Observer.md" },
-      ],
-    });
-    expect(preamble).toContain("[unresolved-parent] Heavy Rain.md — parent 'References' names no note in this graph");
-    expect(preamble).toContain("[duplicate-name] Observer.md — name is shared by References/Observer.md");
-    expect(preamble).not.toContain("Structure check: clean.");
   });
 
   /** The register is gone: no vault-authored text rides inside the system prompt any more. */

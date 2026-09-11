@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { loadFixtureVault } from "./helpers/load-fixture";
 import { GraphModel } from "../src/graph/graph-model";
 import { VaultView } from "../src/graph/types";
-import { buildValidationReport } from "../src/graph/validation";
+import { hierarchyOf } from "../src/graph/hierarchy";
+import { collectNoteFiles } from "../src/graph/discovery";
 
 const TODAY = { y: 2026, m: 8, d: 11 };
 
@@ -11,36 +12,58 @@ function modelFrom(name: string): GraphModel {
   return new GraphModel(vault.rootName, vault.files);
 }
 
+/** What a note hangs off, asked of the model's own view of the graph. */
+function parentIn(model: GraphModel, graphDir: string, note: string): string | undefined {
+  const view = new VaultView({ rootName: model.rootName, files: model.snapshotFiles() });
+  const paths = collectNoteFiles(view, graphDir);
+  return hierarchyOf(paths, graphDir, model.hubPathOf(graphDir)).parentOf.get(note);
+}
+
+function statsFrom(view: VaultView, graphDir: string) {
+  const paths = collectNoteFiles(view, graphDir);
+  const hub = paths.find((p) => p.endsWith(`${graphDir}.md`))!;
+  const { childrenOf } = hierarchyOf(paths, graphDir, hub);
+  return { nodes: paths.length - 1, hubChildren: (childrenOf.get(hub) ?? []).length };
+}
+
 describe("GraphModel", () => {
   it("mirrors a fresh full computation after setFile", () => {
     const model = modelFrom("simple");
-    model.setFile("Noir game/New Node.md", '---\nparent: "[[References]]"\n---\n\nFresh.\n');
+    model.setFile("Noir game/References/New Node.md", "Fresh.\n");
     const fresh = new VaultView({ rootName: "simple", files: model.snapshotFiles() });
-    expect(model.validation()).toEqual(buildValidationReport(fresh));
-    expect(model.validation().ok).toBe(true);
+    expect(model.stats("Noir game")).toEqual(
+      statsFrom(fresh, "Noir game"),
+    );
+    expect(model.notes("Noir game").some((n) => n.stem === "New Node")).toBe(true);
   });
 
-  it("deleteFile surfaces the resulting unresolved parent", () => {
+  it("hands a folder's notes upward when the note that spoke for it goes", () => {
+    // The folder is the hierarchy, so losing `References.md` does not strand
+    // `Observer` — it passes up to the nearest folder that still speaks, which
+    // is the graph's own, and that is the hub.
     const model = modelFrom("simple");
+    expect(parentIn(model, "Noir game", "Noir game/References/Observer.md"))
+      .toBe("Noir game/References/References.md");
     model.deleteFile("Noir game/References/References.md");
-    const problems = model.validation().graphs[0]!.problems;
-    expect(problems.some((p) => p.kind === "unresolved-parent" && p.note === "Heavy Rain.md")).toBe(true);
+    expect(parentIn(model, "Noir game", "Noir game/References/Observer.md"))
+      .toBe("Noir game/Noir game.md");
   });
 
   it("renameFile keeps content and updates identity", () => {
     const model = modelFrom("simple");
     model.renameFile("Noir game/References/Observer.md", "Noir game/References/Observed.md");
-    expect(model.validation().graphs[0]!.problems).toEqual([]); // parent: References still resolves
     expect(model.notes("Noir game").some((n) => n.stem === "Observed")).toBe(true);
+    expect(parentIn(model, "Noir game", "Noir game/References/Observed.md"))
+      .toBe("Noir game/References/References.md");
   });
 
   it("caches between mutations and invalidates on change", () => {
     const model = modelFrom("simple");
-    const first = model.validation();
-    expect(model.validation()).toBe(first); // same object → cached
-    model.setFile("Noir game/Another.md", "no frontmatter");
-    expect(model.validation()).not.toBe(first);
-    expect(model.validation().ok).toBe(false); // orphan-root now
+    const first = model.graphs();
+    expect(model.graphs()).toBe(first); // same object → cached
+    model.setFile("Noir game/Another.md", "anything at all");
+    expect(model.graphs()).not.toBe(first);
+    expect(model.stats("Noir game")!.nodes).toBe(first.length === 0 ? 0 : 5);
   });
 
   it("contentOf hands back a note's raw text for the body-level facts views derive", () => {

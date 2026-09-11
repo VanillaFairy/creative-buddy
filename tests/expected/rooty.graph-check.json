@@ -1,15 +1,17 @@
 {
-  "ok": true,
   "root": ".",
   "graphs": [
     {
       "graph": "rooty",
       "path": ".",
       "counts": {
-        "notes": 2,
-        "problems": 0
+        "notes": 1,
+        "hubChildren": 1
       },
-      "problems": []
+      "tree": [
+        "rooty",
+        "└── Solo"
+      ]
     }
   ]
 }

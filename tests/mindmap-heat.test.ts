@@ -73,7 +73,8 @@ describe("heat on the mindmap tree", () => {
     const refs = findNode(data.root!, "References")!;
     expect(refs.children).toEqual([]);
     expect(refs.openQuestions).toBe(0); // its own body still asks nothing
-    expect(refs.hiddenOpenQuestions).toBe(7); // Heavy Rain 4 + Observer 3
+    expect(refs.hiddenOpenQuestions).toBe(3); // Observer 3 — Heavy Rain is in
+    // the graph's own folder now, so it hangs off the hub rather than here.
   });
 
   it("the sum reaches the whole hidden subtree, not just the children", () => {

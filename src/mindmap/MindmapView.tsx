@@ -302,8 +302,6 @@ export class MindmapView extends ItemView {
     };
 
     this.drawTree(stage, data, report);
-    const dock = stage.createDiv({ cls: "cb-mm-dock" });
-    this.drawTray(dock, data);
   }
 
   /**
@@ -485,12 +483,11 @@ export class MindmapView extends ItemView {
       // and every colour falls back to the flat palette.
       const ownHeat = this.heatmap ? ` ${heatClass(node.openQuestions)}` : "";
       const hiddenHeat = this.heatmap ? ` ${heatClass(node.hiddenOpenQuestions)}` : "";
-      const problem = node.problemKinds.length > 0;
 
       // The hub carries the charter and is what the rest hangs off, so it is a
       // title over a spine; every other note is a discrete claim in a box.
       if (isHub) {
-        const spine = problem ? "cb-mm-hub-spine cb-mm-hub-spine-problem" : "cb-mm-hub-spine";
+        const spine = "cb-mm-hub-spine";
         // Folded, the spine splits where the box would: own heat, then hidden.
         const ownEnd = box.dividerX ?? box.width;
         g.append("rect")
@@ -511,7 +508,7 @@ export class MindmapView extends ItemView {
         }
       } else {
         g.append("rect")
-          .attr("class", `${problem ? "cb-mm-box cb-mm-problem" : "cb-mm-box"}${ownHeat}`)
+          .attr("class", `cb-mm-box${ownHeat}`)
           .attr("x", 0)
           .attr("y", -box.height / 2)
           .attr("width", box.width)
@@ -620,9 +617,8 @@ export class MindmapView extends ItemView {
         .attr("role", "button")
         .attr("aria-label", facts ?? node.stem);
 
-      const problem = node.problemKinds.length > 0;
       const ownHeat = this.heatmap ? ` ${heatClass(node.openQuestions)}` : "";
-      const base = problem ? "cb-mm-dot cb-mm-problem" : "cb-mm-dot";
+      const base = "cb-mm-dot";
 
       // What a collapse is hiding, in the only shape a circle has for it: a
       // second ring outside the dot, coloured by the heat it is hiding. Drawn
@@ -679,21 +675,6 @@ export class MindmapView extends ItemView {
     }
 
     return layout.bounds;
-  }
-
-  private drawTray(dock: HTMLElement, data: MindmapData): void {
-    if (data.unreachable.length === 0) return;
-    // Closed, with the count in the bar: the number is the news, the list is
-    // the detail, and an opened list covers the map you came here to read.
-    const panel = dock.createEl("details", { cls: "cb-mm-panel cb-mm-panel-alert" });
-    panel.createEl("summary", { text: `Not reachable from the hub · ${data.unreachable.length}` });
-    const body = panel.createDiv({ cls: "cb-mm-panel-body" });
-    for (const item of data.unreachable) {
-      const row = body.createDiv({ cls: "cb-mm-tray-row" });
-      const link = row.createEl("a", { text: item.stem });
-      link.onclick = () => this.openNote(item.path);
-      row.createSpan({ text: item.parent !== null ? ` — parent '${item.parent}'` : " — no parent" });
-    }
   }
 
   /**

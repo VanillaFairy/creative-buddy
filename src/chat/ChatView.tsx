@@ -400,7 +400,6 @@ export class ChatView extends ItemView {
           claudePath,
           todayIso,
           stats,
-          problems: model.problemsOf(graphDir),
           apiKeyOverride: this.plugin.settings.apiKeyOverride === "" ? undefined : this.plugin.settings.apiKeyOverride,
           resumeSessionId: session.sessionId ?? undefined,
         },

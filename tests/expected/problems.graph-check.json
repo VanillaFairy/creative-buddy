@@ -1,40 +1,27 @@
 {
-  "ok": false,
   "root": ".",
   "graphs": [
     {
       "graph": "Tangle",
       "path": "Tangle",
       "counts": {
-        "notes": 13,
-        "problems": 5
+        "notes": 12,
+        "hubChildren": 11
       },
-      "problems": [
-        {
-          "kind": "unresolved-parent",
-          "note": "Ghost.md",
-          "detail": "parent 'Nobody' names no note in this graph"
-        },
-        {
-          "kind": "orphan-root",
-          "note": "Orphan.md",
-          "detail": "no parent: value, and this note is not the hub"
-        },
-        {
-          "kind": "cycle",
-          "note": "Loop A.md",
-          "detail": "parent chain forms a cycle: Loop A -> Loop B -> Loop C -> Loop A"
-        },
-        {
-          "kind": "duplicate-name",
-          "note": "Echo.md",
-          "detail": "name is shared by Echo/Echo.md"
-        },
-        {
-          "kind": "misfiled",
-          "note": "Lost.md",
-          "detail": "sits in 'Misplaced', which is not one of its ancestors"
-        }
+      "tree": [
+        "Tangle",
+        "├── Bad Date",
+        "├── Deep",
+        "│   └── Twin",
+        "├── Echo",
+        "├── Echo",
+        "├── Ghost",
+        "├── Loop A",
+        "├── Loop B",
+        "├── Loop C",
+        "├── Lost",
+        "├── Orphan",
+        "└── Twin"
       ]
     }
   ]

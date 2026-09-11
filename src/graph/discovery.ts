@@ -1,4 +1,5 @@
 import { VaultView, baseName } from "./types";
+import { Note, noteFromFile } from "./notes";
 import { normalizeContent, stripBom } from "./reader";
 import { casefold, comparePathSegments, comparePyStrings, sortKeyWindows } from "./py-compat";
 
@@ -91,3 +92,7 @@ export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
   return out.sort((a, b) => comparePyStrings(sortKeyWindows(a), sortKeyWindows(b)));
 }
 
+/** Every note of a graph, read and parsed, in the order `collectNoteFiles` gives. */
+export function loadGraphNotes(view: VaultView, graphDir: string): Note[] {
+  return collectNoteFiles(view, graphDir).map((p) => noteFromFile(p, view.get(p)!));
+}

@@ -1,24 +1,29 @@
 {
-  "ok": true,
   "root": ".",
   "graphs": [
     {
       "graph": "Alpha",
       "path": "Alpha",
       "counts": {
-        "notes": 2,
-        "problems": 0
+        "notes": 1,
+        "hubChildren": 1
       },
-      "problems": []
+      "tree": [
+        "Alpha",
+        "└── A1"
+      ]
     },
     {
       "graph": "Beta",
       "path": "Beta",
       "counts": {
-        "notes": 2,
-        "problems": 0
+        "notes": 1,
+        "hubChildren": 1
       },
-      "problems": []
+      "tree": [
+        "Beta",
+        "└── B1"
+      ]
     }
   ]
 }

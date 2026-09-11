@@ -176,10 +176,6 @@ describe("inspectorLine", () => {
     expect(inspectorLine({ ...bare, collapsedChildren: 7 })).toBe("Doors · 7 hidden");
   });
 
-  it("puts problems last, where the eye lands after the facts", () => {
-    expect(inspectorLine({ ...bare, kind: "statement", problemKinds: ["misfiled"] })).toBe("Doors · statement · misfiled");
-  });
-
   it("ignores an empty frontmatter scalar rather than printing a stray separator", () => {
     expect(inspectorLine({ ...bare, kind: "", status: "open" })).toBe("Doors · open");
   });

@@ -1,6 +1,6 @@
-import { Problem, Vault, VaultView } from "./types";
-import { buildValidationReport, ValidationReport, graphStats, GraphStats, loadGraphNotes } from "./validation";
-import { findGraphs, hubPath } from "./discovery";
+import { Vault, VaultView } from "./types";
+import { statsOf, GraphStats } from "./hierarchy";
+import { findGraphs, hubPath, loadGraphNotes, collectNoteFiles } from "./discovery";
 import { graphOfNote } from "./ownership";
 import { Note } from "./notes";
 
@@ -15,7 +15,6 @@ export class GraphModel {
   private readonly files: Map<string, string>;
   private readonly listeners = new Set<() => void>();
   private cachedView: VaultView | null = null;
-  private cachedValidation: ValidationReport | null = null;
   private cachedGraphs: string[] | null = null;
 
   constructor(rootName: string, initial?: ReadonlyMap<string, string>) {
@@ -51,7 +50,6 @@ export class GraphModel {
 
   private invalidate(): void {
     this.cachedView = null;
-    this.cachedValidation = null;
     this.cachedGraphs = null;
     // Snapshot before notifying: a listener that subscribes another mid-notification
     // (JS Set iteration would otherwise visit it live) must not see it fire for this
@@ -81,24 +79,11 @@ export class GraphModel {
     return graphOfNote(this.graphs(), notePath);
   }
 
-  validation(): ValidationReport {
-    if (this.cachedValidation === null) this.cachedValidation = buildValidationReport(this.view());
-    return this.cachedValidation;
-  }
-
+  /** How big a graph is. Null for a dir with no hub file, which is no graph. */
   stats(graphDir: string): GraphStats | null {
-    return graphStats(this.view(), graphDir);
-  }
-
-  /**
-   * One graph's structural problems, read off the cached whole-vault report.
-   * The root graph is filed under "." there, so the empty graph dir has to be
-   * translated rather than looked up as itself. Empty for a dir the report
-   * does not cover — an unknown graph has no problems, it has no notes.
-   */
-  problemsOf(graphDir: string): Problem[] {
-    const wanted = graphDir === "" ? "." : graphDir;
-    return this.validation().graphs.find((g) => g.path === wanted)?.problems ?? [];
+    const hub = this.hubPathOf(graphDir);
+    if (this.view().get(hub) === undefined) return null;
+    return statsOf(collectNoteFiles(this.view(), graphDir), graphDir, hub);
   }
 
   notes(graphDir: string): Note[] {
