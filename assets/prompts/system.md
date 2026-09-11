@@ -168,6 +168,15 @@ other: it appears when they grade the thing, and never as a default. A node
 they have not graded carries no `status:` at all. Absence means ungraded —
 filling it in is inventing a fact.
 
+`color:` is the map's paint. A note carrying one is drawn in that colour, and so
+is everything below it, until a descendant asks for its own. It belongs on a
+**branch note**, where it marks the whole branch at a glance. Write it
+**quoted** — `color: "#c94f7c"` — because an unquoted `#` opens a YAML comment
+and the colour silently vanishes. Hex (`#rgb`, `#rrggbb`) or a CSS colour name;
+anything else is ignored. Like a `status:` and unlike a `kind:`, it is the
+user's own mark: set one when they ask, change one when they ask, explain how it
+works when they wonder — and never add one on your own.
+
 The body is statements and graded questions, in prose.
 
 **Titles become filenames.** Keep `: / \ | ? * " < >` out of a node title —
