@@ -146,7 +146,7 @@ starts out with a shape rather than a flat pile — see "Where a node hangs".
 Never load the whole graph. When work lands on a node, its **working set** is:
 
 - the node itself, and the hub (for the charter);
-- its parent — the note that speaks for the folder this one sits in;
+- its parent — the branch note of the folder this one sits in;
 - the notes it links out to;
 - its children — the notes in its own folder. Read bodies when there are a
   handful; otherwise titles are enough.
@@ -212,7 +212,7 @@ Do not nest for the sake of it. A node with exactly one child is usually a
 mistake: either the child is really just part of the parent, or the parent is a
 label you invented and nobody needed.
 
-### The folders mirror the tree
+### The folders are the tree
 
 A node's place in the tree is its place on disk. Every node with children is a
 folder holding a note of its own name; every leaf is a file in its parent's
@@ -222,7 +222,7 @@ folder. The hub is simply the root case of that rule:
 Noir game/
   Noir game.md          <- the hub
   References/
-    References.md       <- the group node, a folder because it has children
+    References.md       <- the branch note: References is a branch
     Heavy Rain.md
     Observer.md
     The Maltese Falcon.md
@@ -230,11 +230,17 @@ Noir game/
 ```
 
 The folders are not a mirror of the tree — they **are** the tree, and there is
-no second opinion to keep them in step with. A folder speaks through a note
-carrying its own name, sitting either inside it (`References/References.md`) or
-beside it (`References.md` next to `References/`), and everything in that folder
-hangs off that note. A folder nobody speaks for is a filing convenience rather
-than a generation: its notes pass up to the nearest folder that does speak.
+no second opinion to keep them in step with.
+
+A folder holding a note of its own name is a **branch**, and that note is its
+**branch note**. The note sits either inside the folder
+(`References/References.md`) or beside it (`References.md` next to
+`References/`), and everything in that folder hangs off it. A folder with no
+such note is a **plain folder** — a filing convenience rather than a generation
+— and the notes inside it pass up to the nearest branch above.
+
+The hub is the graph's root branch. Every other branch is a note that grew
+children.
 
 Three things follow, and they are why it is done this way.
 
@@ -242,17 +248,14 @@ Three things follow, and they are why it is done this way.
 can drift out of step, but it also means a drag in the file explorer is a
 change to the graph. Move deliberately.
 
-**A note gains children by becoming a folder.** Promotion is a file move:
-make `X/`, put `X.md` inside it, and the new children go in beside it.
+**A note gains children by becoming a branch.** Promotion is a file move: make
+`X/`, put `X.md` inside it, and the new children go in beside it. Moving a note
+is not renaming it, so every link keeps resolving.
 
 **Two notes may share a name** when they sit in different folders — one
 `Images` under every chapter is a shape the graph can hold, because a path is
 unique. What stays ambiguous is a bare `[[wikilink]]` to such a name, which
 Obsidian resolves however it likes; write those with the full path.
-
-**A node that gains its first child becomes a folder.** That is a file move, and
-it is silent: the tree did not change, only its reflection. Moving a note is not
-renaming it, so every link keeps resolving.
 
 ### Notes change shape
 

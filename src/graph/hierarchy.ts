@@ -2,12 +2,12 @@
  * Who hangs off what.
  *
  * The folder tree is the hierarchy — there is no second opinion to reconcile
- * and nothing to keep in step. A folder speaks through a note carrying its own
- * name, sitting either *inside* it (`World/World.md`) or *beside* it
- * (`Buddies.md` next to `Buddies/`); everything in that folder hangs off that
- * note, and the note itself answers to the folder above. A folder nobody
- * speaks for is a filing convenience rather than a generation, so its notes
- * pass up to the nearest folder that does speak.
+ * and nothing to keep in step. A folder holding a note of its own name is a
+ * **branch**, and that note is its **branch note**: it sits either *inside* the
+ * folder (`World/World.md`) or *beside* it (`Buddies.md` next to `Buddies/`),
+ * everything in that folder hangs off it, and it answers to the branch above.
+ * A folder with no such note is a plain folder — a filing convenience rather
+ * than a generation — so its notes pass up to the nearest branch above.
  *
  * Three things follow from a path being unique, and they are the reason this
  * replaced a `parent:` field resolved by bare name. Nothing can be orphaned:
