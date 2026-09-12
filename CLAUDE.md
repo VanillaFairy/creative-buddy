@@ -6,6 +6,10 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
 
 ## Architecture (one direction of truth: files are the state)
 
+Each module below carries an `INDEX.md` beside its code — the fences, measured
+constants and cross-file couplings the code itself cannot state. Read the one for
+the module you are about to touch.
+
 - `src/graph/` — deterministic core, **no Obsidian imports, no AI**. A line-faithful
   TypeScript port of the vendored Python in `oracle/`. `hierarchy.ts` is the
   load-bearing one: **the folder tree is the hierarchy**. A folder holding a
@@ -29,7 +33,9 @@ user's Claude Code subscription via the Claude Agent SDK. Renamed from "graph-bu
   where conversational conventions are defined (the `- [ ]` open-question rule
   that `src/mindmap/heat.ts` counts, for one), so read it before changing
   anything about how the interviewer is meant to behave.
-- `src/main.ts` — plugin wiring, vault-event → GraphModel feed.
+- `src/` (root) — plugin wiring in `main.ts` (vault-event → GraphModel feed), plus
+  the modules both surfaces share: `open-questions.ts`, `project-list.ts`,
+  `view-title.ts`, `claude-locator.ts`, `settings.ts`.
 
 ## The oracle discipline (load-bearing)
 
