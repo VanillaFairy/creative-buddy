@@ -1355,10 +1355,6 @@
   stroke-width: 1.5px;
 }
 
-/* Dashed as well as red, so "this note is broken" survives a reader who
-   cannot tell the red from the border grey. Declared after the heat areas so a
-   broken note keeps its alarm border and shows its heat in the fill — a colour
-
 /* What a collapsed node is hiding. One path fills the area, carries the box's
    right-hand outline and, where it closes, draws the divider — so the rule and
    the border can never disagree about where the two areas meet. */
@@ -1461,6 +1457,14 @@
   transition: fill 120ms ease, stroke 120ms ease;
 }
 
+/* A service node — infrastructure rather than content, `kind: service`. It is a
+   dot in both views, and the dashes are all that says so. They carry no colour
+   of their own, so heat and tint still set the stroke underneath them and the
+   two readings stack instead of arguing. */
+.cb-mm-service {
+  stroke-dasharray: 2 2;
+}
+
 .cb-mm-dot-hidden {
   fill: none;
   stroke: var(--cb-heat-line, var(--background-modifier-border-hover));
@@ -1554,10 +1558,6 @@ text.cb-mm-caption:hover {
 .cb-mm-inspector-idle {
   color: var(--cb-faint);
 }
-
-/* Both panels start closed and carry their count in the summary, so a graph
-   with loose notes says so in one line instead of opening a list over the map.
-   Stacked in one column, they also cannot land on top of each other the way
 
 .cb-mm-empty {
   margin: 0;
