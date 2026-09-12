@@ -3,3 +3,5 @@ node_modules/
 main.js
 *.js.map
 __pycache__/
+
+.claude/knowledge/usage.log
