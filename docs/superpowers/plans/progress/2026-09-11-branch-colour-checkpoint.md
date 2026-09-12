@@ -2,7 +2,8 @@
 
 **Plan:** `docs/superpowers/plans/2026-09-11-branch-colour/plan.md`
 **Design:** `docs/superpowers/specs/2026-09-11-branch-colour-design.md`
-**Branch:** `claude/branch-colour`, cut from `main` at `0baa612`. Not merged, not pushed.
+**Branch:** `claude/branch-colour`, cut from `main` at `0baa612`. Merged into
+`main` at `ae3c0b8` on 2026-09-11 and deleted. `main` is unpushed.
 
 ## What shipped
 
@@ -68,7 +69,26 @@ that the table is not protected at this tier, and records the cross-check date.
 - **The manual visual pass.** Six checks, listed in
   `docs/superpowers/plans/2026-09-11-branch-colour/tasks/T04-paint.md`, Step 5.
   Nobody has run them. No agent can — the map has to be looked at.
-- **The branch is unmerged and unpushed.**
+- **`main` is unpushed**, 27 commits ahead of `origin/main`.
+
+## What followed
+
+Service nodes and a glossary, on `claude/service-nodes`, merged at `040537e`
+and deleted. `kind: service` is the first kind the plugin reads for itself —
+apparatus rather than content, drawn as a dashed dot with its name beside it in
+both views. `docs/GLOSSARY.md` now holds the vocabulary this project settled one
+module at a time, and `CLAUDE.md` points at it.
+
+That work also carried a fix it did not go looking for: two truncated comments
+in `styles.css`, one of which had been commenting out the tail of the stylesheet
+— the whole `prefers-reduced-motion: reduce` block included — since the
+obligations register was removed in `fde6f27`. Reduced-motion users had been
+getting every animation anyway. Fixed in `a2effba`, which is worth knowing about
+separately from the feature it arrived with.
+
+Its manual pass is outstanding too: a `kind: service` note drawn as a dashed dot
+in both views, folding to `+3` after the name, still taking its colour, with
+Heat still overriding.
 
 ## A process lesson, recorded because it cost an audit to find
 
