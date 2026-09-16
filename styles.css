@@ -1263,6 +1263,12 @@
   font-size: var(--font-ui-smaller);
 }
 
+.cb-mm-highlight::before {
+  content: "|";
+  margin-right: var(--size-2-1);
+  color: var(--cb-faint);
+}
+
 .cb-mm-stage {
   position: relative;
   flex: 1 1 auto;
