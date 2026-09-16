@@ -1307,7 +1307,11 @@
   transition: opacity 100ms ease, stroke-width 100ms ease;
 }
 
-.cb-mm-crosslink-live {
+/* `-held` is Highlight's own name for the same weight: a cross-link between
+   two lit notes sits here for as long as Highlight is on, rather than for as
+   long as the pointer is over one end, which is what `-live` means. */
+.cb-mm-crosslink-live,
+.cb-mm-crosslink-held {
   stroke-width: 1.75px;
   opacity: 0.95;
 }
@@ -1329,6 +1333,33 @@
 
 .cb-mm-crosslink-chord.cb-mm-crosslink-live {
   display: inline;
+}
+
+/* Highlight holds a handful of links for as long as it is on, not the whole
+   mesh, so the chord performance note above allows it: drawn the same way a
+   hovered chord is, just for longer. */
+.cb-mm-crosslink-chord.cb-mm-crosslink-held {
+  display: inline;
+}
+
+/* Dimming lowers opacity on top of whatever a node, edge or cross-link
+   already is, so heat, tint and fold marks keep reading through it. Starting
+   values, tuned by eye against a real vault rather than measured. */
+.cb-mm-node.cb-mm-dimmed {
+  opacity: 0.25;
+}
+
+/* `stroke-opacity`, not `opacity`: an edge's `opacity` attribute already
+   carries its depth fade, and `stroke-opacity` multiplies with that instead
+   of overriding it. */
+.cb-mm-edge.cb-mm-dimmed {
+  stroke-opacity: 0.25;
+}
+
+/* Excludes a hovered cross-link so hovering still lights a dimmed one at full
+   weight on top of Highlight. */
+.cb-mm-crosslink.cb-mm-dimmed:not(.cb-mm-crosslink-live) {
+  stroke-opacity: 0.4;
 }
 
 .cb-mm-node {

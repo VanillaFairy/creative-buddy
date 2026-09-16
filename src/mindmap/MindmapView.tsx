@@ -16,7 +16,7 @@ import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import type { GraphModel } from "../graph/graph-model";
 import { PICKER_EMPTY, folderOffer, noteCount, offerLabel, projectRowLabel, projectRows } from "../project-list";
-import { Highlight, Links, add, extend, menuFor, prune, remove, toggle } from "./highlight";
+import { Highlight, Links, add, drawnLit, extend, menuFor, prune, remove, toggle } from "./highlight";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const H_GAP = 48;
@@ -370,9 +370,15 @@ export class MindmapView extends ItemView {
       report(node);
     };
 
+    // Named apart from the cross-link hover state above (also `lit` in its own
+    // right, but of paths under the pointer, not notes in the Highlight).
+    const highlightLit = this.highlight === null
+      ? null
+      : drawnLit(this.highlight, data.parentOf, this.collapse.collapsedSet(this.graphDir!));
+
     const bounds = this.radial
-      ? this.paintRadial(canvas, data, hubPath, measure, setActive, crossByPath)
-      : this.paintCartesian(canvas, data, hubPath, measure, setActive, crossByPath);
+      ? this.paintRadial(canvas, data, hubPath, measure, setActive, crossByPath, highlightLit)
+      : this.paintCartesian(canvas, data, hubPath, measure, setActive, crossByPath, highlightLit);
 
     const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 2.5]).on("zoom", (event) => {
       this.lastTransform = event.transform as ZoomTransform;
@@ -462,7 +468,10 @@ export class MindmapView extends ItemView {
     measure: { node: Measure; hub: Measure },
     setActive: (node: MindmapNode | null) => void,
     crossByPath: Map<string, SVGPathElement[]>,
+    lit: ReadonlySet<string> | null,
   ): Bounds {
+    const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
+    const held = (a: string, b: string): boolean => lit !== null && lit.has(a) && lit.has(b);
     const boxes = new Map<string, Box>();
     const boxOf = (node: MindmapNode): Box => {
       const cached = boxes.get(node.path);
@@ -496,6 +505,7 @@ export class MindmapView extends ItemView {
       canvas
         .append("path")
         .attr("class", "cb-mm-edge")
+        .classed("cb-mm-dimmed", dimmed(link.source.data.path) || dimmed(link.target.data.path))
         .attr("opacity", edgeOpacity(link.source.depth))
         .attr("d", `M${startX},${link.source.x} C${midX},${link.source.x} ${midX},${link.target.x} ${link.target.y},${link.target.x}`);
     });
@@ -508,6 +518,8 @@ export class MindmapView extends ItemView {
       const path = canvas
         .append("path")
         .attr("class", "cb-mm-crosslink")
+        .classed("cb-mm-crosslink-held", held(cross.from, cross.to))
+        .classed("cb-mm-dimmed", !held(cross.from, cross.to) && lit !== null)
         .attr("d", `M${startX},${from.x} Q${(startX + to.y) / 2},${(from.x + to.x) / 2 - 40} ${to.y},${to.x}`)
         .node();
       if (path === null) continue;
@@ -526,6 +538,7 @@ export class MindmapView extends ItemView {
       const g = canvas
         .append("g")
         .attr("class", isHub ? "cb-mm-node cb-mm-hub" : "cb-mm-node")
+        .classed("cb-mm-dimmed", dimmed(node.path))
         .attr("transform", `translate(${n.y},${n.x})`)
         .attr("tabindex", 0)
         .attr("role", "button")
@@ -614,7 +627,10 @@ export class MindmapView extends ItemView {
     measure: { node: Measure; hub: Measure },
     setActive: (node: MindmapNode | null) => void,
     crossByPath: Map<string, SVGPathElement[]>,
+    lit: ReadonlySet<string> | null,
   ): Bounds {
+    const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
+    const held = (a: string, b: string): boolean => lit !== null && lit.has(a) && lit.has(b);
     // `reachOf` is d3-flextree's contour walk re-reading the same node's size
     // many times over — measured at ~11 calls per node on a real graph — and
     // this one measures text on a canvas, so it is cached the way
@@ -647,6 +663,7 @@ export class MindmapView extends ItemView {
       canvas
         .append("path")
         .attr("class", "cb-mm-edge")
+        .classed("cb-mm-dimmed", dimmed(link.source.path) || dimmed(link.target.path))
         .attr("opacity", edgeOpacity(link.source.depth))
         .attr("d", radialLinkPath(link.source, link.target));
     }
@@ -659,6 +676,8 @@ export class MindmapView extends ItemView {
       const path = canvas
         .append("path")
         .attr("class", "cb-mm-crosslink cb-mm-crosslink-chord")
+        .classed("cb-mm-crosslink-held", held(cross.from, cross.to))
+        .classed("cb-mm-dimmed", !held(cross.from, cross.to) && lit !== null)
         .attr("d", crossLinkPath(from, to))
         .node();
       if (path === null) continue;
@@ -678,6 +697,7 @@ export class MindmapView extends ItemView {
       const g = canvas
         .append("g")
         .attr("class", isHub ? "cb-mm-node cb-mm-hub" : "cb-mm-node")
+        .classed("cb-mm-dimmed", dimmed(radialNode.path))
         .attr("transform", `translate(${radialNode.x},${radialNode.y})`)
         .attr("tabindex", 0)
         .attr("role", "button")
