@@ -489,6 +489,43 @@ older than the code.
       rings right along with it. Worth a look, not worth a bug report unless
       it is obviously worse than described.
 
+### Highlight
+
+- [ ] Right-click a note with Highlight off → the menu shows only **Highlight
+      ☐**. Tick it → that note becomes the Highlight center: it and its
+      neighbours stay lit, everything else dims, and the header shows
+      **Highlight: *name*** between the note count and the gear. Check both maps.
+- [ ] Right-click the **center** → the menu shows **Highlight ☑** and **Extend
+      Highlight**, with no Add or Remove. Right-click a **lit** note that is not
+      the center → **Highlight ☐**, **Remove from Highlight**, **Extend
+      Highlight**. Right-click a **dimmed** note → **Highlight ☐**, **Add to
+      Highlight**, **Extend Highlight**. Check all three on both maps.
+- [ ] With Highlight on, tick it on a different note → that note becomes the
+      new center, the header name follows it, and whatever you had added or
+      removed since starting is forgotten.
+- [ ] Untick Highlight on the center → it turns off and every note returns to
+      full weight. It is the only way out — no other note offers an untick.
+- [ ] **Add to Highlight** on a dimmed note → it lights on its own, without
+      pulling its neighbours in with it. **Remove from Highlight** on a lit
+      note → it dims on its own. **Extend Highlight** on any note → the note
+      and all its neighbours light, bringing back one you removed a moment ago.
+- [ ] Cross-links between two lit notes stay drawn at hover weight with nothing
+      hovered — chords on the radial map included. Hover a **dimmed** note →
+      its own cross-links light up on top of the dimming, same as with
+      Highlight off.
+- [ ] Fold a branch hiding a lit note → the folded branch itself is drawn lit,
+      standing in for what it hides. Highlight never opens the fold to show you.
+- [ ] Right-click a **radial caption** (not the dot) → the same Highlight menu
+      appears. Focus a node and press **Shift+F10** → same menu, keyboard-only.
+- [ ] Tick Highlight on a note with a long name in a narrow sidebar → the
+      header chip truncates with an ellipsis and the gear stays fully visible
+      and clickable.
+- [ ] Turn Highlight on, then switch project → Highlight is off on the new
+      map. Turn it on again, then restart Obsidian → it opens with Highlight off.
+- [ ] Rename the center's note → Highlight turns off. Delete the center's note
+      instead → same. Delete a lit note that is **not** the center → Highlight
+      stays on and that note simply drops out of the lit set.
+
 ## 3 — Vault copy: parity with the CLI skill
 
 Work on a **copy** of the real vault. The reference is a Claude Code CLI

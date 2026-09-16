@@ -19,6 +19,9 @@ and a radial one — which is why `geometry.ts` is separate from both.
   were *reserved* against, while `node.radius` is where `bands.ts` actually
   seated it, usually nearer the hub. An arc reserved for a note is an angle
   times the ring, never times `node.radius`.
+- `highlight.ts` decides Highlight: the state, its transitions, and the two
+  drawing questions (is this note lit, is this edge lit). `MindmapView.tsx`
+  only holds the `Highlight | null` in memory and asks `drawnLit` once per draw.
 
 ## INVARIANTS & GOTCHAS
 
@@ -37,6 +40,11 @@ and a radial one — which is why `geometry.ts` is separate from both.
 - The map redraws on a 300 ms debounce of its own (`scheduleRedraw`).
   `GraphModel` notifies synchronously on every single file event, so removing
   that timer means a redraw per keystroke during vault indexing.
+- Highlight is deliberately not in `getState` — it is a way of looking, not a
+  saved fact — and is pruned against the graph's live notes on every redraw.
+- `MindmapData.parentOf` exists because the flat tree's `root` has already
+  dropped folded notes, so Highlight needs its own copy of the hierarchy to
+  find their parents.
 
 ## DEPENDENCIES
 

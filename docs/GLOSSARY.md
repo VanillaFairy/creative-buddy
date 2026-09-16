@@ -214,6 +214,17 @@ is on and hands it straight back when it goes off. The count-to-step mapping is
 [`src/mindmap/heat.ts`](../src/mindmap/heat.ts); the eleven steps themselves are
 declared in `styles.css`, once per theme.
 
+**Highlight** — A way of reading the map around one note: right-click it, tick
+**Highlight**, and everything not connected to it dims. **The Highlight
+center** is the note you ticked it on; **in the Highlight** are the center and
+its neighbours — its parent, its children, and every note it shares a
+cross-link with — and every other note is **dimmed**. A note's neighbours are
+read from the whole graph, so a fold is never opened for it: a folded branch
+hiding a lit note is drawn lit as a stand-in for what it hides. Like heat it is
+a way of looking rather than a fact recorded anywhere, so it is not saved —
+switching project or restarting Obsidian leaves it off.
+[`src/mindmap/highlight.ts`](../src/mindmap/highlight.ts) decides.
+
 **fold / collapse** — Two words for one arrangement, worth keeping apart.
 **Collapse** is the state — which notes the user has folded, remembered per
 graph by [`src/mindmap/collapse-store.ts`](../src/mindmap/collapse-store.ts) and
