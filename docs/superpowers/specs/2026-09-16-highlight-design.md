@@ -1,8 +1,8 @@
 # Highlight — design
 
 A way of reading the map around one note. Right-click a note, tick
-**Highlight**, and everything not connected to it dims, while the connections
-between the notes that stay lit are drawn at full weight and stay drawn. From
+**Highlight**, and everything not connected to it dims. Dimming is the only
+thing Highlight changes about how the map looks. From
 there you can grow or trim what is lit, one note at a time or a whole
 neighbourhood at once.
 
@@ -67,13 +67,9 @@ dimmed until you add it.
 - A tree edge or cross-link is lit only when **both** of its drawn ends are lit.
   Where an end is hidden in a fold, the folded branch standing in for it is the
   end that counts.
-- Cross-links that are lit stay drawn at the hover weight for as long as
-  Highlight is on, but in the tree edges' own colour and solid rather than
-  dashed: the accent colour and the dash both mark a link as a passing hover,
-  and a link held by Highlight is part of the subgraph being shown, not that.
-  Dimmed cross-links keep the accent colour and the dash. Hovering any
-  cross-link, held or dimmed, still shows the ordinary accent-coloured dash on
-  top — Highlight does not change what hover looks like.
+- Lit only means not dimmed. A lit cross-link looks exactly as it does with
+  Highlight off: part of the flat map's faint mesh, and on the radial map
+  hidden until you hover one of its ends.
 
 Everything else is dimmed. Dimmed notes behave exactly as before: click, alt-click,
 fold and hover all work, and they have the context menu. Hover still lights the
@@ -137,9 +133,8 @@ bytes, so this change shows as a binary diff.)
   transition, stores the result and redraws. The radial caption, which stops
   click propagation, gets the same menu.
 - `paintCartesian` and `paintRadial` ask the drawing questions once per note and
-  per edge and set classes: `cb-mm-dimmed` on dimmed notes, edges and cross-links;
-  a persistent lit class on lit cross-links, separate from `cb-mm-crosslink-live`
-  so that hover leaving a note cannot turn them off.
+  per edge and set one class, `cb-mm-dimmed`, on dimmed notes, edges and
+  cross-links.
 - The header chip is created in `redraw()` between the stats span and
   `settingsMenu`, with a close button that sets the state back to `null` and
   redraws.
@@ -147,10 +142,9 @@ bytes, so this change shows as a binary diff.)
 ### `styles.css`
 
 `cb-mm-dimmed` lowers opacity on top of whatever the element already is, so heat,
-tint and fold marks keep working. The persistent lit cross-link class matches
-`cb-mm-crosslink-live`'s weight but takes the tree edges' colour and drops the
-dash instead, `:not(-live)` so hovering a held link still shows the ordinary
-dashed accent colour. The header chip's name gets an ellipsis, and a `|` sets
+tint and fold marks keep working; on a cross-link it yields to
+`cb-mm-crosslink-live`, so hover still lights a dimmed link. The header chip's
+name gets an ellipsis, and a `|` sets
 the chip apart from the note count. The dimmed opacity
 is a starting value to be tuned by eye on a real vault, not a measured constant.
 
@@ -199,6 +193,10 @@ avoids stale paths after a restart.
 **Q. Which connections stay lit?**
 A. Only those with both ends lit, so the picture is exactly the chosen
 subgraph. Lighting everything touching a lit note was rejected as too busy.
+Lit cross-links were at first also held on screen at hover weight for as long
+as Highlight was on; on a real graph, Highlight on the hub turned that into a
+solid web over the whole circle, so it was dropped (2026-09-16). Highlight only
+dims, and links show the way they do with it off.
 
 **Q. Can the center be removed?**
 A. No. A dimmed center would leave the header naming a note that is not lit.
