@@ -91,7 +91,7 @@ away), Highlight turns off; a lit note that has gone simply drops out.
 
 ### `src/mindmap/highlight.ts` — the rules
 
-Pure: no Obsidian, no DOM, tested in `tests/highlight.test.ts`. Every decision
+Pure: no Obsidian, no DOM, tested in `tests/mindmap-highlight.test.ts`. Every decision
 above lives here.
 
 - State: `Highlight | null`, where `Highlight = { center: string; lit: ReadonlySet<string> }`.
@@ -145,7 +145,7 @@ is a starting value to be tuned by eye on a real vault, not a measured constant.
 
 ## Testing
 
-`tests/highlight.test.ts`, against small fixture graphs built in each test, with
+`tests/mindmap-highlight.test.ts`, against small fixture graphs built in each test, with
 expected sets computed from the fixture's own links rather than written out:
 
 - neighbours include parent, children and cross-links in both directions;
