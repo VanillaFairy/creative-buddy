@@ -389,3 +389,29 @@ describe("colour down a branch", () => {
     expect(folded).toEqual(coloursIn(built([], { prune: false })));
   });
 });
+
+describe("parentOf", () => {
+  it("covers every note but the hub, whether a fold pruned it or not", () => {
+    const open = dataFor("simple", "Noir game");
+    const hub = open.root!.path;
+    const refs = refsIn(open);
+    const folded = dataFor("simple", "Noir game", [refs.path]);
+
+    // Pruned out of the drawn tree…
+    expect(refsIn(folded).children).toEqual([]);
+    // …but still known to the hierarchy.
+    for (const child of refs.children) expect(folded.parentOf.get(child.path)).toBe(refs.path);
+    expect(folded.parentOf.has(hub)).toBe(false);
+  });
+
+  it("agrees with the drawn tree wherever the tree is whole", () => {
+    const data = dataFor("simple", "Noir game");
+    const walk = (node: NonNullable<typeof data.root>): void => {
+      for (const child of node.children) {
+        expect(data.parentOf.get(child.path)).toBe(node.path);
+        walk(child);
+      }
+    };
+    walk(data.root!);
+  });
+});
