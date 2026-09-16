@@ -1342,6 +1342,16 @@
   opacity: 0.95;
 }
 
+/* The accent colour and the dash both mark a link as texture, reserved for the
+   momentary pointer emphasis. One held by Highlight is part of the subgraph
+   being shown for as long as Highlight is on, not a passing hover, so it takes
+   the tree edges' own colour and draws solid — `:not(-live)` so hovering a
+   held link still shows the ordinary dashed-purple on top. */
+.cb-mm-crosslink-held:not(.cb-mm-crosslink-live) {
+  stroke: var(--cb-faint);
+  stroke-dasharray: none;
+}
+
 /* Kept out of the drawing until a node calls for it, which is a performance
    decision with a trace behind it. Chromium rasters in tiles, and a chord runs
    the width of the circle, so it lands in nearly every tile the map has: on a
