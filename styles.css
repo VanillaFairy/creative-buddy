@@ -1253,6 +1253,16 @@
   white-space: nowrap;
 }
 
+.cb-mm-highlight {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cb-quiet);
+  font-family: var(--cb-hand);
+  font-size: var(--font-ui-smaller);
+}
+
 .cb-mm-stage {
   position: relative;
   flex: 1 1 auto;

@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, setIcon, Menu } from "obsidian";
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
@@ -16,6 +16,7 @@ import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import type { GraphModel } from "../graph/graph-model";
 import { PICKER_EMPTY, folderOffer, noteCount, offerLabel, projectRowLabel, projectRows } from "../project-list";
+import { Highlight, Links, add, extend, menuFor, prune, remove, toggle } from "./highlight";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const H_GAP = 48;
@@ -47,6 +48,9 @@ export class MindmapView extends ItemView {
   private offChange: (() => void) | null = null;
   private redrawTimer: number | null = null;
   private lastTransform: ZoomTransform | null = null;
+  // Highlight is a way of exploring, not a saved view: a stored path could
+  // outlive its note across a restart, so it stays out of getState/setState.
+  private highlight: Highlight | null = null;
 
   constructor(leaf: WorkspaceLeaf, private readonly plugin: CreativeBuddyPlugin) {
     super(leaf);
@@ -114,6 +118,7 @@ export class MindmapView extends ItemView {
   showGraph(graphDir: string): void {
     this.graphDir = graphDir;
     this.lastTransform = null;
+    this.highlight = null;
     this.app.workspace.requestSaveLayout();
     this.redraw();
   }
@@ -260,7 +265,10 @@ export class MindmapView extends ItemView {
     // A persisted graphDir can outlive its folder (rename). Drawing whichever
     // graph happens to sort first would be a map of something nobody asked for,
     // so an unresolvable one falls back to asking.
-    if (this.graphDir !== null && !graphs.includes(this.graphDir)) this.graphDir = null;
+    if (this.graphDir !== null && !graphs.includes(this.graphDir)) {
+      this.graphDir = null;
+      this.highlight = null;
+    }
     if (this.graphDir === null) {
       this.drawPicker(container, model);
       return;
@@ -275,6 +283,9 @@ export class MindmapView extends ItemView {
     selector.value = this.graphDir;
     selector.onchange = () => this.showGraph(selector.value);
 
+    const notes = model.notes(this.graphDir);
+    this.highlight = prune(this.highlight, new Set(notes.map((note) => note.path)));
+
     // The circle asks for the whole tree and draws part of it. Pruning would
     // repack the ring on every fold and throw the reader's place away; laid out
     // whole, a fold leaves a gap exactly where the branch was and moves nothing.
@@ -286,6 +297,12 @@ export class MindmapView extends ItemView {
       cls: "cb-mm-stats",
       text: stats === null ? "no hub found" : `${stats.nodes} notes`,
     });
+
+    if (this.highlight !== null) {
+      const center = this.highlight.center;
+      const stem = notes.find((note) => note.path === center)?.stem ?? center;
+      header.createSpan({ cls: "cb-mm-highlight", text: `Highlight: ${stem}`, attr: { title: center } });
+    }
 
     // Radial and Heat are ways of reading the map, not facts about the graph,
     // so both switches ride in the header beside the project picker rather
@@ -380,6 +397,7 @@ export class MindmapView extends ItemView {
     g: Selection<SVGGElement, unknown, null, undefined>,
     node: MindmapNode,
     setActive: (node: MindmapNode | null) => void,
+    links: Links,
   ): void {
     const foldable = foldMark(node) !== null;
     const fold = (): void => {
@@ -404,6 +422,37 @@ export class MindmapView extends ItemView {
     g.on("focus", () => setActive(node));
     g.on("mouseleave", () => setActive(null));
     g.on("blur", () => setActive(null));
+    g.on("contextmenu", (event: MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const apply = (next: Highlight | null): void => {
+        this.highlight = next;
+        this.redraw();
+      };
+      const on = this.highlight;
+      const offer = menuFor(on, node.path);
+      const menu = new Menu();
+      menu.addItem((item) =>
+        item.setTitle("Highlight").setChecked(offer.checked).onClick(() => apply(toggle(on, links, node.path))),
+      );
+      if (on !== null && offer.membership === "add") {
+        menu.addItem((item) => item.setTitle("Add to Highlight").onClick(() => apply(add(on, node.path))));
+      }
+      if (on !== null && offer.membership === "remove") {
+        menu.addItem((item) => item.setTitle("Remove from Highlight").onClick(() => apply(remove(on, node.path))));
+      }
+      if (on !== null && offer.extend) {
+        menu.addItem((item) => item.setTitle("Extend Highlight").onClick(() => apply(extend(on, links, node.path))));
+      }
+      // A menu raised from the keyboard can arrive without a pointer position, so it
+      // opens beside the node instead of in the corner of the window.
+      if (event.clientX === 0 && event.clientY === 0) {
+        const rect = (event.currentTarget as Element).getBoundingClientRect();
+        menu.showAtPosition({ x: rect.left, y: rect.bottom });
+      } else {
+        menu.showAtMouseEvent(event);
+      }
+    });
   }
 
   private paintCartesian(
@@ -544,7 +593,7 @@ export class MindmapView extends ItemView {
       if (box.suffix !== null && box.suffixX !== null) {
         g.append("text").attr("class", "cb-mm-fold").attr("x", box.suffixX).attr("y", textY).text(box.suffix);
       }
-      this.wireNode(g, node, setActive);
+      this.wireNode(g, node, setActive, data);
     });
 
     const bounds: Bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
@@ -691,7 +740,7 @@ export class MindmapView extends ItemView {
           .text(caption.suffix);
       }
 
-      this.wireNode(g, node, setActive);
+      this.wireNode(g, node, setActive, data);
     }
 
     return layout.bounds;
