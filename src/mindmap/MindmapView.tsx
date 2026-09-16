@@ -481,7 +481,7 @@ export class MindmapView extends ItemView {
     lit: ReadonlySet<string> | null,
   ): Bounds {
     const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
-    const held = (a: string, b: string): boolean => lit !== null && edgeLit(lit, a, b);
+    const dimmedLink = (a: string, b: string): boolean => lit !== null && !edgeLit(lit, a, b);
     const boxes = new Map<string, Box>();
     const boxOf = (node: MindmapNode): Box => {
       const cached = boxes.get(node.path);
@@ -528,8 +528,7 @@ export class MindmapView extends ItemView {
       const path = canvas
         .append("path")
         .attr("class", "cb-mm-crosslink")
-        .classed("cb-mm-crosslink-held", held(cross.from, cross.to))
-        .classed("cb-mm-dimmed", !held(cross.from, cross.to) && lit !== null)
+        .classed("cb-mm-dimmed", dimmedLink(cross.from, cross.to))
         .attr("d", `M${startX},${from.x} Q${(startX + to.y) / 2},${(from.x + to.x) / 2 - 40} ${to.y},${to.x}`)
         .node();
       if (path === null) continue;
@@ -640,7 +639,7 @@ export class MindmapView extends ItemView {
     lit: ReadonlySet<string> | null,
   ): Bounds {
     const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
-    const held = (a: string, b: string): boolean => lit !== null && edgeLit(lit, a, b);
+    const dimmedLink = (a: string, b: string): boolean => lit !== null && !edgeLit(lit, a, b);
     // `reachOf` is d3-flextree's contour walk re-reading the same node's size
     // many times over — measured at ~11 calls per node on a real graph — and
     // this one measures text on a canvas, so it is cached the way
@@ -686,8 +685,7 @@ export class MindmapView extends ItemView {
       const path = canvas
         .append("path")
         .attr("class", "cb-mm-crosslink cb-mm-crosslink-chord")
-        .classed("cb-mm-crosslink-held", held(cross.from, cross.to))
-        .classed("cb-mm-dimmed", !held(cross.from, cross.to) && lit !== null)
+        .classed("cb-mm-dimmed", dimmedLink(cross.from, cross.to))
         .attr("d", crossLinkPath(from, to))
         .node();
       if (path === null) continue;
