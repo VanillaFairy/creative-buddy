@@ -1,8 +1,9 @@
 # Highlight — design
 
 A way of reading the map around one note. Right-click a note, tick
-**Highlight**, and everything not connected to it dims. Dimming is the only
-thing Highlight changes about how the map looks. From
+**Highlight**, and everything not connected to it dims, while the titles of the
+notes that stay lit go bold. Those are the only two things Highlight changes
+about how the map looks. From
 there you can grow or trim what is lit, one note at a time or a whole
 neighbourhood at once.
 
@@ -67,8 +68,12 @@ dimmed until you add it.
 - A tree edge or cross-link is lit only when **both** of its drawn ends are lit.
   Where an end is hidden in a fold, the folded branch standing in for it is the
   end that counts.
-- Lit only means not dimmed. A lit cross-link looks exactly as it does with
-  Highlight off: part of the flat map's faint mesh, and on the radial map
+- A lit note's title reads bold, a folded branch standing in for a lit note
+  included. The hub's title is bold already and stays as it is. Nothing moves
+  when the lit set changes: the layout makes room for every title at bold width,
+  Highlight or not.
+- Otherwise lit only means not dimmed. A lit cross-link looks exactly as it does
+  with Highlight off: part of the flat map's faint mesh, and on the radial map
   hidden until you hover one of its ends.
 
 Everything else is dimmed. Dimmed notes behave exactly as before: click, alt-click,
@@ -133,8 +138,8 @@ bytes, so this change shows as a binary diff.)
   transition, stores the result and redraws. The radial caption, which stops
   click propagation, gets the same menu.
 - `paintCartesian` and `paintRadial` ask the drawing questions once per note and
-  per edge and set one class, `cb-mm-dimmed`, on dimmed notes, edges and
-  cross-links.
+  per edge and set two classes: `cb-mm-dimmed` on dimmed notes, edges and
+  cross-links, and `cb-mm-lit` on lit notes.
 - The header chip is created in `redraw()` between the stats span and
   `settingsMenu`, with a close button that sets the state back to `null` and
   redraws.
@@ -143,7 +148,13 @@ bytes, so this change shows as a binary diff.)
 
 `cb-mm-dimmed` lowers opacity on top of whatever the element already is, so heat,
 tint and fold marks keep working; on a cross-link it yields to
-`cb-mm-crosslink-live`, so hover still lights a dimmed link. The header chip's
+`cb-mm-crosslink-live`, so hover still lights a dimmed link. `cb-mm-lit` sets a
+title's `font-weight` to 600. The view sizes a lit title's box and caption at
+that weight, so the two must agree, but it lays the map out with room for every
+title in either weight, lit or not — the way the radial map already reserves a
+fold count it may never draw. Lighting a note changes how it is drawn, never
+where. An outline that thickened letters at the regular width was tried first
+and replaced with real bold. The header chip's
 name gets an ellipsis, and a `|` sets
 the chip apart from the note count. The dimmed opacity
 is a starting value to be tuned by eye on a real vault, not a measured constant.
