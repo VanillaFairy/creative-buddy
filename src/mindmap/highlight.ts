@@ -95,3 +95,8 @@ export function drawnLit(
   }
   return result;
 }
+
+/** Whether an edge between two drawn ends is lit: both ends must be in the drawn-lit set. */
+export function edgeLit(lit: ReadonlySet<string>, a: string, b: string): boolean {
+  return lit.has(a) && lit.has(b);
+}

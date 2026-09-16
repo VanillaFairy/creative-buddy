@@ -12,6 +12,7 @@ import {
   prune,
   menuFor,
   drawnLit,
+  edgeLit,
 } from "../src/mindmap/highlight";
 
 // ---------------------------------------------------------------------------
@@ -307,6 +308,27 @@ describe("drawnLit", () => {
       drawnLit(state, parentOf, new Set(["Other/graph/Ghost.md", "T/R/P/Deleted.md"])),
     ).not.toThrow();
     expect(drawnLit(state, parentOf, new Set(["Other/graph/Ghost.md"]))).toEqual(new Set([R, Y]));
+  });
+});
+
+describe("edgeLit", () => {
+  const R = "T/R.md";
+  const P = "T/R/P.md";
+  const Q = "T/R/P/Q.md";
+  const X = "T/R/P/Q/X.md";
+
+  const lit = new Set([R, P]);
+
+  it("both ends lit", () => {
+    expect(edgeLit(lit, R, P)).toBe(true);
+  });
+
+  it("one end lit, one dimmed", () => {
+    expect(edgeLit(lit, R, Q)).toBe(false);
+  });
+
+  it("neither end lit", () => {
+    expect(edgeLit(lit, Q, X)).toBe(false);
   });
 });
 

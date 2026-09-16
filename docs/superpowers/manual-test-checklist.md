@@ -518,8 +518,13 @@ older than the code.
 - [ ] Right-click a **radial caption** (not the dot) → the same Highlight menu
       appears. Focus a node and press **Shift+F10** → same menu, keyboard-only.
 - [ ] Tick Highlight on a note with a long name in a narrow sidebar → the
-      header chip truncates with an ellipsis and the gear stays fully visible
-      and clickable.
+      header chip truncates with an ellipsis, hovering the truncated chip
+      shows the center's full path as a tooltip, and the gear stays fully
+      visible and clickable.
+- [ ] With Highlight on, create a new wikilink from another note to the
+      center (or have the interviewer write one) → the newly-connected note
+      stays dimmed until you explicitly Add or Extend it; it does not light
+      on its own.
 - [ ] Turn Highlight on, then switch project → Highlight is off on the new
       map. Turn it on again, then restart Obsidian → it opens with Highlight off.
 - [ ] Rename the center's note → Highlight turns off. Delete the center's note

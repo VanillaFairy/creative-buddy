@@ -16,7 +16,7 @@ import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import type { GraphModel } from "../graph/graph-model";
 import { PICKER_EMPTY, folderOffer, noteCount, offerLabel, projectRowLabel, projectRows } from "../project-list";
-import { Highlight, Links, add, drawnLit, extend, menuFor, prune, remove, toggle } from "./highlight";
+import { Highlight, Links, add, drawnLit, edgeLit, extend, menuFor, prune, remove, toggle } from "./highlight";
 
 export const MINDMAP_VIEW_TYPE = "creative-buddy-mindmap";
 const H_GAP = 48;
@@ -471,7 +471,7 @@ export class MindmapView extends ItemView {
     lit: ReadonlySet<string> | null,
   ): Bounds {
     const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
-    const held = (a: string, b: string): boolean => lit !== null && lit.has(a) && lit.has(b);
+    const held = (a: string, b: string): boolean => lit !== null && edgeLit(lit, a, b);
     const boxes = new Map<string, Box>();
     const boxOf = (node: MindmapNode): Box => {
       const cached = boxes.get(node.path);
@@ -630,7 +630,7 @@ export class MindmapView extends ItemView {
     lit: ReadonlySet<string> | null,
   ): Bounds {
     const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
-    const held = (a: string, b: string): boolean => lit !== null && lit.has(a) && lit.has(b);
+    const held = (a: string, b: string): boolean => lit !== null && edgeLit(lit, a, b);
     // `reachOf` is d3-flextree's contour walk re-reading the same node's size
     // many times over — measured at ~11 calls per node on a real graph — and
     // this one measures text on a canvas, so it is cached the way
