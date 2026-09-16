@@ -23,7 +23,8 @@ neighbourhood at once.
 - Ticking it on a different note while Highlight is on makes that note the new
   center and starts over from it — whatever had been added or removed is
   forgotten.
-- Unticking it on the center turns Highlight off. That is the only way out.
+- Highlight turns off two ways: unticking it on the center, or the close button
+  beside its name in the map header (below).
 
 ### Neighbours
 
@@ -67,7 +68,12 @@ dimmed until you add it.
   Where an end is hidden in a fold, the folded branch standing in for it is the
   end that counts.
 - Cross-links that are lit stay drawn at the hover weight for as long as
-  Highlight is on.
+  Highlight is on, but in the tree edges' own colour and solid rather than
+  dashed: the accent colour and the dash both mark a link as a passing hover,
+  and a link held by Highlight is part of the subgraph being shown, not that.
+  Dimmed cross-links keep the accent colour and the dash. Hovering any
+  cross-link, held or dimmed, still shows the ordinary accent-coloured dash on
+  top — Highlight does not change what hover looks like.
 
 Everything else is dimmed. Dimmed notes behave exactly as before: click, alt-click,
 fold and hover all work, and they have the context menu. Hover still lights the
@@ -76,9 +82,10 @@ hovered note's cross-links on top of Highlight, dimmed or not.
 ### Header
 
 While Highlight is on, the map header shows **Highlight: *center name*** between
-the note count and the settings gear. It is a label, not a control, truncates
-with an ellipsis on a narrow pane so the project picker keeps its room, and
-carries the center's full path as a tooltip.
+the note count and the settings gear, set apart from the count by a `|`. The
+name truncates with an ellipsis on a narrow pane so the project picker keeps its
+room, and carries the center's full path as a tooltip. A close button beside
+the name turns Highlight off; it never truncates away with the name.
 
 ### Lifetime
 
@@ -134,13 +141,17 @@ bytes, so this change shows as a binary diff.)
   a persistent lit class on lit cross-links, separate from `cb-mm-crosslink-live`
   so that hover leaving a note cannot turn them off.
 - The header chip is created in `redraw()` between the stats span and
-  `settingsMenu`.
+  `settingsMenu`, with a close button that sets the state back to `null` and
+  redraws.
 
 ### `styles.css`
 
 `cb-mm-dimmed` lowers opacity on top of whatever the element already is, so heat,
-tint and fold marks keep working. The persistent lit cross-link class matches the
-`cb-mm-crosslink-live` look. The header chip gets an ellipsis. The dimmed opacity
+tint and fold marks keep working. The persistent lit cross-link class matches
+`cb-mm-crosslink-live`'s weight but takes the tree edges' colour and drops the
+dash instead, `:not(-live)` so hovering a held link still shows the ordinary
+dashed accent colour. The header chip's name gets an ellipsis, and a `|` sets
+the chip apart from the note count. The dimmed opacity
 is a starting value to be tuned by eye on a real vault, not a measured constant.
 
 ## Testing
@@ -190,9 +201,12 @@ A. Only those with both ends lit, so the picture is exactly the chosen
 subgraph. Lighting everything touching a lit note was rejected as too busy.
 
 **Q. Can the center be removed?**
-A. No. Unticking Highlight is the only exit; a Remove that exits would be two
-controls for one action, and a dimmed center would leave the header naming a
-note that is not lit.
+A. No. A dimmed center would leave the header naming a note that is not lit.
+The ways out are unticking Highlight on the center and the close button in the
+header. The close button overturns this design's original "unticking is the
+only exit" (2026-09-16). A Remove on the center that exits is still rejected:
+Remove dims one note everywhere else, and should not mean "turn it all off"
+on one.
 
 **Q. Is the lit set a snapshot or recomputed from the graph on every redraw?**
 A. A snapshot. The picture changes only on a click. A live recipe would need a

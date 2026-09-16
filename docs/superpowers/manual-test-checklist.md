@@ -493,8 +493,9 @@ older than the code.
 
 - [ ] Right-click a note with Highlight off → the menu shows only **Highlight
       ☐**. Tick it → that note becomes the Highlight center: it and its
-      neighbours stay lit, everything else dims, and the header shows
-      **Highlight: *name*** between the note count and the gear. Check both maps.
+      neighbours stay lit, everything else dims, and the header reads
+      **63 notes | Highlight: *name* ✕** — a `|` between the count and the
+      name, a close button after it, then the gear. Check both maps.
 - [ ] Right-click the **center** → the menu shows **Highlight ☑** and **Extend
       Highlight**, with no Add or Remove. Right-click a **lit** note that is not
       the center → **Highlight ☐**, **Remove from Highlight**, **Extend
@@ -504,23 +505,30 @@ older than the code.
       new center, the header name follows it, and whatever you had added or
       removed since starting is forgotten.
 - [ ] Untick Highlight on the center → it turns off and every note returns to
-      full weight. It is the only way out — no other note offers an untick.
+      full weight. No other note offers an untick.
+- [ ] With Highlight on, click the **✕** beside its name in the header →
+      Highlight turns off exactly as unticking would: every note back to full
+      weight, the chip and its `|` gone, folds and pan/zoom untouched. Tab to
+      the ✕ and press Enter → same.
 - [ ] **Add to Highlight** on a dimmed note → it lights on its own, without
       pulling its neighbours in with it. **Remove from Highlight** on a lit
       note → it dims on its own. **Extend Highlight** on any note → the note
       and all its neighbours light, bringing back one you removed a moment ago.
 - [ ] Cross-links between two lit notes stay drawn at hover weight with nothing
-      hovered — chords on the radial map included. Hover a **dimmed** note →
-      its own cross-links light up on top of the dimming, same as with
-      Highlight off.
+      hovered — chords on the radial map included — **solid** and in the tree
+      edges' own colour, not the purple accent. Dimmed cross-links keep the
+      purple accent and the dash. Hover a **held** link → it flips to the
+      ordinary dashed purple for as long as the pointer is on it, then back to
+      solid when you move away. Hover a **dimmed** note → its own cross-links
+      light up dashed-purple on top of the dimming, same as with Highlight off.
 - [ ] Fold a branch hiding a lit note → the folded branch itself is drawn lit,
       standing in for what it hides. Highlight never opens the fold to show you.
 - [ ] Right-click a **radial caption** (not the dot) → the same Highlight menu
       appears. Focus a node and press **Shift+F10** → same menu, keyboard-only.
 - [ ] Tick Highlight on a note with a long name in a narrow sidebar → the
-      header chip truncates with an ellipsis, hovering the truncated chip
-      shows the center's full path as a tooltip, and the gear stays fully
-      visible and clickable.
+      header chip's name truncates with an ellipsis, hovering the truncated
+      name shows the center's full path as a tooltip, and both the ✕ and the
+      gear stay fully visible and clickable.
 - [ ] With Highlight on, create a new wikilink from another note to the
       center (or have the interviewer write one) → the newly-connected note
       stays dimmed until you explicitly Add or Extend it; it does not light
