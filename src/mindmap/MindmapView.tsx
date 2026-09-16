@@ -301,7 +301,17 @@ export class MindmapView extends ItemView {
     if (this.highlight !== null) {
       const center = this.highlight.center;
       const stem = notes.find((note) => note.path === center)?.stem ?? center;
-      header.createSpan({ cls: "cb-mm-highlight", text: `Highlight: ${stem}`, attr: { title: center } });
+      const chip = header.createDiv({ cls: "cb-mm-highlight" });
+      chip.createSpan({ cls: "cb-mm-highlight-name", text: `Highlight: ${stem}`, attr: { title: center } });
+      const close = chip.createEl("button", {
+        cls: "cb-mm-highlight-close clickable-icon",
+        attr: { "aria-label": "Turn Highlight off" },
+      });
+      setIcon(close, "x");
+      close.onclick = () => {
+        this.highlight = null;
+        this.redraw();
+      };
     }
 
     // Radial and Heat are ways of reading the map, not facts about the graph,

@@ -1254,10 +1254,10 @@
 }
 
 .cb-mm-highlight {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--cb-quiet);
   font-family: var(--cb-hand);
   font-size: var(--font-ui-smaller);
@@ -1265,8 +1265,28 @@
 
 .cb-mm-highlight::before {
   content: "|";
+  flex: none;
   margin-right: var(--size-2-1);
   color: var(--cb-faint);
+}
+
+/* The name gives way on a narrow pane; the close button beside it never does. */
+.cb-mm-highlight-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cb-mm-header .cb-mm-highlight-close {
+  flex: none;
+  padding: var(--size-2-1);
+  color: var(--cb-quiet);
+  --icon-size: var(--icon-xs);
+}
+
+.cb-mm-header .cb-mm-highlight-close:hover {
+  color: var(--cb-ink);
 }
 
 .cb-mm-stage {
