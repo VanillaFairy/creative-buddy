@@ -16,7 +16,7 @@
  * Element resets are written as two-class descendant selectors on purpose.
  * Obsidian's app.css styles bare elements with a qualifier — `button:not(
  * .clickable-icon)` at (0,1,1) — which outranks a lone class. See
- * .claude/knowledge/gotchas.md; the harness at c:/tmp/cb-panel-harness.html
+ * docs/kb/GOTCHAS.md; the harness at c:/tmp/cb-panel-harness.html
  * reproduces the rule outside Obsidian.
  */
 

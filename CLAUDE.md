@@ -86,7 +86,9 @@ the module you are about to touch.
 
 ## Deeper context
 
-- `.claude/knowledge/` — project KB (commands, conventions, gotchas).
+- `docs/kb/` — the knowledge base: `GOTCHAS.md` (traps and machine quirks),
+  `CONVENTIONS.md` (commit format, docs discipline), `BUILD.md` (typecheck,
+  oracle regen, deploy), `TESTING.md` (how to run the suites).
 - `docs/GLOSSARY.md` — what the project's words mean and which module decides:
   branch, limb, group node, heat, fold, band, reach, service node.
 - `docs/TODO.md` — feature backlog: wanted but not yet planned.

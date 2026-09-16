@@ -4,4 +4,4 @@ main.js
 *.js.map
 __pycache__/
 
-.claude/knowledge/usage.log
+.claude/settings.local.json
