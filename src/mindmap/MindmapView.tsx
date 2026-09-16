@@ -23,6 +23,9 @@ const H_GAP = 48;
 const ROW_GAP = 8;
 const INSPECTOR_HINT = "Click a note to open it, a branch to fold it. Alt-click always opens.";
 
+/** One ruler per face a title renders in: regular, bold for a title in the Highlight, the hub's. */
+interface Measurers { node: Measure; bold: Measure; hub: Measure; }
+
 /**
  * How close the rings sit. Only the least room between rings is being set here:
  * a crowded ring is sized by what stands on it and will not come in past that,
@@ -336,7 +339,7 @@ export class MindmapView extends ItemView {
    * Measures labels in the faces they actually render in. The geometry module
    * owns every rule about width; all it needs from the shell is a ruler.
    */
-  private measurers(host: HTMLElement): { node: Measure; hub: Measure } {
+  private measurers(host: HTMLElement): Measurers {
     const style = getComputedStyle(host);
     const family = style.getPropertyValue("--font-interface").trim() || style.fontFamily;
     const small = style.getPropertyValue("--font-ui-small").trim() || "13px";
@@ -345,14 +348,18 @@ export class MindmapView extends ItemView {
     if (context === null) {
       // No canvas in this environment — fall back to an average advance, which
       // is what the map used to do for every label.
-      const rough = (size: number): Measure => (text) => [...text].length * size * 0.55;
-      return { node: rough(13), hub: rough(15) };
+      const rough = (size: number, advance = 0.55): Measure => (text) => [...text].length * size * advance;
+      return { node: rough(13), bold: rough(13, 0.6), hub: rough(15) };
     }
     const at = (font: string): Measure => (text) => {
       context.font = font;
       return context.measureText(text).width;
     };
-    return { node: at(`${small} ${family}`), hub: at(`600 ${medium} ${family}`) };
+    return {
+      node: at(`${small} ${family}`),
+      bold: at(`600 ${small} ${family}`),
+      hub: at(`600 ${medium} ${family}`),
+    };
   }
 
   private drawTree(stage: HTMLElement, data: MindmapData, report: (node: MindmapNode | null) => void): void {
@@ -475,31 +482,39 @@ export class MindmapView extends ItemView {
     canvas: Selection<SVGGElement, unknown, null, undefined>,
     data: MindmapData,
     hubPath: string,
-    measure: { node: Measure; hub: Measure },
+    measure: Measurers,
     setActive: (node: MindmapNode | null) => void,
     crossByPath: Map<string, SVGPathElement[]>,
     lit: ReadonlySet<string> | null,
   ): Bounds {
     const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
+    const inHighlight = (path: string): boolean => lit !== null && lit.has(path);
     const dimmedLink = (a: string, b: string): boolean => lit !== null && !edgeLit(lit, a, b);
-    const boxes = new Map<string, Box>();
-    const boxOf = (node: MindmapNode): Box => {
+    const boxes = new Map<string, { box: Box; room: number }>();
+    const sized = (node: MindmapNode): { box: Box; room: number } => {
       const cached = boxes.get(node.path);
       if (cached !== undefined) return cached;
       const isHub = node.path === hubPath;
       const suffix = node.collapsedChildren > 0 ? `+${node.collapsedChildren}` : null;
       // However it is filed, the hub carries the charter and is never drawn as
       // something you file past.
-      const box =
+      const boxIn = (face: Measure): Box =>
         !isHub && isService(node.kind)
-          ? serviceBox(node.stem, measure.node, { suffix })
-          : nodeBox(node.stem, isHub ? measure.hub : measure.node, { isHub, suffix });
-      boxes.set(node.path, box);
-      return box;
+          ? serviceBox(node.stem, face, { suffix })
+          : nodeBox(node.stem, isHub ? measure.hub : face, { isHub, suffix });
+      const box = boxIn(inHighlight(node.path) ? measure.bold : measure.node);
+      // Room for the title in either weight, so Highlight turning a title bold
+      // moves nothing. Not just the bold width: a bold title ellipsises sooner,
+      // and the regular one it replaces can come out a hair wider.
+      const room = isHub ? box.width : Math.max(boxIn(measure.node).width, boxIn(measure.bold).width);
+      const entry = { box, room };
+      boxes.set(node.path, entry);
+      return entry;
     };
+    const boxOf = (node: MindmapNode): Box => sized(node).box;
 
     const layout = flextree<MindmapNode>()
-      .nodeSize((n) => [boxOf(n.data).height + ROW_GAP, boxOf(n.data).width + H_GAP])
+      .nodeSize((n) => [boxOf(n.data).height + ROW_GAP, sized(n.data).room + H_GAP])
       .spacing(6);
     const root = layout(hierarchy(data.root!, (d) => d.children));
 
@@ -548,6 +563,7 @@ export class MindmapView extends ItemView {
         .append("g")
         .attr("class", isHub ? "cb-mm-node cb-mm-hub" : "cb-mm-node")
         .classed("cb-mm-dimmed", dimmed(node.path))
+        .classed("cb-mm-lit", inHighlight(node.path))
         .attr("transform", `translate(${n.y},${n.x})`)
         .attr("tabindex", 0)
         .attr("role", "button")
@@ -622,7 +638,7 @@ export class MindmapView extends ItemView {
     root.each((n) => {
       const box = boxOf(n.data);
       bounds.minX = Math.min(bounds.minX, n.y);
-      bounds.maxX = Math.max(bounds.maxX, n.y + box.width);
+      bounds.maxX = Math.max(bounds.maxX, n.y + sized(n.data).room);
       bounds.minY = Math.min(bounds.minY, n.x - box.height / 2);
       bounds.maxY = Math.max(bounds.maxY, n.x + box.height / 2);
     });
@@ -633,12 +649,13 @@ export class MindmapView extends ItemView {
     canvas: Selection<SVGGElement, unknown, null, undefined>,
     data: MindmapData,
     hubPath: string,
-    measure: { node: Measure; hub: Measure },
+    measure: Measurers,
     setActive: (node: MindmapNode | null) => void,
     crossByPath: Map<string, SVGPathElement[]>,
     lit: ReadonlySet<string> | null,
   ): Bounds {
     const dimmed = (path: string): boolean => lit !== null && !lit.has(path);
+    const inHighlight = (path: string): boolean => lit !== null && lit.has(path);
     const dimmedLink = (a: string, b: string): boolean => lit !== null && !edgeLit(lit, a, b);
     // `reachOf` is d3-flextree's contour walk re-reading the same node's size
     // many times over — measured at ~11 calls per node on a real graph — and
@@ -653,9 +670,22 @@ export class MindmapView extends ItemView {
       // the one it shows now: a note that widens by a `+12` the moment you fold
       // it would shove its whole ring along, which is the jumping this mode
       // exists to avoid. The count is reserved always and drawn only when real.
-      const computed = reachFor(node.stem, isHub, hiddenIfFolded(node), isHub ? measure.hub : measure.node);
-      reaching.set(node.path, computed);
-      return computed.reach;
+      // Bold is the same bargain: room for the title in either weight, drawn in
+      // whichever one Highlight gives it, so lighting a note moves nothing.
+      const count = hiddenIfFolded(node);
+      const face = inHighlight(node.path) ? measure.bold : measure.node;
+      const drawn = reachFor(node.stem, isHub, count, isHub ? measure.hub : face);
+      const room = isHub
+        ? drawn.reach
+        : {
+            ...drawn.reach,
+            caption: Math.max(
+              reachFor(node.stem, false, count, measure.node).reach.caption,
+              reachFor(node.stem, false, count, measure.bold).reach.caption,
+            ),
+          };
+      reaching.set(node.path, { reach: room, caption: drawn.caption });
+      return room;
     };
 
     const layout = radialLayout(data.root!, reachOf, { ringGap: this.ringGap() });
@@ -706,6 +736,7 @@ export class MindmapView extends ItemView {
         .append("g")
         .attr("class", isHub ? "cb-mm-node cb-mm-hub" : "cb-mm-node")
         .classed("cb-mm-dimmed", dimmed(radialNode.path))
+        .classed("cb-mm-lit", inHighlight(radialNode.path))
         .attr("transform", `translate(${radialNode.x},${radialNode.y})`)
         .attr("tabindex", 0)
         .attr("role", "button")

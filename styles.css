@@ -1592,6 +1592,14 @@ text.cb-mm-caption:hover {
   font-weight: 600;
 }
 
+/* Must stay the weight `measurers` gives its `bold` ruler: the layout sizes a
+   lit title's box and caption at that weight, and any other one overruns them.
+   Fold counts are not titles, and are measured apart from the weight they draw
+   in anyway. */
+.cb-mm-lit text:not(.cb-mm-fold) {
+  font-weight: 600;
+}
+
 /* One fixed readout beats a tooltip that moves with a pannable canvas — and it
    answers to the keyboard, which a hover tooltip never does. */
 /* A block, not a flex row: text-overflow never applies to the anonymous item
