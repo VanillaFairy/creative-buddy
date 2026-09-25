@@ -26,3 +26,12 @@ overwriting, and prints each file's timestamp — those are *build* times, since
 to copy anything if the build output is missing. The target is the first
 argument, else `CB_PLUGIN_DIR`; with neither it refuses. Obsidian does not hot-reload — toggle the plugin off and on
 after deploying.
+
+## Release
+Bump `version` in `manifest.json` and `package.json`, commit, then push a tag
+equal to that version, no `v` prefix: `git tag 1.0.4 && git push origin 1.0.4`.
+`.github/workflows/release.yml` builds, attests `main.js`, `manifest.json` and
+`styles.css` with build provenance, and opens a draft release with them attached;
+write the notes and publish it on GitHub. It fails if the tag and manifest
+version differ. Check a downloaded file with
+`gh attestation verify main.js --owner VanillaFairy`.
