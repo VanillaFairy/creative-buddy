@@ -13,6 +13,21 @@ Claude does the interviewing, through your own Claude Code installation.
 
 > You do the thinking. Creative Buddy does the rest.
 
+![The chat beside a note. The interviewer has filed an answer into the HELM note and asks a follow-up about a locked note it hasn't touched.](docs/images/chat.png)
+
+*An interview about a sci-fi adventure game. The answer went into the HELM note
+you can see open, and the interviewer asks before touching a note marked
+`locked`.*
+
+![The mindmap: the hub in the middle and five coloured branches for art direction, characters, gameplay, setting and story.](docs/images/mindmap.png)
+
+*The same project as a mindmap. Click a note to open it, or click a branch to
+fold it.*
+
+![The mindmap in radial mode: the hub as a dot in the centre, each branch fanning out in its own colour.](docs/images/mindmap-radial.png)
+
+*The map's radial mode, switched on from the map settings.*
+
 ## Is it for you?
 
 It suits you if you work in Obsidian and like building up a project by talking
