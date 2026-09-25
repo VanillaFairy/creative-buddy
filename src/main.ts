@@ -9,6 +9,7 @@ import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
 import { countOpenQuestions } from "./open-questions";
 import { charterEdit } from "./project-list";
 import { dirName } from "./graph/types";
+import { CHAT_ICON, MAP_ICON, registerIcons } from "./icons";
 import { existsSync } from "node:fs";
 
 export default class CreativeBuddyPlugin extends Plugin {
@@ -45,6 +46,7 @@ export default class CreativeBuddyPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
     this.addSettingTab(new CreativeBuddySettingTab(this.app, this));
+    registerIcons();
 
     this.registerView(CHAT_VIEW_TYPE, (leaf) => new ChatView(leaf, this));
     this.registerView(MINDMAP_VIEW_TYPE, (leaf) => new MindmapView(leaf, this));
@@ -54,10 +56,10 @@ export default class CreativeBuddyPlugin extends Plugin {
     // reopen one of them. Both read the note you are on and go straight to its
     // project, so the picker is for when there is nothing to read — and both
     // are a way *back* to that project, never a second copy of it.
-    this.addRibbonIcon("messages-square", "Open Creative Buddy chat", () => {
+    this.addRibbonIcon(CHAT_ICON, "Open Creative Buddy chat", () => {
       void this.openChat(this.activeGraphDir());
     });
-    this.addRibbonIcon("git-fork", "Open Creative Buddy map", () => {
+    this.addRibbonIcon(MAP_ICON, "Open Creative Buddy map", () => {
       void this.openMap(this.activeGraphDir());
     });
 
@@ -81,14 +83,14 @@ export default class CreativeBuddyPlugin extends Plugin {
           item
             .setSection("open")
             .setTitle("Open in Creative Buddy chat")
-            .setIcon("messages-square")
+            .setIcon(CHAT_ICON)
             .onClick(() => void this.openChat(graphDir)),
         );
         menu.addItem((item) =>
           item
             .setSection("open")
             .setTitle("Show in Creative Buddy map")
-            .setIcon("git-fork")
+            .setIcon(MAP_ICON)
             .onClick(() => void this.openMap(graphDir)),
         );
       }),

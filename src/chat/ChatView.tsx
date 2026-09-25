@@ -29,6 +29,7 @@ import { noteLinktext } from "./links";
 import { projectName, tabTitle } from "../view-title";
 import { folderOffer, pickerHint, projectRows } from "../project-list";
 import { resolveTarget, targetPathOf, vaultRelative } from "../agent/permissions";
+import { CHAT_ICON } from "../icons";
 
 /** What a new conversation in this panel starts as. */
 function seedFrom(settings: CreativeBuddySettings): SessionSeed {
@@ -95,7 +96,7 @@ export class ChatView extends ItemView {
   getDisplayText(): string {
     return tabTitle("Creative buddy chat", activeSession(this.list).graphDir, this.app.vault.getName());
   }
-  getIcon(): string { return "messages-square"; }
+  getIcon(): string { return CHAT_ICON; }
 
   getState(): Record<string, unknown> {
     return {

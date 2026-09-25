@@ -15,6 +15,7 @@ import { foldMark, hiddenIfFolded } from "./fold";
 import { heatClass } from "./heat";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
+import { MAP_ICON } from "../icons";
 import type { GraphModel } from "../graph/graph-model";
 import { PICKER_EMPTY, folderOffer, noteCount, offerLabel, projectRowLabel, projectRows } from "../project-list";
 import { Highlight, Links, add, drawnLit, edgeLit, extend, menuFor, prune, remove, toggle } from "./highlight";
@@ -62,7 +63,7 @@ export class MindmapView extends ItemView {
 
   getViewType(): string { return MINDMAP_VIEW_TYPE; }
   getDisplayText(): string { return tabTitle("Creative Buddy map", this.graphDir, this.app.vault.getName()); }
-  getIcon(): string { return "git-fork"; }
+  getIcon(): string { return MAP_ICON; }
 
   getState(): Record<string, unknown> {
     return { graphDir: this.graphDir, collapse: this.collapse.toJSON(), heatmap: this.heatmap, radial: this.radial, density: this.density };
