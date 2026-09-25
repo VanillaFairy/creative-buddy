@@ -13,17 +13,18 @@ export interface CreativeBuddySettings {
 
 export const DEFAULT_SETTINGS: CreativeBuddySettings = {
   claudePath: "",
-  defaultModel: "claude-sonnet-5",
+  defaultModel: "sonnet",
   defaultEffort: DEFAULT_EFFORT,
   apiKeyOverride: "",
   openInMainTab: false,
 };
 
+/** Family aliases, not versions: the CLI runs each family's newest model. */
 export const MODEL_CHOICES: Record<string, string> = {
-  "claude-fable-5-1": "Fable 5.1",
-  "claude-opus-5": "Opus 5",
-  "claude-sonnet-5": "Sonnet 5",
-  "claude-haiku-4-5": "Haiku 4.5",
+  fable: "Fable",
+  opus: "Opus",
+  sonnet: "Sonnet",
+  haiku: "Haiku",
 };
 
 export class CreativeBuddySettingTab extends PluginSettingTab {

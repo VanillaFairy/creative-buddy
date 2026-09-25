@@ -33,7 +33,11 @@ late model.
 - The list of models exists twice and nothing ties the two together:
   `MODEL_CHOICES` in `settings.ts` decides what the pickers offer,
   `HONOURED` in `agent/effort.ts` decides which of those get an effort control.
-  `claude-haiku-4-5` is deliberately in the first and not the second. A model
+  `haiku` is deliberately in the first and not the second. Both are keyed by
+  family alias (`opus`, not `claude-opus-5`), so the CLI always runs the
+  family's newest version; `asFamily` in the same file collapses a pinned id
+  read back from disk onto its family, and its pattern is a third place the
+  family names appear. A model
   added only to `MODEL_CHOICES` silently loses its effort row; one added only to
   `HONOURED` is unreachable.
 

@@ -1,6 +1,7 @@
 import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { GraphModel } from "./graph/graph-model";
 import { CreativeBuddySettings, DEFAULT_SETTINGS, CreativeBuddySettingTab } from "./settings";
+import { asFamily } from "./agent/effort";
 import { findClaudeExecutable } from "./claude-locator";
 import { ChatView, CHAT_VIEW_TYPE } from "./chat/ChatView";
 import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
@@ -296,6 +297,7 @@ export default class CreativeBuddyPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) ?? {}) };
+    this.settings.defaultModel = asFamily(this.settings.defaultModel);
   }
 
   async saveSettings(): Promise<void> {

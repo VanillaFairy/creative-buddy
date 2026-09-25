@@ -40,7 +40,7 @@ describe("live smoke (requires a logged-in Claude Code install)", () => {
         vaultRoot: root.replace(/\\/g, "/"),
         graphDir: "Probe",
         hubPath: "Probe/Probe.md",
-        model: "claude-haiku-4-5",
+        model: "haiku",
         effort: "high",
         claudePath: claudePath!,
         todayIso: new Date().toISOString().slice(0, 10),

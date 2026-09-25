@@ -32,7 +32,7 @@ const CONFIG: SessionConfig = {
   vaultRoot: "C:/vaults/General",
   graphDir: "Noir game",
   hubPath: "Noir game/Noir game.md",
-  model: "claude-sonnet-5",
+  model: "sonnet",
   effort: "high",
   claudePath: "C:/fake/claude.exe",
   todayIso: "2026-08-11",
@@ -62,7 +62,7 @@ describe("AgentService options assembly", () => {
     expect(opts["settingSources"]).toEqual([]);
     expect(opts["permissionMode"]).toBe("default");
     expect(opts["allowDangerouslySkipPermissions"]).toBeUndefined();
-    expect(opts["model"]).toBe("claude-sonnet-5");
+    expect(opts["model"]).toBe("sonnet");
     expect(opts["includePartialMessages"]).toBe(true);
     const env = opts["env"] as Record<string, string | undefined>;
     expect(env["ANTHROPIC_API_KEY"]).toBeUndefined();
@@ -360,7 +360,7 @@ describe("effort", () => {
     // Haiku rejects the parameter, and a rejected option fails the whole session.
     const { queryFn, captured } = fakeQuery([INIT, RESULT]);
     const session = new AgentService({ queryFn }).start(
-      { ...CONFIG, model: "claude-haiku-4-5", effort: "max" },
+      { ...CONFIG, model: "haiku", effort: "max" },
       {},
     );
     session.sendUserMessage("hello");
@@ -394,7 +394,7 @@ describe("effort", () => {
     const { queryFn, captured } = fakeQuery([INIT, RESULT]);
     const session = new AgentService({ queryFn }).start({ ...CONFIG, effort: "max" }, {});
     session.sendUserMessage("hello");
-    await session.setModel("claude-haiku-4-5");
+    await session.setModel("haiku");
     await session.done();
     expect(flagCalls(captured)).toEqual([{ effortLevel: null }]);
   });
@@ -403,8 +403,8 @@ describe("effort", () => {
     const { queryFn, captured } = fakeQuery([INIT, RESULT]);
     const session = new AgentService({ queryFn }).start({ ...CONFIG, effort: "max" }, {});
     session.sendUserMessage("hello");
-    await session.setModel("claude-haiku-4-5");
-    await session.setModel("claude-opus-5");
+    await session.setModel("haiku");
+    await session.setModel("opus");
     await session.done();
     expect(flagCalls(captured)).toEqual([{ effortLevel: null }, { effortLevel: "max" }]);
   });

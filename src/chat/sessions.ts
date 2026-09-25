@@ -1,4 +1,4 @@
-import { asLevel, EffortLevel } from "../agent/effort";
+import { asFamily, asLevel, EffortLevel } from "../agent/effort";
 import { TranscriptItem } from "./transcript";
 
 /**
@@ -145,7 +145,7 @@ function restoreSession(raw: unknown, seed: SessionSeed, fallbackKey: string): C
   return {
     key: typeof row["key"] === "string" && row["key"] !== "" ? row["key"] : fallbackKey,
     graphDir: typeof row["graphDir"] === "string" ? row["graphDir"] : null,
-    model: typeof row["model"] === "string" ? row["model"] : seed.model,
+    model: typeof row["model"] === "string" ? asFamily(row["model"]) : seed.model,
     // A panel written before effort existed has none, and workspace.json is a
     // file anyone can edit, so the stored value is read rather than trusted.
     effort: asLevel(row["effort"], seed.effort),

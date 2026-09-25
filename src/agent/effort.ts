@@ -24,17 +24,27 @@ export const EFFORT_LABELS: Record<EffortLevel, string> = {
   max: "Max",
 };
 
-// Only the models the picker offers. Anything else is unknown rather than
-// assumed, because an effort the CLI rejects fails the whole session.
+// Keyed by family alias: the CLI resolves each alias to the family's newest
+// version. Anything else is unknown rather than assumed, because an effort the
+// CLI rejects fails the whole session.
 const HONOURED: Record<string, readonly EffortLevel[]> = {
-  "claude-fable-5-1": LEVELS,
-  "claude-opus-5": LEVELS,
-  "claude-sonnet-5": LEVELS,
+  fable: LEVELS,
+  opus: LEVELS,
+  sonnet: LEVELS,
 };
 
 /** Levels this model honours. Empty means it has no effort control at all. */
 export function levelsFor(model: string): EffortLevel[] {
   return [...(HONOURED[model] ?? [])];
+}
+
+/**
+ * A stored model read back as its family alias. Settings and workspaces saved
+ * before the pickers offered families hold pinned ids like `claude-opus-5`;
+ * those would otherwise stay on that version forever.
+ */
+export function asFamily(stored: string): string {
+  return /^claude-(fable|opus|sonnet|haiku)-/.exec(stored)?.[1] ?? stored;
 }
 
 /**

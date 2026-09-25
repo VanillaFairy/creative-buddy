@@ -15,7 +15,7 @@ import {
 import { DEFAULT_EFFORT } from "../src/agent/effort";
 import { TranscriptItem } from "../src/chat/transcript";
 
-const MODEL = "claude-sonnet-5";
+const MODEL = "sonnet";
 const SEED = { model: MODEL, effort: "high" } as const;
 
 function listOf(...graphDirs: Array<string | null>): SessionList {
@@ -178,13 +178,13 @@ describe("restoreSessions", () => {
   it("carries a pre-tab-strip panel's one conversation across, transcript intact", () => {
     const legacy = {
       graphDir: "Noir game",
-      model: "claude-opus-5",
+      model: "opus",
       sessionId: "abc123",
       items: [{ kind: "user", text: "hello" }] as TranscriptItem[],
     };
     const list = restoreSessions(legacy, SEED);
     expect(list.sessions).toHaveLength(1);
-    expect(list.sessions[0]).toMatchObject({ graphDir: "Noir game", model: "claude-opus-5", sessionId: "abc123" });
+    expect(list.sessions[0]).toMatchObject({ graphDir: "Noir game", model: "opus", sessionId: "abc123" });
     expect(list.sessions[0]!.items).toHaveLength(1);
   });
 
@@ -240,6 +240,11 @@ describe("restoreSessions", () => {
     expect(list.sessions[0]!.model).toBe(MODEL);
   });
 
+  it("moves a conversation saved on a pinned version onto that version's family", () => {
+    const list = restoreSessions({ sessions: [{ key: "t0", model: "claude-opus-5" }] }, SEED);
+    expect(list.sessions[0]!.model).toBe("opus");
+  });
+
   it("keeps the effort a conversation was left on", () => {
     const list = restoreSessions({ sessions: [{ key: "t0", effort: "max" }] }, SEED);
     expect(list.sessions[0]!.effort).toBe("max");
@@ -259,7 +264,7 @@ describe("restoreSessions", () => {
   it("keeps an effort the session's own model cannot use", () => {
     // The preference outlives the model: move this tab back off Haiku and the
     // level you picked is still there.
-    const list = restoreSessions({ sessions: [{ key: "t0", model: "claude-haiku-4-5", effort: "max" }] }, SEED);
+    const list = restoreSessions({ sessions: [{ key: "t0", model: "haiku", effort: "max" }] }, SEED);
     expect(list.sessions[0]!.effort).toBe("max");
   });
 });
