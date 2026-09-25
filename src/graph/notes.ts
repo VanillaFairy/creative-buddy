@@ -15,7 +15,7 @@ export interface Note {
   links: string[];
 }
 
-const WIKILINK = /\[\[([^\[\]]+)\]\]/g;
+const WIKILINK = /\[\[([^[\]]+)\]\]/g;
 
 export function extractLinks(text: string): string[] {
   const out: string[] = [];

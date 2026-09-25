@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Keymap, MarkdownRenderer, Notice, parseLinktext } from "obsidian";
+import { ItemView, WorkspaceLeaf, Keymap, MarkdownRenderer, Notice, parseLinktext, ViewStateResult } from "obsidian";
 import * as React from "react";
 import { createRoot, Root } from "react-dom/client";
 import type CreativeBuddyPlugin from "../main";
@@ -112,7 +112,7 @@ export class ChatView extends ItemView {
     };
   }
 
-  async setState(state: unknown, result: unknown): Promise<void> {
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
     this.presetsShown = restorePresetsOpen(state);
     const restored = restoreSessions(state, seedFrom(this.plugin.settings));
     // Drop anything live whose conversation this state does not contain, or
@@ -129,7 +129,7 @@ export class ChatView extends ItemView {
       this.runtime(session.key).approvalSeq = highestApprovalSeq(session.items);
     }
     this.render();
-    await super.setState(state as never, result as never);
+    await super.setState(state, result);
   }
 
   async onOpen(): Promise<void> {

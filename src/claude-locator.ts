@@ -1,5 +1,5 @@
 export interface LocatorEnv {
-  platform: NodeJS.Platform | string;
+  platform: string;
   env: Record<string, string | undefined>;
 }
 

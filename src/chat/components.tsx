@@ -18,19 +18,19 @@ import {
 
 export interface ChatCallbacks {
   /** What you typed, or a preset carrying the name it should be shown under. */
-  onSend(message: Outgoing): void;
-  onModelChange(model: string): void;
-  onEffortChange(effort: EffortLevel): void;
-  onApprove(id: string, allow: boolean, message?: string): void;
+  onSend: (message: Outgoing) => void;
+  onModelChange: (model: string) => void;
+  onEffortChange: (effort: EffortLevel) => void;
+  onApprove: (id: string, allow: boolean, message?: string) => void;
   /** Stop the turn in flight. What is queued behind it still goes out. */
-  onInterrupt(): void;
+  onInterrupt: () => void;
   /** Take one waiting message back, or put a canceled one back in line. */
-  onQueuedCanceled(index: number, canceled: boolean): void;
+  onQueuedCanceled: (index: number, canceled: boolean) => void;
   /** Throw one away for good. Only ever offered on a message that never went out. */
-  onQueuedDeleted(index: number): void;
+  onQueuedDeleted: (index: number) => void;
   /** Show or hide the preset row. The panel remembers the answer. */
-  onPresetsToggle(open: boolean): void;
-  renderMarkdown(el: HTMLElement, markdown: string): void;
+  onPresetsToggle: (open: boolean) => void;
+  renderMarkdown: (el: HTMLElement, markdown: string) => void;
 }
 
 export interface ChatTab {
@@ -48,9 +48,9 @@ export interface ChatTab {
 export function ChatPanel(props: {
   tabs: ChatTab[];
   active: number;
-  onSelectTab(index: number): void;
-  onCloseTab(index: number): void;
-  onNewTab(): void;
+  onSelectTab: (index: number) => void;
+  onCloseTab: (index: number) => void;
+  onNewTab: () => void;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (

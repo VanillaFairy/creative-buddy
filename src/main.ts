@@ -307,7 +307,7 @@ export default class CreativeBuddyPlugin extends Plugin {
 
   resolveClaudePath(): string | null {
     if (this.settings.claudePath !== "") return existsSync(this.settings.claudePath) ? this.settings.claudePath : null;
-    return findClaudeExecutable({ platform: process.platform, env: process.env as Record<string, string | undefined> }, existsSync);
+    return findClaudeExecutable({ platform: process.platform, env: process.env }, existsSync);
   }
 
   vaultRootPath(): string {
@@ -320,7 +320,8 @@ export default class CreativeBuddyPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = { ...DEFAULT_SETTINGS, ...((await this.loadData()) ?? {}) };
+    const saved = (await this.loadData()) as Partial<CreativeBuddySettings> | null;
+    this.settings = { ...DEFAULT_SETTINGS, ...saved };
     this.settings.defaultModel = asFamily(this.settings.defaultModel);
   }
 

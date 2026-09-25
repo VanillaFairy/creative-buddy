@@ -81,7 +81,7 @@ export interface ToolLineContext {
  * what the "Updating knowledge base" panel is a list of.
  */
 export function formatToolLine(name: string, input: Record<string, unknown>, ctx: ToolLineContext): string {
-  const path = typeof input["file_path"] === "string" ? baseName((input["file_path"] as string).replace(/\\/g, "/")) : null;
+  const path = typeof input["file_path"] === "string" ? baseName(input["file_path"].replace(/\\/g, "/")) : null;
   return (ctx.subagent ? "scout · " : "") + toolBody(name, input, path, ctx.existed);
 }
 

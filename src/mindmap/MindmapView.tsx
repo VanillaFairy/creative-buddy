@@ -1,9 +1,10 @@
-import { ItemView, WorkspaceLeaf, TFile, setIcon, Menu } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, setIcon, Menu, ViewStateResult } from "obsidian";
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
 import type { Selection } from "d3-selection";
 import { zoom, zoomIdentity, ZoomTransform } from "d3-zoom";
+import type { D3ZoomEvent } from "d3-zoom";
 import type CreativeBuddyPlugin from "../main";
 import { buildMindmapData, MindmapNode, MindmapData } from "./layout";
 import { Box, Bounds, Measure, DOT_RADIUS, childRegionPath, edgeOpacity, fitTransform, inspectorLine, nodeBox } from "./geometry";
@@ -67,7 +68,7 @@ export class MindmapView extends ItemView {
     return { graphDir: this.graphDir, collapse: this.collapse.toJSON(), heatmap: this.heatmap, radial: this.radial, density: this.density };
   }
 
-  async setState(state: unknown, result: unknown): Promise<void> {
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
     const s = (state ?? {}) as {
       graphDir?: string | null;
       collapse?: Record<string, string[]>;
@@ -81,7 +82,7 @@ export class MindmapView extends ItemView {
     this.density = DENSITY.some((d) => d.id === s.density) ? s.density! : "mid";
     this.collapse = CollapseStore.fromJSON(s.collapse);
     this.redraw();
-    await super.setState(state as never, result as never);
+    await super.setState(state, result);
   }
 
   async onOpen(): Promise<void> {
@@ -344,7 +345,7 @@ export class MindmapView extends ItemView {
     const family = style.getPropertyValue("--font-interface").trim() || style.fontFamily;
     const small = style.getPropertyValue("--font-ui-small").trim() || "13px";
     const medium = style.getPropertyValue("--font-ui-medium").trim() || "15px";
-    const context = document.createElement("canvas").getContext("2d");
+    const context = createEl("canvas").getContext("2d");
     if (context === null) {
       // No canvas in this environment — fall back to an average advance, which
       // is what the map used to do for every label.
@@ -397,8 +398,8 @@ export class MindmapView extends ItemView {
       ? this.paintRadial(canvas, data, hubPath, measure, setActive, crossByPath, highlightLit)
       : this.paintCartesian(canvas, data, hubPath, measure, setActive, crossByPath, highlightLit);
 
-    const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 2.5]).on("zoom", (event) => {
-      this.lastTransform = event.transform as ZoomTransform;
+    const zoomBehavior = zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 2.5]).on("zoom", (event: D3ZoomEvent<SVGSVGElement, unknown>) => {
+      this.lastTransform = event.transform;
       canvas.attr("transform", String(event.transform));
     });
     svg.call(zoomBehavior);
@@ -409,9 +410,9 @@ export class MindmapView extends ItemView {
     const applyFit = (): void => {
       if (!host.isConnected) return;
       const fit = fitTransform(bounds, { width: host.clientWidth, height: host.clientHeight });
-      svg.call(zoomBehavior.transform, zoomIdentity.translate(fit.x, fit.y).scale(fit.k));
+      zoomBehavior.transform(svg, zoomIdentity.translate(fit.x, fit.y).scale(fit.k));
     };
-    if (this.lastTransform !== null) svg.call(zoomBehavior.transform, this.lastTransform);
+    if (this.lastTransform !== null) zoomBehavior.transform(svg, this.lastTransform);
     else window.requestAnimationFrame(applyFit);
   }
 

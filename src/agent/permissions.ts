@@ -114,7 +114,7 @@ function filenameProblem(relPath: string, graphDir: string): string | null {
       );
     }
     // The same "Windows silently mangles it" rule, beyond punctuation.
-    if (/[\u0000-\u001f]/.test(title)) {
+    if ([...title].some((c) => c.charCodeAt(0) < 0x20)) {
       return `The title "${title}" contains control characters Windows cannot store in a filename. Pick a plain title.`;
     }
     if (title !== title.replace(/[. ]+$/, "")) {

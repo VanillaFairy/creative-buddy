@@ -1,3 +1,5 @@
+import { statSync } from "node:fs";
+import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
 import { GraphStats } from "../graph/hierarchy";
 import { buildSystemPrompt, buildSessionPreamble } from "./prompts";
 import { decideToolUse, targetPathOf, zeroByteWriteMessage, PermissionContext } from "./permissions";
@@ -151,7 +153,7 @@ export class AgentService {
 
     const postWrite = async (hookInput: Record<string, unknown>): Promise<Record<string, unknown>> => {
       const input = hookInput["tool_input"] as Record<string, unknown> | undefined;
-      const filePath = typeof input?.["file_path"] === "string" ? (input["file_path"] as string) : null;
+      const filePath = typeof input?.["file_path"] === "string" ? input["file_path"] : null;
       if (filePath === null) return {};
       const size = this.fileSize(filePath);
       if (size === 0) {
@@ -364,15 +366,12 @@ function routeMessage(message: SdkMessage, events: SessionEvents, setSessionId: 
 }
 
 function defaultQueryFn(): QueryFn {
-  // Isolated so the SDK import (and its import.meta bundling patch) stays in one place.
-  const sdk = require("@anthropic-ai/claude-agent-sdk") as { query: (p: unknown) => unknown };
-  return (({ prompt, options }) => sdk.query({ prompt, options })) as QueryFn;
+  return ({ prompt, options }) => query({ prompt, options: options as Options }) as SdkQueryHandle;
 }
 
 function defaultFileSize(absPath: string): number | null {
-  const fs = require("node:fs") as typeof import("node:fs");
   try {
-    return fs.statSync(absPath).size;
+    return statSync(absPath).size;
   } catch {
     return null;
   }
