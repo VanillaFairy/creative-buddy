@@ -49,6 +49,33 @@ time. That's what keeps the interview flowing, but it also means a bad session
 changes your notes directly, and Obsidian has no undo for that. Keep the vault
 under git or a backup, or try your first sessions on a copy of the vault.
 
+## What it does on your computer
+
+The plugin is a front end for Claude Code, so it does a few things a plugin
+that stays inside Obsidian wouldn't. Obsidian's plugin review flags each of
+them; here's what they're for.
+
+- It runs a program. Every conversation starts the Claude Code executable
+  (`claude`, or `claude.exe` on Windows) as a child process, through
+  Anthropic's Agent SDK. The Test button in settings also runs it once with
+  `--version`. Nothing else is launched.
+- It reads files outside the vault. To find Claude Code it checks whether the
+  executable exists in the folders on your `PATH`, in its usual install
+  folders under your home directory, or at the path you set in settings. It
+  checks the size of each file the interviewer writes, to catch one that came
+  out empty. The plugin writes nothing outside the vault; Claude Code keeps
+  its own session files where it always does.
+- It reads environment variables. `PATH`, `HOME`, `USERPROFILE` and
+  `LOCALAPPDATA` are how it finds Claude Code. It hands your environment on to
+  Claude Code so it runs the way it does in your terminal, minus the variables
+  (`ANTHROPIC_MODEL`, `CLAUDE_CODE_USE_BEDROCK` and the like) that would
+  quietly switch a subscription session to another account, model or server. The bundled SDK also looks up your
+  username on macOS, to find Claude Code's login in the keychain. The plugin
+  itself doesn't read your hostname or network details, and sends nothing
+  anywhere except what Claude Code sends to Anthropic.
+- It reads the whole vault. The mindmap is drawn from every note, so on start
+  the plugin reads each Markdown file once and then follows changes.
+
 ## Requirements
 
 - Obsidian desktop 1.13 or newer, on Windows, macOS or Linux, with the vault on
