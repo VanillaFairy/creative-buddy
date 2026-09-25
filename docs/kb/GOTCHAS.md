@@ -27,7 +27,7 @@ rather than expecting a diff.
 `tests/expected/*.json` are written by Python with `newline="\n"` and stored LF in git via attributes. If a regeneration shows a full-file diff, suspect line endings before suspecting the port.
 
 ## Obsidian's button styles outrank single-class selectors
-Obsidian's app.css styles `button:not(.clickable-icon)`, which is specificity (0,1,1) — a lone `.my-button {}` reset is (0,1,0) and silently loses, so the element keeps Obsidian's background, radius, padding and shadow. The CSS reads correctly in the file and does nothing in the app. Scope any button reset to a parent (`.cb-activity > .cb-activity-head`) and cover `:hover`/`:active` too, since those carry the same qualifier. `c:/tmp/cb-panel-harness.html` reproduces the rule for testing CSS outside Obsidian.
+Obsidian's app.css styles `button:not(.clickable-icon)`, which is specificity (0,1,1) — a lone `.my-button {}` reset is (0,1,0) and silently loses, so the element keeps Obsidian's background, radius, padding and shadow. The CSS reads correctly in the file and does nothing in the app. Scope any button reset to a parent (`.cb-activity > .cb-activity-head`) and cover `:hover`/`:active` too, since those carry the same qualifier. `<scratch>/cb-panel-harness.html` reproduces the rule for testing CSS outside Obsidian.
 
 ## Seeing the CSS without launching Obsidian
 Two separate things refuse `file:`, so a harness opened straight off disk never
@@ -40,10 +40,10 @@ Inlining the stylesheet beats copying it, because a copy goes stale the moment
 you edit and the harness gives no sign that it has:
 ```bash
 node -e "const f=require('fs'),c=f.readFileSync('styles.css','utf8');
-  f.writeFileSync('c:/tmp/cb-standalone.html',
-    f.readFileSync('c:/tmp/cb-chat-harness.html','utf8')
+  f.writeFileSync('<scratch>/cb-standalone.html',
+    f.readFileSync('<scratch>/cb-chat-harness.html','utf8')
      .replace(/<link rel=\"stylesheet\"[^>]*>/, '<style>'+c+'</style>'))"
-python -m http.server 8732 --bind 127.0.0.1 -d /c/tmp   # -d beats cd'ing
+python -m http.server 8732 --bind 127.0.0.1 -d <scratch>   # -d beats cd'ing
 ```
 Then drive it with the Playwright MCP over `http://127.0.0.1:8732/…`. Note
 Playwright writes its screenshots and a `.playwright-mcp/` directory into the
@@ -57,7 +57,7 @@ a colour), the `--radius-*` and `--size-*` scales, and `--font-text` vs
 `--font-interface` set to visibly different families, or the two voices look
 identical when they are not.
 
-`c:/tmp/cb-design-harness.html` covers the chat and map surfaces;
+`<scratch>/cb-design-harness.html` covers the chat and map surfaces;
 `cb-states-harness.html` covers the empty, picker and no-hub states;
 `cb-composer-harness.html` covers the composer, the send/stop swap and the
 queued-message bubble in both themes; `cb-chat-harness.html` covers the
@@ -101,7 +101,7 @@ API failure all render the same. Two files settle it without reproducing
 anything:
 
 ```bash
-ls -lt ~/.claude/projects/G--My-Drive-Obsidian-General/     # newest first
+ls -lt ~/.claude/projects/<vault-path-slug>/     # newest first
 ```
 `~/.claude/projects/<cwd-slug>/<session-id>.jsonl` is the CLI's own record of
 the session the plugin drove. The slug is the **vault path**, because
@@ -131,7 +131,7 @@ was told, which is usually the whole answer.
 be bundled standalone and driven by Playwright — which is the only way to tell a
 CSS problem from a React one:
 ```bash
-npx esbuild probe.tsx --bundle --outfile=c:/tmp/cb-probe.js \
+npx esbuild probe.tsx --bundle --outfile=<scratch>/cb-probe.js \
   --define:process.env.NODE_ENV='"development"' --format=iife --platform=browser
 ```
 If a new import ever drags `obsidian` or a `node:` module in, alias it to a
@@ -209,7 +209,7 @@ node -e 'const f=require("fs"),
   a=f.readFileSync(process.env.LOCALAPPDATA+"/Programs/Obsidian/resources/obsidian.asar"),
   e=JSON.parse(a.subarray(16,16+a.readUInt32LE(12)).toString()).files["app.js"],
   s=8+a.readUInt32LE(4)+Number(e.offset);
-  f.writeFileSync("c:/tmp/obsidian-app.js",a.subarray(s,s+e.size))'
+  f.writeFileSync("<scratch>/obsidian-app.js",a.subarray(s,s+e.size))'
 ```
 `obsidian.d.ts` is types only — it cannot answer "does Obsidian handle this for me?". The asar is a plain header-plus-blobs format, so app.js falls out in a few lines and settles those questions in minutes. It is minified onto a handful of enormous lines, so `grep` is useless: search it with `indexOf` in a loop and print a character window around each hit. Faster and far more reliable than reasoning from memory about core behaviour.
 
@@ -262,7 +262,7 @@ gitignored — so `npx vitest run` in a fresh worktree fails before it starts.
 `npm ci` per worktree costs minutes each; a directory junction is instant and
 the suite does not notice:
 ```powershell
-New-Item -ItemType Junction -Path C:\tmp\cb-T01\node_modules -Target C:\work\creative-buddy\node_modules
+New-Item -ItemType Junction -Path <worktree>\node_modules -Target <repo>\node_modules
 ```
 Five parallel agents sharing one `node_modules` this way ran the full suite,
 `tsc --noEmit` and `npm run build` concurrently with no cache contention.

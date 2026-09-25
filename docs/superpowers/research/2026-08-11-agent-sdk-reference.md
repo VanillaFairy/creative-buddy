@@ -117,7 +117,7 @@ https, module, net, os, path, process, readline, stream, string_decoder, url, ut
 292 MB cannot ship inside an Obsidian plugin. Therefore: install with `--omit=optional`, and
 always pass `pathToClaudeCodeExecutable` pointing at the **user's installed Claude Code binary**.
 On this machine the installed CLI is the same artifact the SDK would have used —
-`C:\Users\dragm\.local\bin\claude.exe`, 292227232 bytes (identical), `claude --version` 2.1.227,
+`~/.local/bin/claude.exe`, 292227232 bytes (identical), `claude --version` 2.1.227,
 matching the package's `claudeCodeVersion`. `manifest.json.sdkCompat.testedWrapperVersions`
 records tested pairings, so a CLI a few patches off is expected to work; large drift is not.
 
