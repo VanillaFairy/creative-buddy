@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { asFamily, asLevel, coerce, DEFAULT_EFFORT, EFFORT_LABELS, EffortLevel, LEVELS, levelsFor } from "../src/agent/effort";
+import { asLevel, coerce, DEFAULT_EFFORT, EFFORT_LABELS, EffortLevel, LEVELS, levelsFor } from "../src/agent/effort";
 
 describe("levelsFor", () => {
   it("gives every level to the families that honour every level", () => {
@@ -21,25 +21,6 @@ describe("levelsFor", () => {
 
   it("orders levels cheapest first, so the picker reads as a dial", () => {
     expect(levelsFor("opus")).toEqual(LEVELS);
-  });
-});
-
-describe("asFamily", () => {
-  it("reads a pinned version back as its family", () => {
-    expect(asFamily("claude-fable-5-1")).toBe("fable");
-    expect(asFamily("claude-opus-5")).toBe("opus");
-    expect(asFamily("claude-sonnet-5")).toBe("sonnet");
-    expect(asFamily("claude-haiku-4-5")).toBe("haiku");
-  });
-
-  it("passes a family through", () => {
-    expect(asFamily("opus")).toBe("opus");
-  });
-
-  it("leaves a model outside the offered families alone", () => {
-    // Nothing to collapse it into; levelsFor already fails it closed.
-    expect(asFamily("claude-mythos-5-1")).toBe("claude-mythos-5-1");
-    expect(asFamily("")).toBe("");
   });
 });
 

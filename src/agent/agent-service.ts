@@ -3,6 +3,7 @@ import { buildSystemPrompt, buildSessionPreamble } from "./prompts";
 import { decideToolUse, targetPathOf, zeroByteWriteMessage, PermissionContext } from "./permissions";
 import { coerce, EffortLevel } from "./effort";
 import { KG_SCOUT } from "./kg-scout";
+import { ListedModel } from "./models";
 import { MessageChannel, QueryFn, SdkMessage, SdkQueryHandle } from "./sdk-types";
 
 export interface SessionConfig {
@@ -164,14 +165,6 @@ export class AgentService {
       return {};
     };
 
-    // The subscription path must not be silently re-routed by ambient config. An explicit
-    // API-key override may legitimately pair with a custom base URL, so that one survives.
-    const env: Record<string, string | undefined> = { ...process.env };
-    const hasKeyOverride = config.apiKeyOverride !== undefined && config.apiKeyOverride !== "";
-    for (const name of ENV_DENY) delete env[name];
-    if (!hasKeyOverride) delete env["ANTHROPIC_BASE_URL"];
-    if (hasKeyOverride) env["ANTHROPIC_API_KEY"] = config.apiKeyOverride;
-
     const systemPrompt =
       buildSystemPrompt() +
       "\n\n---\n\n" +
@@ -183,13 +176,7 @@ export class AgentService {
 
     const options: Record<string, unknown> = {
       cwd: config.vaultRoot,
-      pathToClaudeCodeExecutable: config.claudePath,
-      env,
-      settingSources: [],
-      // settingSources: [] isolates settings files, but MCP servers from user
-      // config are gated separately — without this the user's claude.ai
-      // connectors leak into the session's tool surface.
-      strictMcpConfig: true,
+      ...isolatedOptions(config.claudePath, config.apiKeyOverride),
       systemPrompt,
       model: config.model,
       tools: CONTRACT_TOOLS,
@@ -273,6 +260,41 @@ export class AgentService {
       },
     };
   }
+
+  /**
+   * What the CLI offers and what each alias resolves to right now. Spawns
+   * claude.exe without sending it anything, so it costs a process, not a turn.
+   */
+  async listModels(claudePath: string, apiKeyOverride?: string): Promise<ListedModel[]> {
+    const channel = new MessageChannel();
+    const handle = this.queryFn({ prompt: channel, options: isolatedOptions(claudePath, apiKeyOverride) });
+    try {
+      return await handle.supportedModels();
+    } finally {
+      channel.end();
+      handle.close();
+    }
+  }
+}
+
+/** Options every claude.exe this plugin spawns shares: which binary, and what it may not inherit. */
+function isolatedOptions(claudePath: string, apiKeyOverride: string | undefined): Record<string, unknown> {
+  // The subscription path must not be silently re-routed by ambient config. An explicit
+  // API-key override may legitimately pair with a custom base URL, so that one survives.
+  const env: Record<string, string | undefined> = { ...process.env };
+  const hasKeyOverride = apiKeyOverride !== undefined && apiKeyOverride !== "";
+  for (const name of ENV_DENY) delete env[name];
+  if (!hasKeyOverride) delete env["ANTHROPIC_BASE_URL"];
+  if (hasKeyOverride) env["ANTHROPIC_API_KEY"] = apiKeyOverride;
+  return {
+    pathToClaudeCodeExecutable: claudePath,
+    env,
+    settingSources: [],
+    // settingSources: [] isolates settings files, but MCP servers from user
+    // config are gated separately — without this the user's claude.ai
+    // connectors leak into the session's tool surface.
+    strictMcpConfig: true,
+  };
 }
 
 function routeMessage(message: SdkMessage, events: SessionEvents, setSessionId: (id: string) => void): void {

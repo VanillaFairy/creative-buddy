@@ -5,7 +5,6 @@ import { Outgoing, Queued, hasWaiting } from "./queue";
 import { draggedHeight, heightBounds, pxLength } from "./composer-size";
 import { visiblePresets } from "./presets";
 import { anchoredScrollTop, bottomGap } from "./scroll-anchor";
-import { MODEL_CHOICES } from "../settings";
 import { coerce, EFFORT_LABELS, EffortLevel, levelsFor } from "../agent/effort";
 import {
   FolderOffer,
@@ -94,6 +93,8 @@ export function ChatPanel(props: {
 
 export function ChatSurface(props: {
   model: string;
+  /** Picker options: family alias → label naming the version it runs. */
+  modelLabels: Record<string, string>;
   /** The conversation's preference; the header shows what the model will honour. */
   effort: EffortLevel;
   busy: boolean;
@@ -215,7 +216,7 @@ export function ChatSurface(props: {
             </button>
           ) : null}
           <select className="cb-quiet-control" value={props.model} onChange={(e) => callbacks.onModelChange(e.target.value)}>
-            {Object.entries(MODEL_CHOICES).map(([id, label]) => (
+            {Object.entries(props.modelLabels).map(([id, label]) => (
               <option key={id} value={id}>{label}</option>
             ))}
           </select>

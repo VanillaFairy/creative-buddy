@@ -1,7 +1,8 @@
 import { Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 import { GraphModel } from "./graph/graph-model";
 import { CreativeBuddySettings, DEFAULT_SETTINGS, CreativeBuddySettingTab } from "./settings";
-import { asFamily } from "./agent/effort";
+import { asFamily, FAMILY_NAMES, modelLabels } from "./agent/models";
+import { AgentService } from "./agent/agent-service";
 import { findClaudeExecutable } from "./claude-locator";
 import { ChatView, CHAT_VIEW_TYPE } from "./chat/ChatView";
 import { MindmapView, MINDMAP_VIEW_TYPE } from "./mindmap/MindmapView";
@@ -14,6 +15,15 @@ export default class CreativeBuddyPlugin extends Plugin {
   settings: CreativeBuddySettings = DEFAULT_SETTINGS;
   model: GraphModel | null = null;
   private modelReadyCallbacks: Array<() => void> = [];
+  /** Bare family names until the CLI has said which version each one runs. */
+  modelLabels: Record<string, string> = { ...FAMILY_NAMES };
+  private modelLabelListeners = new Set<() => void>();
+
+  /** Runs cb whenever modelLabels changes. Returns a disposer for Component.register. */
+  onModelLabels(cb: () => void): () => void {
+    this.modelLabelListeners.add(cb);
+    return () => void this.modelLabelListeners.delete(cb);
+  }
 
   /**
    * Runs cb once the vault index exists — immediately if it already does.
@@ -86,7 +96,21 @@ export default class CreativeBuddyPlugin extends Plugin {
 
     this.app.workspace.onLayoutReady(() => {
       void this.buildModel();
+      void this.loadModelLabels();
     });
+  }
+
+  /** Asks the CLI which version each family runs. On any failure the pickers keep the bare names. */
+  private async loadModelLabels(): Promise<void> {
+    const claudePath = this.resolveClaudePath();
+    if (claudePath === null) return;
+    try {
+      const rows = await new AgentService().listModels(claudePath, this.settings.apiKeyOverride);
+      this.modelLabels = modelLabels(rows);
+    } catch {
+      return;
+    }
+    for (const cb of this.modelLabelListeners) cb();
   }
 
   onunload(): void {

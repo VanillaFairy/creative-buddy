@@ -3,6 +3,7 @@
  *  them local lets tests script the boundary without the SDK's 37-member unions. */
 
 import { EffortLevel } from "./effort";
+import { ListedModel } from "./models";
 
 export interface SdkUserMessage {
   type: "user";
@@ -18,6 +19,7 @@ export interface SdkQueryHandle extends AsyncIterable<SdkMessage> {
   setModel(model?: string): Promise<void>;
   /** null clears the level, which is what a model without effort wants. */
   applyFlagSettings(settings: { effortLevel: EffortLevel | null }): Promise<void>;
+  supportedModels(): Promise<ListedModel[]>;
   close(): void;
 }
 

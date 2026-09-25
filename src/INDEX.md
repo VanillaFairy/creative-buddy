@@ -31,15 +31,18 @@ late model.
 ## INVARIANTS & GOTCHAS
 
 - The list of models exists twice and nothing ties the two together:
-  `MODEL_CHOICES` in `settings.ts` decides what the pickers offer,
+  `FAMILY_NAMES` in `agent/models.ts` decides what the pickers offer,
   `HONOURED` in `agent/effort.ts` decides which of those get an effort control.
-  `haiku` is deliberately in the first and not the second. Both are keyed by
-  family alias (`opus`, not `claude-opus-5`), so the CLI always runs the
-  family's newest version; `asFamily` in the same file collapses a pinned id
-  read back from disk onto its family, and its pattern is a third place the
-  family names appear. A model
-  added only to `MODEL_CHOICES` silently loses its effort row; one added only to
-  `HONOURED` is unreachable.
+  `haiku` is deliberately in the first and not the second. A model added only
+  to `FAMILY_NAMES` silently loses its effort row; one added only to `HONOURED`
+  is unreachable. The two regexes in `models.ts` spell the family names a
+  third and fourth time.
+- Both are keyed by family alias (`opus`, not `claude-opus-5`), and the CLI
+  runs the family's newest version it knows — which moves when Claude Code
+  updates, not when this plugin does. `modelLabels` is the only source of
+  version numbers: `loadModelLabels` asks claude.exe once, at layout-ready.
+  Until that answers, and if it fails, the pickers show bare family names; an
+  update to Claude Code while Obsidian is open is not seen until reload.
 
 ## DEPENDENCIES
 

@@ -39,15 +39,6 @@ export function levelsFor(model: string): EffortLevel[] {
 }
 
 /**
- * A stored model read back as its family alias. Settings and workspaces saved
- * before the pickers offered families hold pinned ids like `claude-opus-5`;
- * those would otherwise stay on that version forever.
- */
-export function asFamily(stored: string): string {
-  return /^claude-(fable|opus|sonnet|haiku)-/.exec(stored)?.[1] ?? stored;
-}
-
-/**
  * A stored preference read back as a level. Says nothing about any model — a
  * conversation keeps the level you chose even while it sits on a model that
  * cannot use it, so switching back gives you what you had.

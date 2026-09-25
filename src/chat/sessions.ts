@@ -1,4 +1,5 @@
-import { asFamily, asLevel, EffortLevel } from "../agent/effort";
+import { asLevel, EffortLevel } from "../agent/effort";
+import { asFamily } from "../agent/models";
 import { TranscriptItem } from "./transcript";
 
 /**

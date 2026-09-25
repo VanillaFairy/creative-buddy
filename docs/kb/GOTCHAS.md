@@ -132,13 +132,11 @@ be bundled standalone and driven by Playwright — which is the only way to tell
 CSS problem from a React one:
 ```bash
 npx esbuild probe.tsx --bundle --outfile=c:/tmp/cb-probe.js \
-  --alias:obsidian=./stub.js --alias:node:child_process=./cp-stub.js \
   --define:process.env.NODE_ENV='"development"' --format=iife --platform=browser
 ```
-Both stubs are needed because `components.tsx` reaches `settings.ts` for
-`MODEL_CHOICES`, and that file imports `obsidian` and `node:child_process`.
-`--external:` is the wrong tool — it leaves a runtime `require` that throws in
-the browser; alias to a stub instead. Have the probe's wrapper re-render with
+If a new import ever drags `obsidian` or a `node:` module in, alias it to a
+stub (`--alias:obsidian=./stub.js`). `--external:` is the wrong tool — it
+leaves a runtime `require` that throws in the browser. Have the probe's wrapper re-render with
 fresh props on a timer, the way `ChatView.render()` does, or the test proves
 nothing about the case that actually matters. Obsidian's own bare-element rules
 have to be copied into the probe page (see the harness note above).

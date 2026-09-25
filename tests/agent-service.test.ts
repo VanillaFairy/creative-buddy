@@ -20,6 +20,7 @@ function fakeQuery(script: SdkMessage[]) {
       interrupt: vi.fn(async () => undefined),
       setModel: vi.fn(async () => undefined),
       applyFlagSettings: vi.fn(async () => undefined),
+      supportedModels: vi.fn(async () => []),
       close: vi.fn(),
     };
     captured.handle = handle;
@@ -407,5 +408,53 @@ describe("effort", () => {
     await session.setModel("opus");
     await session.done();
     expect(flagCalls(captured)).toEqual([{ effortLevel: null }, { effortLevel: "max" }]);
+  });
+});
+
+describe("listModels", () => {
+  function listingQuery(rows: Array<{ value: string; resolvedModel?: string }>) {
+    const captured: { options?: Record<string, unknown>; sent: SdkUserMessage[]; closed: boolean } = { sent: [], closed: false };
+    const queryFn: QueryFn = ({ prompt, options }) => {
+      captured.options = options;
+      void (async () => {
+        for await (const m of prompt) captured.sent.push(m);
+      })();
+      return {
+        async *[Symbol.asyncIterator]() {},
+        interrupt: vi.fn(async () => undefined),
+        setModel: vi.fn(async () => undefined),
+        applyFlagSettings: vi.fn(async () => undefined),
+        supportedModels: vi.fn(async () => rows),
+        close: () => void (captured.closed = true),
+      };
+    };
+    return { queryFn, captured };
+  }
+
+  it("returns what the CLI lists, then closes the CLI", async () => {
+    const rows = [{ value: "sonnet", resolvedModel: "claude-sonnet-5" }];
+    const { queryFn, captured } = listingQuery(rows);
+    expect(await new AgentService({ queryFn }).listModels("C:/fake/claude.exe")).toEqual(rows);
+    expect(captured.closed).toBe(true);
+  });
+
+  it("sends no message, so listing never spends a turn", async () => {
+    const { queryFn, captured } = listingQuery([]);
+    await new AgentService({ queryFn }).listModels("C:/fake/claude.exe");
+    expect(captured.sent).toEqual([]);
+  });
+
+  it("asks under the same isolation as a session", async () => {
+    // The ambient model overrides would otherwise decide what each alias
+    // resolves to, and the labels would name a model the session never runs.
+    const { queryFn, captured } = listingQuery([]);
+    process.env["ANTHROPIC_DEFAULT_OPUS_MODEL"] = "claude-opus-4-8";
+    await new AgentService({ queryFn }).listModels("C:/fake/claude.exe");
+    delete process.env["ANTHROPIC_DEFAULT_OPUS_MODEL"];
+    const opts = captured.options!;
+    expect(opts["pathToClaudeCodeExecutable"]).toBe("C:/fake/claude.exe");
+    expect((opts["env"] as Record<string, string | undefined>)["ANTHROPIC_DEFAULT_OPUS_MODEL"]).toBeUndefined();
+    expect(opts["settingSources"]).toEqual([]);
+    expect(opts["strictMcpConfig"]).toBe(true);
   });
 });

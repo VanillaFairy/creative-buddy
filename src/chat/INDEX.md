@@ -44,5 +44,5 @@ conversation is closed **or rebound to another graph** — see `src/agent`.
 
 `src/agent` for `EffortLevel` and the session handle. `src/graph` for
 `baseName`. `src/open-questions` for the count `visiblePresets` gates on.
-`src/settings` for `MODEL_CHOICES` — that import reaches Obsidian's runtime,
-which is why the test config aliases `obsidian` to a stub.
+The model picker's labels arrive as a prop (`plugin.modelLabels`), so
+`components.tsx` imports nothing that reaches Obsidian's runtime.

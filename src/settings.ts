@@ -5,7 +5,7 @@ import type CreativeBuddyPlugin from "./main";
 
 export interface CreativeBuddySettings {
   claudePath: string;        // "" = auto-detect
-  defaultModel: string;      // a key of MODEL_CHOICES
+  defaultModel: string;      // a key of FAMILY_NAMES
   defaultEffort: EffortLevel; // seeds new conversations; ignored by models without effort
   apiKeyOverride: string;    // "" = subscription (the path)
   openInMainTab: boolean;    // false = the right sidebar
@@ -17,14 +17,6 @@ export const DEFAULT_SETTINGS: CreativeBuddySettings = {
   defaultEffort: DEFAULT_EFFORT,
   apiKeyOverride: "",
   openInMainTab: false,
-};
-
-/** Family aliases, not versions: the CLI runs each family's newest model. */
-export const MODEL_CHOICES: Record<string, string> = {
-  fable: "Fable",
-  opus: "Opus",
-  sonnet: "Sonnet",
-  haiku: "Haiku",
 };
 
 export class CreativeBuddySettingTab extends PluginSettingTab {
@@ -63,7 +55,7 @@ export class CreativeBuddySettingTab extends PluginSettingTab {
       .setName("Default model")
       .setDesc("Each conversation has its own picker; this seeds new ones.")
       .addDropdown((dd) => {
-        for (const [id, label] of Object.entries(MODEL_CHOICES)) dd.addOption(id, label);
+        for (const [id, label] of Object.entries(this.plugin.modelLabels)) dd.addOption(id, label);
         dd.setValue(this.plugin.settings.defaultModel).onChange(async (value) => {
           this.plugin.settings.defaultModel = value;
           await this.plugin.saveSettings();

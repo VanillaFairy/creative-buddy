@@ -148,6 +148,7 @@ export class ChatView extends ItemView {
         this.render();
       }),
     );
+    this.register(this.plugin.onModelLabels(() => this.render()));
     this.registerEvent(this.app.workspace.on("layout-change", () => this.render()));
     // Which note you are reading, from both directions: another note in the same
     // pane, and another pane. Clicking into this panel does not change the active
@@ -687,6 +688,7 @@ export class ChatView extends ItemView {
         ) : (
           <ChatSurface
             model={session.model}
+            modelLabels={this.plugin.modelLabels}
             effort={session.effort}
             busy={runtime.busy}
             status={runtime.status}

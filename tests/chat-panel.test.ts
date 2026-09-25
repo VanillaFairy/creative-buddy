@@ -21,6 +21,7 @@ import { act } from "react";
 import { ChatSurface, ChatCallbacks } from "../src/chat/components";
 import { TranscriptItem } from "../src/chat/transcript";
 import { Queued } from "../src/chat/queue";
+import { FAMILY_NAMES } from "../src/agent/models";
 
 function noopCallbacks(record: string[]): ChatCallbacks {
   return {
@@ -54,7 +55,8 @@ async function mount(record: string[], items: TranscriptItem[] = [], queued: Que
       root = root ?? createRoot(host);
       root.render(
         React.createElement(ChatSurface, {
-          model: "claude-opus-5",
+          model: "opus",
+          modelLabels: FAMILY_NAMES,
           effort: "high",
           busy,
           status: null,
