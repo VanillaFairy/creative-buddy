@@ -1,4 +1,5 @@
 import esbuild from "esbuild";
+import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -15,6 +16,30 @@ const nodeEvents = {
   },
 };
 
+// React DOM can create <script> elements (JSX <script>, ReactDOM.preinit) and
+// Obsidian's plugin review fails any bundle that does. The plugin renders none,
+// so those paths become throws. A React upgrade that moves them fails the build
+// here rather than slipping past review.
+const scriptSites = [
+  { pattern: /\b[\w$]+\.createElement\("script"\)/g, name: 'createElement("script")' },
+  { pattern: /\b[\w$]+\.innerHTML = "<script>\\x3c\/script>"/g, name: "innerHTML <script>" },
+];
+const noScriptThrow = '(() => { throw new Error("Creative Buddy never renders <script> elements"); })()';
+const noScriptElements = {
+  name: "no-script-elements",
+  setup(build) {
+    build.onLoad({ filter: /[\\/]react-dom[\\/]cjs[\\/]react-dom-client\.[\w.]+\.js$/ }, async (args) => {
+      let contents = await fs.readFile(args.path, "utf8");
+      for (const { pattern, name } of scriptSites) {
+        const replaced = contents.replace(pattern, noScriptThrow);
+        if (replaced === contents) throw new Error(`no-script-elements: ${name} not found in ${args.path}`);
+        contents = replaced;
+      }
+      return { contents, loader: "js" };
+    });
+  },
+};
+
 const ctx = await esbuild.context({
   entryPoints: ["src/main.ts"],
   bundle: true,
@@ -27,7 +52,7 @@ const ctx = await esbuild.context({
   treeShaking: true,
   outfile: "main.js",
   loader: { ".md": "text" },
-  plugins: [nodeEvents],
+  plugins: [nodeEvents, noScriptElements],
   // The bundled Agent SDK reads `import.meta.url` to locate its own runtime; in a
   // CJS bundle that expression is invalid and require() throws ERR_INVALID_ARG_VALUE.
   define: {
