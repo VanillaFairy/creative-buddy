@@ -4,7 +4,7 @@
 A *graph* is a directory holding `<DirName>.md` (the hub) whose text contains a
 line `## Charter`. Every other `.md` file inside is a node, except for anything
 under a `Log/` directory — those are session logs — and anything under a folder
-that holds tooling rather than notes (`.claude/`, `.obsidian/` and the rest).
+that holds tooling rather than notes (any dot-folder, and `node_modules/`).
 
 **The folder tree is the hierarchy.** A folder speaks through a note carrying
 its own name, sitting either inside it (`World/World.md`) or beside it
@@ -36,7 +36,7 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
-SKIP_DIRS = {".obsidian", ".claude", ".git", ".trash", "node_modules"}
+SKIP_DIRS = {"node_modules"}
 LOG_DIR = "log"  # matched case-insensitively
 CHARTER = "## Charter"
 
@@ -70,11 +70,16 @@ def is_graph(directory: Path) -> bool:
     return any(line.strip() == CHARTER for line in read_text(hub).splitlines())
 
 
+def is_tooling(name: str) -> bool:
+    """Dot-folders (`.obsidian`, `.git`, ...) and `node_modules` hold tooling, not notes."""
+    return name.startswith(".") or name in SKIP_DIRS
+
+
 def child_directories(directory: Path) -> list[Path]:
     """Subdirectories worth walking into. Unreadable directories yield nothing."""
     try:
         return [Path(entry.path) for entry in os.scandir(directory)
-                if entry.is_dir() and entry.name not in SKIP_DIRS]
+                if entry.is_dir() and not is_tooling(entry.name)]
     except OSError:
         return []
 
@@ -100,7 +105,7 @@ def find_graphs(root: Path) -> list[Path]:
 def collect_notes(graph_dir: Path) -> list[Path]:
     """Every node in the graph, subfolders included.
 
-    `Log/` is excluded because session logs are not nodes, and SKIP_DIRS
+    `Log/` is excluded because session logs are not nodes, and tooling folders
     because `.claude/` and its like hold somebody's tooling rather than
     somebody's notes.
     """
@@ -115,7 +120,7 @@ def collect_notes(graph_dir: Path) -> list[Path]:
         for entry in entries:
             path = Path(entry.path)
             if entry.is_dir():
-                if entry.name.casefold() != LOG_DIR and entry.name not in SKIP_DIRS:
+                if entry.name.casefold() != LOG_DIR and not is_tooling(entry.name):
                     pending.append(path)
             elif path.suffix.lower() == ".md":
                 notes.append(path)

@@ -3,7 +3,11 @@ import { Note, noteFromFile } from "./notes";
 import { normalizeContent, stripBom } from "./reader";
 import { casefold, comparePathSegments, comparePyStrings, sortKeyWindows } from "./py-compat";
 
-export const SKIP_DIRS: ReadonlySet<string> = new Set([".obsidian", ".claude", ".git", ".trash", "node_modules"]);
+/** graph_check.py is_tooling: dot-folders and `node_modules` hold tooling, not notes. */
+function isTooling(name: string): boolean {
+  return name.startsWith(".") || name === "node_modules";
+}
+
 const LOG_DIR = "log";
 const CHARTER = "## Charter";
 
@@ -12,8 +16,8 @@ export function hubPath(view: VaultView, dir: string): string {
   return dir === "" ? `${name}.md` : `${dir}/${name}.md`;
 }
 
-/** Immediate subdirectories of dir, derived from the path set. `skip` filters by exact name. */
-export function childDirectories(view: VaultView, dir: string, skip: ReadonlySet<string> | null): string[] {
+/** Immediate subdirectories of dir that are not tooling, derived from the path set. */
+function childDirectories(view: VaultView, dir: string): string[] {
   const prefix = dir === "" ? "" : dir + "/";
   const seen = new Set<string>();
   const out: string[] = [];
@@ -25,7 +29,7 @@ export function childDirectories(view: VaultView, dir: string, skip: ReadonlySet
     const name = rest.slice(0, slash);
     if (seen.has(name)) continue;
     seen.add(name);
-    if (skip !== null && skip.has(name)) continue;
+    if (isTooling(name)) continue;
     out.push(prefix + name);
   }
   return out;
@@ -60,7 +64,7 @@ export function findGraphs(view: VaultView): string[] {
       found.push(dir);
       continue;
     }
-    for (const child of childDirectories(view, dir, SKIP_DIRS)) pending.push(child);
+    for (const child of childDirectories(view, dir)) pending.push(child);
   }
   return found.sort(comparePathSegments);
 }
@@ -74,7 +78,7 @@ function isMarkdown(path: string): boolean {
 
 /**
  * graph_check.py collect_notes: everything under the graph, bar `Log/` — which
- * holds session logs rather than nodes — and SKIP_DIRS, which hold somebody's
+ * holds session logs rather than nodes — and tooling folders, which hold somebody's
  * tooling rather than somebody's notes.
  */
 export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
@@ -82,7 +86,7 @@ export function collectNoteFiles(view: VaultView, graphDir: string): string[] {
   const pending: string[] = [graphDir];
   while (pending.length > 0) {
     const dir = pending.pop()!;
-    for (const child of childDirectories(view, dir, SKIP_DIRS)) {
+    for (const child of childDirectories(view, dir)) {
       if (casefold(baseName(child)) !== LOG_DIR) pending.push(child);
     }
     for (const file of filesDirectlyIn(view, dir)) {

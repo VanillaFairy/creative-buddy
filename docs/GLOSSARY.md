@@ -110,8 +110,8 @@ than two curves saying the same thing. Built in `buildMindmapData` in
 
 **`Log/`** — A folder inside a graph holding session logs. Its files are notes
 on disk and never nodes. `collectNoteFiles` in `discovery.ts` skips it, and
-skips `.obsidian`, `.claude`, `.git`, `.trash` and `node_modules` for the same
-reason: those hold somebody's tooling rather than somebody's notes.
+skips every dot-folder (`.obsidian`, `.git` and the like) and `node_modules` for
+the same reason: those hold somebody's tooling rather than somebody's notes.
 
 **project** — What the user interface calls a graph. The chat and map pickers,
 the tab titles and [`src/project-list.ts`](../src/project-list.ts) all say

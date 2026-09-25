@@ -31,6 +31,8 @@ describe("collectNoteFiles (the graph's notes)", () => {
       ["G/Real.md", ""],
       ["G/.claude/todo/scratch.md", ""],
       ["G/.obsidian/plugins/notes.md", ""],
+      // Obsidian lets the config folder take any dot-name.
+      ["G/.vault-config/plugins/notes.md", ""],
       ["G/node_modules/pkg/readme.md", ""],
     ]);
     expect(collectNoteFiles(new VaultView({ rootName: "V", files }), "G")).toEqual([
