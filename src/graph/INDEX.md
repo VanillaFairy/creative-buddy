@@ -46,5 +46,5 @@ Debouncing belongs to the caller — `MindmapView` does it, tests do not.
 
 ## DEPENDENCIES
 
-`js-yaml` for frontmatter, and nothing else. This module is the bottom of the
+`yaml` for frontmatter, and nothing else. This module is the bottom of the
 stack; everything above imports it.

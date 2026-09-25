@@ -1,5 +1,4 @@
-import { load } from "js-yaml";
-import { pyStr } from "./py-compat";
+import { parse } from "yaml";
 
 /** Python's whitespace set for str.strip() — notably excludes U+FEFF (BOM). */
 const PY_STRIP_CLASS =
@@ -32,11 +31,11 @@ export function parseFrontmatter(text: string): Record<string, unknown> {
   if (end === -1) return {};
   let loaded: unknown;
   try {
-    loaded = load(lines.slice(1, end).join("\n"));
+    loaded = parse(lines.slice(1, end).join("\n"), { logLevel: "error" });
   } catch {
     return {};
   }
-  if (typeof loaded !== "object" || loaded === null || Array.isArray(loaded) || loaded instanceof Date) return {};
+  if (typeof loaded !== "object" || loaded === null || Array.isArray(loaded)) return {};
   return loaded as Record<string, unknown>;
 }
 
