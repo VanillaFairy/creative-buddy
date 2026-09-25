@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice } from "obsidian";
+import { App, PluginSettingTab, Notice, type SettingDefinitionItem } from "obsidian";
 import { execFile } from "node:child_process";
 import { DEFAULT_EFFORT, EFFORT_LABELS, EffortLevel, levelsFor } from "./agent/effort";
 import type CreativeBuddyPlugin from "./main";
@@ -24,92 +24,82 @@ export class CreativeBuddySettingTab extends PluginSettingTab {
     super(app, plugin);
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-
-    new Setting(containerEl)
-      .setName("Claude Code executable")
-      .setDesc("Leave empty to auto-detect. The plugin runs on your Claude Code login (subscription billing).")
-      .addText((text) =>
-        text
-          .setPlaceholder("auto-detect")
-          .setValue(this.plugin.settings.claudePath)
-          .onChange(async (value) => {
-            this.plugin.settings.claudePath = value.trim();
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(containerEl)
-      .setName("Open in the main editor area")
-      .setDesc("Open Creative Buddy panels as tabs in the centre instead of the right sidebar. Panels already open stay where they are.")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.openInMainTab).onChange(async (value) => {
-          this.plugin.settings.openInMainTab = value;
-          await this.plugin.saveSettings();
-        }),
-      );
-
-    new Setting(containerEl)
-      .setName("Default model")
-      .setDesc("Each conversation has its own picker; this seeds new ones.")
-      .addDropdown((dd) => {
-        for (const [id, label] of Object.entries(this.plugin.modelLabels)) dd.addOption(id, label);
-        dd.setValue(this.plugin.settings.defaultModel).onChange(async (value) => {
-          this.plugin.settings.defaultModel = value;
-          await this.plugin.saveSettings();
-          // The effort row below belongs to this model, so it is redrawn rather
-          // than left offering levels the new model would reject.
-          this.display();
-        });
-      });
-
+  getSettingDefinitions(): SettingDefinitionItem<keyof CreativeBuddySettings>[] {
     // Kept in settings even while hidden, so switching off a model without
     // effort brings back the level you had rather than the default.
     const effortLevels = levelsFor(this.plugin.settings.defaultModel);
-    if (effortLevels.length > 0) {
-      new Setting(containerEl)
-        .setName("Default effort")
-        .setDesc("How hard the interviewer thinks. Each conversation can change it mid-thread.")
-        .addDropdown((dd) => {
-          for (const level of effortLevels) dd.addOption(level, EFFORT_LABELS[level]);
-          dd.setValue(this.plugin.settings.defaultEffort).onChange(async (value) => {
-            this.plugin.settings.defaultEffort = value as EffortLevel;
-            await this.plugin.saveSettings();
+    return [
+      {
+        name: "Claude Code executable",
+        desc: "Leave empty to auto-detect. The plugin runs on your Claude Code login (subscription billing).",
+        control: { type: "text", key: "claudePath", placeholder: "auto-detect" },
+      },
+      {
+        name: "Open in the main editor area",
+        desc: "Open Creative Buddy panels as tabs in the centre instead of the right sidebar. Panels already open stay where they are.",
+        control: { type: "toggle", key: "openInMainTab" },
+      },
+      {
+        name: "Default model",
+        desc: "Each conversation has its own picker; this seeds new ones.",
+        control: { type: "dropdown", key: "defaultModel", options: { ...this.plugin.modelLabels } },
+      },
+      {
+        name: "Default effort",
+        desc: "How hard the interviewer thinks. Each conversation can change it mid-thread.",
+        visible: effortLevels.length > 0,
+        control: {
+          type: "dropdown",
+          key: "defaultEffort",
+          options: Object.fromEntries(effortLevels.map((level) => [level, EFFORT_LABELS[level]])),
+        },
+      },
+      {
+        name: "API key override",
+        desc:
+          "Not the path. Only set this if you deliberately want API billing instead of your subscription. " +
+          `Stored unencrypted in this vault's ${this.app.vault.configDir} folder — leave empty on synced or shared vaults.`,
+        render: (setting) => {
+          setting.addText((text) => {
+            text.inputEl.type = "password";
+            text.setValue(this.plugin.settings.apiKeyOverride).onChange(async (value) => {
+              this.plugin.settings.apiKeyOverride = value.trim();
+              await this.plugin.saveSettings();
+            });
           });
-        });
+        },
+      },
+      {
+        name: "Health check",
+        desc: "Verifies the Claude Code executable is found and runnable.",
+        render: (setting) => {
+          setting.addButton((btn) => btn.setButtonText("Run").onClick(() => this.healthCheck()));
+        },
+      },
+    ];
+  }
+
+  getControlValue(key: string): unknown {
+    return this.plugin.settings[key as keyof CreativeBuddySettings];
+  }
+
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    Object.assign(this.plugin.settings, { [key]: typeof value === "string" ? value.trim() : value });
+    await this.plugin.saveSettings();
+    // The effort row belongs to the model, so it is rebuilt rather than left
+    // offering levels the new model would reject.
+    if (key === "defaultModel") this.update();
+  }
+
+  private healthCheck(): void {
+    const path = this.plugin.resolveClaudePath();
+    if (path === null) {
+      new Notice("Claude Code executable not found. Install Claude Code or set the path above.");
+      return;
     }
-
-    new Setting(containerEl)
-      .setName("API key override")
-      .setDesc(
-        "Not the path. Only set this if you deliberately want API billing instead of your subscription. " +
-          "Stored unencrypted in this vault's .obsidian folder — leave empty on synced or shared vaults.",
-      )
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text.setValue(this.plugin.settings.apiKeyOverride).onChange(async (value) => {
-          this.plugin.settings.apiKeyOverride = value.trim();
-          await this.plugin.saveSettings();
-        });
-      });
-
-    new Setting(containerEl)
-      .setName("Health check")
-      .setDesc("Verifies the Claude Code executable is found and runnable.")
-      .addButton((btn) =>
-        btn.setButtonText("Run").onClick(() => {
-          const path = this.plugin.resolveClaudePath();
-          if (path === null) {
-            new Notice("Claude Code executable not found. Install Claude Code or set the path above.");
-            return;
-          }
-          execFile(path, ["--version"], { timeout: 10_000, windowsHide: true }, (error, stdout) => {
-            if (error) new Notice(`Found ${path} but it failed to run: ${error.message}`);
-            else new Notice(`Claude Code ${stdout.trim()} at ${path}. Login is checked when a session starts.`);
-          });
-        }),
-      );
+    execFile(path, ["--version"], { timeout: 10_000, windowsHide: true }, (error, stdout) => {
+      if (error) new Notice(`Found ${path} but it failed to run: ${error.message}`);
+      else new Notice(`Claude Code ${stdout.trim()} at ${path}. Login is checked when a session starts.`);
+    });
   }
 }
