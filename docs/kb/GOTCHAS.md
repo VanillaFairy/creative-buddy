@@ -276,7 +276,7 @@ removal walks into the real `node_modules`.
 Running `deploy.bat` from the Bash tool silently no-ops — no output, no copy —
 even wrapped in `cmd /c`. It works from the PowerShell tool with a full path:
 ```powershell
-cmd.exe /c "C:\work\creative-buddy\deploy.bat"
+cmd.exe /c "<repo>\deploy.bat" "<vault>\.obsidian\plugins\creative-buddy"
 ```
 Failure is quiet, so a stale bundle in the vault looks like a deploy that
 worked. Confirm by the copy log and the build timestamps the script prints,

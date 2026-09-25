@@ -4,21 +4,25 @@ setlocal
 rem ---------------------------------------------------------------------------
 rem  Creative Buddy - copy the built plugin into an Obsidian vault.
 rem
-rem    deploy.bat                  deploy to the default vault below
-rem    deploy.bat "D:\Vault\..."   deploy somewhere else
-rem    set CB_PLUGIN_DIR=...       change the default without editing this file
+rem    deploy.bat "D:\Vault\.obsidian\plugins\creative-buddy"
+rem    set CB_PLUGIN_DIR=...       then plain "deploy.bat" uses it
 rem
 rem  Overwrites whatever is already in the target. Only the three files
 rem  Obsidian loads are copied - data.json is the plugin's own settings, lives
 rem  in the vault, and must never be clobbered from here.
 rem ---------------------------------------------------------------------------
 
-set "DEFAULT_TARGET=g:\My Drive\Obsidian\General\.obsidian\plugins\creative-buddy"
 set "FILES=main.js manifest.json styles.css"
 
 set "TARGET=%~1"
 if not defined TARGET set "TARGET=%CB_PLUGIN_DIR%"
-if not defined TARGET set "TARGET=%DEFAULT_TARGET%"
+if not defined TARGET (
+  echo ERROR: no target folder.
+  echo        Pass the vault's plugin folder, for example:
+  echo          deploy.bat "D:\Vault\.obsidian\plugins\creative-buddy"
+  echo        or set CB_PLUGIN_DIR to it.
+  exit /b 1
+)
 
 rem %~dp0 is this script's own folder, and already ends in a backslash.
 set "SOURCE=%~dp0"

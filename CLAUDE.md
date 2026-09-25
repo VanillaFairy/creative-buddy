@@ -53,7 +53,7 @@ the module you are about to touch.
 
 - `npx vitest run` — full suite (live test excluded). Single file: `npx vitest run tests/<f>.test.ts`
 - `npm run build` — typecheck + esbuild production bundle (`main.js`)
-- `deploy.bat [target]` — copy `main.js` + `manifest.json` + `styles.css` into
+- `deploy.bat [target]` — target defaults to `%CB_PLUGIN_DIR%`; copy `main.js` + `manifest.json` + `styles.css` into
   the vault's plugin folder, overwriting. Prints build timestamps; never
   touches `data.json`. Build first — it refuses to deploy a missing bundle.
 - `npm run oracle` — regenerate expected JSON (needs `python`; no third-party
