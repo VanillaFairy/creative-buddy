@@ -1,5 +1,5 @@
 import { statSync } from "node:fs";
-import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 import { GraphStats } from "../graph/hierarchy";
 import { buildSystemPrompt, buildSessionPreamble } from "./prompts";
 import { decideToolUse, targetPathOf, zeroByteWriteMessage, PermissionContext } from "./permissions";
@@ -366,7 +366,7 @@ function routeMessage(message: SdkMessage, events: SessionEvents, setSessionId: 
 }
 
 function defaultQueryFn(): QueryFn {
-  return ({ prompt, options }) => query({ prompt, options: options as Options }) as SdkQueryHandle;
+  return ({ prompt, options }) => query({ prompt, options });
 }
 
 function defaultFileSize(absPath: string): number | null {
