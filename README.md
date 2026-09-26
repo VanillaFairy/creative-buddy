@@ -85,6 +85,21 @@ them; here's what they're for.
 
 ## Install
 
+### Claude Code first
+
+Creative Buddy doesn't talk to Claude on its own. Each conversation runs
+through the Claude Code program on your computer, which is what lets the
+interviewer read and write your notes, and it signs in with your Claude
+account, so there's no API key to paste into the plugin. You need a paid
+Claude plan (Pro, Max, Team or Enterprise) or an Anthropic Console account;
+the free plan doesn't include Claude Code.
+
+Install it and log in by following
+[Anthropic's setup guide](https://code.claude.com/docs/en/setup). Once running
+`claude --version` in a terminal prints a version number, you're ready.
+
+### The plugin
+
 The plugin isn't in Obsidian's community catalogue yet, so you build it and
 copy it in:
 
