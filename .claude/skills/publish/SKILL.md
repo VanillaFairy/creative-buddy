@@ -1,6 +1,6 @@
 ---
 name: publish
-description: Publish a new Creative Buddy release - commit any pending work, bump the version by semver, push `main` and the version tag so the release workflow builds a draft release. Use when the user invokes /publish or asks to publish, release or ship the current state of this repo.
+description: Publish a new Creative Buddy release - commit any pending work, bump the version by semver, push `main` and the version tag, then publish the GitHub release the workflow drafts. Use when the user invokes /publish or asks to publish, release or ship the current state of this repo.
 ---
 
 # Publish
@@ -77,11 +77,26 @@ git push origin <version>
 The tag has no `v` prefix: the release workflow fails when the tag differs from
 `manifest.json`'s version.
 
-## 5. Report
+## 5. Publish the release
 
 Pushing the tag starts `.github/workflows/release.yml`, which builds, attests and opens a
-**draft** release. Check it with `gh run list --workflow release.yml --limit 1` and wait
-for it with `gh run watch <id> --exit-status`. Tell the user the version, the bump level
-and why, the commits it covers, and whether the workflow passed. The draft still needs
-release notes and publishing on GitHub; say so, and offer to draft the notes from the
-commit list.
+**draft** release in about half a minute. Find the run with
+`gh run list --workflow release.yml --limit 1` and wait for it with
+`gh run watch <id> --exit-status`. If it fails, stop and report; don't publish.
+
+Write the release notes from the commits since the previous tag, for someone who uses the
+plugin rather than develops it: a short plain paragraph on what changed for them, in the
+voice of the earlier releases (`gh release view <previous tag> --json body -q .body`).
+Leave out `test` and `chore` commits unless they change what a user gets. When nothing a
+user sees has changed, say so ("No behaviour change."). Then publish the draft:
+
+```bash
+gh release edit <version> --notes-file <notes file> --draft=false --latest
+```
+
+Confirm with `gh release view <version> --json isDraft,url`.
+
+## 6. Report
+
+Tell the user the version, the bump level and why, the commits it covers, and the release
+URL.
