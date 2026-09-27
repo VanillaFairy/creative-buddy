@@ -13,6 +13,8 @@ import { radialLayout, radialLinkPath, crossLinkPath, reachFor, CAPTION_GAP, HID
 import type { Reaching } from "./radial";
 import { foldMark, hiddenIfFolded } from "./fold";
 import { heatClass } from "./heat";
+import { DENSITIES, densityFrom, spreadOf } from "./density";
+import type { Density } from "./density";
 import { CollapseStore } from "./collapse-store";
 import { tabTitle } from "../view-title";
 import { MAP_ICON } from "../icons";
@@ -27,19 +29,6 @@ const INSPECTOR_HINT = "Click a note to open it, a branch to fold it. Alt-click 
 
 /** One ruler per face a title renders in: regular, bold for a title in the Highlight, the hub's. */
 interface Measurers { node: Measure; bold: Measure; hub: Measure; }
-
-/**
- * How close the rings sit. Only the least room between rings is being set here:
- * a crowded ring is sized by what stands on it and will not come in past that,
- * so on a busy circle the tighter settings show mostly in the inner rings.
- */
-const DENSITY: ReadonlyArray<{ id: Density; label: string; ringGap: number }> = [
-  { id: "near", label: "Near", ringGap: 90 },
-  { id: "mid", label: "Medium", ringGap: 130 },
-  { id: "far", label: "Far", ringGap: 170 },
-];
-
-export type Density = "near" | "mid" | "far";
 
 export class MindmapView extends ItemView {
   private graphDir: string | null = null;
@@ -75,12 +64,12 @@ export class MindmapView extends ItemView {
       collapse?: Record<string, string[]>;
       heatmap?: boolean;
       radial?: boolean;
-      density?: Density;
+      density?: unknown;
     };
     this.graphDir = s.graphDir ?? null;
     this.heatmap = s.heatmap === true;
     this.radial = s.radial === true;
-    this.density = DENSITY.some((d) => d.id === s.density) ? s.density! : "mid";
+    this.density = densityFrom(s.density);
     this.collapse = CollapseStore.fromJSON(s.collapse);
     this.redraw();
     await super.setState(state, result);
@@ -181,15 +170,6 @@ export class MindmapView extends ItemView {
    * How the map is read, behind one button. These settings belong beside the
    * map rather than in the vault's settings pane — they are ways of looking at
    * a graph, not facts about the plugin — but there are enough of them now that
-   * a row of checkboxes was eating the header a project name has to fit in.
-   *
-   * Density is offered only in radial mode, because it is the only shape with
-   * rings to space.
-   */
-  /**
-   * How the map is read, behind one button. These settings belong beside the
-   * map rather than in the vault's settings pane — they are ways of looking at
-   * a graph, not facts about the plugin — but there are enough of them now that
    * a row of controls was eating the header a project name has to fit in.
    *
    * A panel rather than an Obsidian `Menu`, because Density is a choice among
@@ -239,21 +219,15 @@ export class MindmapView extends ItemView {
     });
     check("Heat", this.heatmap, (on) => { this.heatmap = on; });
 
-    // Only the radial map has rings to space.
-    if (!this.radial) return;
     const row = panel.createEl("label", { cls: "cb-mm-setting cb-mm-setting-pick" });
     row.createSpan({ text: "Density" });
     const select = row.createEl("select", { cls: "cb-quiet-control" });
-    for (const step of DENSITY) {
+    for (const step of DENSITIES) {
       const option = select.createEl("option", { text: step.label });
       option.value = step.id;
     }
     select.value = this.density;
     select.addEventListener("change", () => apply(() => { this.density = select.value as Density; }));
-  }
-
-  private ringGap(): number {
-    return DENSITY.find((step) => step.id === this.density)!.ringGap;
   }
 
   private redraw(): void {
@@ -517,6 +491,11 @@ export class MindmapView extends ItemView {
       .nodeSize((n) => [boxOf(n.data).height + ROW_GAP, sized(n.data).room + H_GAP])
       .spacing(6);
     const root = layout(hierarchy(data.root!, (d) => d.children));
+    const spread = spreadOf(this.density);
+    root.each((n) => {
+      n.x *= spread;
+      n.y *= spread;
+    });
 
     const byPath = new Map<string, { x: number; y: number; data: MindmapNode }>();
     root.each((n) => byPath.set(n.data.path, { x: n.x, y: n.y, data: n.data }));
@@ -688,7 +667,7 @@ export class MindmapView extends ItemView {
       return room;
     };
 
-    const layout = radialLayout(data.root!, reachOf, { ringGap: this.ringGap() });
+    const layout = radialLayout(data.root!, reachOf, { spread: spreadOf(this.density) });
     const byPath = new Map(layout.nodes.map((n) => [n.path, n] as const));
 
     // Everything below asks this before it draws. The layout holds every note

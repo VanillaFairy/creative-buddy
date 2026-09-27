@@ -623,7 +623,9 @@ describe("radialLayout: a small graph stays a fan", () => {
     // it, and an even one straddles that spot and never pays full price. The
     // widest step in a fan is the one beside its middle note, so the two fans
     // have to be odd together or they are not being asked the same question.
-    const reachOf = evenReach(70);
+    // Both fans have to fit inside the least ring gap for any of this to hold,
+    // so the notes are kept small enough that seven do.
+    const reachOf = evenReach(30);
     const ringOf = (count: number): RadialNode[] => ringAt(radialLayout(note("Hub", brood(count)), reachOf), 1);
     const lone = ringOf(1);
     const fan = ringOf(3);
@@ -655,7 +657,7 @@ describe("radialLayout: a small graph stays a fan", () => {
       return { radius: ringOf(layout, 1), span: ring[2]!.angle - ring[0]!.angle };
     };
     const small = fan(evenReach(10, 2));
-    const wide = fan(evenReach(200, 6));
+    const wide = fan(evenReach(120, 6));
     expect(small.radius).toBeCloseTo(wide.radius, 6);
     expect(small.span).toBeLessThan(wide.span);
   });
@@ -730,23 +732,25 @@ describe("radialLayout: what it reports back", () => {
     // an empty pane. Each edge has to sit on a note.
     const root = note("Hub", nested(5, 2));
     const reachOf = variedReach(root, [30, 170, 60, 120]);
-    const { nodes, bounds } = radialLayout(root, reachOf);
-    expect(nodes.length).toBeGreaterThan(1);
-    const drawn = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
-    for (const node of nodes) {
-      const reach = reachOf(node.data);
-      const rect = captionRect(node, reach);
-      drawn.minX = Math.min(drawn.minX, rect.left, node.x - reach.dot);
-      drawn.maxX = Math.max(drawn.maxX, rect.right, node.x + reach.dot);
-      drawn.minY = Math.min(drawn.minY, node.y - reach.dot);
-      drawn.maxY = Math.max(drawn.maxY, node.y + reach.dot);
+    for (const spread of [1, 1.7]) {
+      const { nodes, bounds } = radialLayout(root, reachOf, { spread });
+      expect(nodes.length).toBeGreaterThan(1);
+      const drawn = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+      for (const node of nodes) {
+        const reach = reachOf(node.data);
+        const rect = captionRect(node, reach);
+        drawn.minX = Math.min(drawn.minX, rect.left, node.x - reach.dot);
+        drawn.maxX = Math.max(drawn.maxX, rect.right, node.x + reach.dot);
+        drawn.minY = Math.min(drawn.minY, node.y - reach.dot);
+        drawn.maxY = Math.max(drawn.maxY, node.y + reach.dot);
+      }
+      expect(bounds.minX).toBeCloseTo(drawn.minX, 6);
+      expect(bounds.maxX).toBeCloseTo(drawn.maxX, 6);
+      expect(bounds.minY).toBeCloseTo(drawn.minY, 6);
+      expect(bounds.maxY).toBeCloseTo(drawn.maxY, 6);
+      expect(bounds.maxX).toBeGreaterThan(bounds.minX);
+      expect(bounds.maxY).toBeGreaterThan(bounds.minY);
     }
-    expect(bounds.minX).toBeCloseTo(drawn.minX, 6);
-    expect(bounds.maxX).toBeCloseTo(drawn.maxX, 6);
-    expect(bounds.minY).toBeCloseTo(drawn.minY, 6);
-    expect(bounds.maxY).toBeCloseTo(drawn.maxY, 6);
-    expect(bounds.maxX).toBeGreaterThan(bounds.minX);
-    expect(bounds.maxY).toBeGreaterThan(bounds.minY);
   });
 
   it("lays the same graph out the same way twice", () => {
@@ -1056,9 +1060,10 @@ describe("radialLayout sizes each ring by its own crowding", () => {
     const busy = radialLayout(busyBeyond, reach);
 
     // Ring 1 carries the same three notes in both, so it must land in the same
-    // place in both. Only ring 2 differs.
+    // place in both. Only ring 2 differs — said of the circle it was sized on,
+    // since a lone note of the quiet one can still step out a lane when drawn.
     expect(ringRadius(busy, 1)).toBeCloseTo(ringRadius(quiet, 1), 6);
-    expect(ringRadius(busy, 2)).toBeGreaterThan(ringRadius(quiet, 2));
+    expect(ringOf(busy, 2)).toBeGreaterThan(ringOf(quiet, 2));
   });
 
   it("keeps a quiet ring beyond a crowded one outside it all the same", () => {
@@ -1078,37 +1083,47 @@ describe("radialLayout sizes each ring by its own crowding", () => {
 
 describe("radialLayout density", () => {
   const chain = note("Hub", [note("a", [note("b", [note("c")])])]);
+  const shapes = { chain, crowded: note("Hub", brood(50)), branching: note("Hub", nested(5, 3)) };
 
-  it("draws the rings closer together when asked for a tighter density", () => {
-    const far = radialLayout(chain, evenReach(60), { ringGap: 170 });
-    const near = radialLayout(chain, evenReach(60), { ringGap: 90 });
-    for (const depth of [1, 2, 3]) {
-      const at = (l: typeof far) => l.nodes.find((n) => n.depth === depth)!.radius;
-      expect(at(near)).toBeLessThan(at(far));
+  it("stands every note further from the hub at a looser spread, however crowded", () => {
+    for (const [name, root] of Object.entries(shapes)) {
+      const tight = radialLayout(root, evenReach(60), { spread: 1 });
+      const loose = radialLayout(root, evenReach(60), { spread: 1.7 });
+      for (const node of tight.nodes) {
+        if (node.depth === 0) continue;
+        const moved = loose.nodes.find((n) => n.path === node.path)!;
+        expect(moved.radius, `${name}: ${node.path}`).toBeGreaterThan(node.radius);
+        expect(Math.hypot(moved.x, moved.y), `${name}: ${node.path} drawn`).toBeCloseTo(moved.radius, 6);
+      }
     }
   });
 
-  it("keeps the rings in order however tight the density", () => {
-    const near = radialLayout(chain, evenReach(60), { ringGap: 40 });
-    const radii = [1, 2, 3].map((d) => near.nodes.find((n) => n.depth === d)!.radius);
+  it("moves no note round the circle, only outward", () => {
+    for (const root of Object.values(shapes)) {
+      const tight = radialLayout(root, evenReach(60), { spread: 1 });
+      const loose = radialLayout(root, evenReach(60), { spread: 1.7 });
+      for (const node of tight.nodes) {
+        expect(loose.nodes.find((n) => n.path === node.path)!.angle).toBeCloseTo(node.angle, 9);
+      }
+    }
+  });
+
+  it("keeps every caption clear of its neighbours at a looser spread", () => {
+    const reachOf = evenReach(90);
+    const layout = radialLayout(note("Hub", nested(6, 2)), reachOf, { spread: 1.7 });
+    expectNoCollisions(ringAt(layout, 1), reachOf);
+    expectNoCollisions(ringAt(layout, 2), reachOf);
+  });
+
+  it("keeps the rings in order", () => {
+    const radii = [1, 2, 3].map((d) => radialLayout(chain, evenReach(60)).nodes.find((n) => n.depth === d)!.radius);
     expect(radii[1]!).toBeGreaterThan(radii[0]!);
     expect(radii[2]!).toBeGreaterThan(radii[1]!);
   });
 
-  it("cannot pull a crowded ring in past what stands on it", () => {
-    const crowded = note("Hub", brood(50));
-    const reach: Reach = { dot: 6, caption: 120 };
-    const far = radialLayout(crowded, () => reach, { ringGap: 170 });
-    const near = radialLayout(crowded, () => reach, { ringGap: 40 });
-    // A ring of fifty notes is sized by its fifty notes, not by the gap. Said
-    // of the circle they were reserved on: where the band is finally drawn is
-    // a separate question, and density is one of the things that answers it.
-    expect(ringOf(near, 1)).toBeCloseTo(ringOf(far, 1), 6);
-  });
-
-  it("uses the same spacing as before when no density is given", () => {
+  it("draws the tight layout when no spread is given", () => {
     const withDefault = radialLayout(chain, evenReach(60));
-    const explicit = radialLayout(chain, evenReach(60), { ringGap: 170 });
+    const explicit = radialLayout(chain, evenReach(60), { spread: 1 });
     expect(withDefault.nodes.map((n) => n.radius)).toEqual(explicit.nodes.map((n) => n.radius));
   });
 });

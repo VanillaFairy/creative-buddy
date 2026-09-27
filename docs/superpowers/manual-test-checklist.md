@@ -575,17 +575,16 @@ session with the original knowledge-graph skill on the same graph.
       checkboxes, ticked when they are on.
 - [ ] Toggle Radial in the panel → the map changes shape and refits, and **the
       panel stays open**. Toggle Heat → the colours come and go, panel still up.
-- [ ] With Radial **off**, the panel shows no Density row — a flat map has no
-      rings to space. Tick Radial → the row appears without reopening.
-- [ ] With Radial **on**, the panel carries a **Density** row with a real
-      dropdown reading Near / Mid / Far, showing the current one.
+- [ ] The panel carries a **Density** row with a real dropdown reading
+      Near / Medium / Far, showing the current one, with Radial on or off.
 - [ ] Click anywhere outside the panel → it closes. Press Escape → it closes.
       Click the gear again → it toggles.
-- [ ] Pick Near → the inner rings come in. Pick Far → they go back out.
-- [ ] On a crowded project the change is mostly in the **inner** rings, and a
-      ring carrying a lot of notes barely moves. That is correct: a busy ring is
-      sized by what stands on it and cannot come in past that, whatever the
-      density says.
+- [ ] Radial on: step Near → Medium → Far → every ring moves outward at each
+      step, crowded rings included, and no note changes its bearing. Near packs
+      the rings as tight as the captions allow; nothing overlaps at any step.
+- [ ] Radial off: step Near → Medium → Far → the tree spreads out both ways at
+      each step — columns further apart, rows further apart — with the boxes
+      themselves the same size.
 - [ ] Set a density, close the map tab, reopen it → the setting is where you
       left it. Restart Obsidian → still there.
 - [ ] A map saved before this existed opens at **Mid** rather than blank.

@@ -33,16 +33,20 @@ import type { MindmapNode } from "./layout";
 import type { Bounds, Caption, Measure } from "./geometry";
 
 /**
- * The least room between one generation's circle and the next's. A generation
- * with few notes on it takes exactly this; a crowded one is sized by what
- * stands on it and ignores the gap entirely, which is why loosening it does
- * nothing to a busy circle.
+ * The least room between one generation's circle and the next's in the tight
+ * layout. A generation with few notes on it takes exactly this; a crowded one
+ * is sized by what stands on it. Captions are kept apart by `placeBands`, not
+ * by this gap.
  */
-const RING_GAP = 170;
+const RING_GAP = 90;
 
-/** How the map is asked to space its rings. */
 export interface RadialOptions {
-  ringGap?: number;
+  /**
+   * How far the tight layout is pulled outward: every radius is multiplied by
+   * it, every bearing kept. One or more — see `density.ts` for why that keeps
+   * captions apart.
+   */
+  spread?: number;
 }
 /** Breathing room either side of what a node reserves on its ring. */
 const BREADTH_GAP = 14;
@@ -124,7 +128,6 @@ export function radialLayout(
   reachOf: ReachOf,
   options: RadialOptions = {},
 ): RadialLayout {
-  const ringGap = options.ringGap ?? RING_GAP;
 
   // Where each note stood when the rings were last measured. Empty to begin
   // with, which reads as the worst case: every caption reserved as if it lay
@@ -160,7 +163,7 @@ export function radialLayout(
   let rings = new Map<number, number>();
   // The hub sits at the origin and has no ring; it borrows the first one's gap
   // purely to have a radius to divide by.
-  const ringOf = (depth: number): number => rings.get(depth) ?? ringGap;
+  const ringOf = (depth: number): number => rings.get(depth) ?? RING_GAP;
   const angularSize = (depth: number, node: MindmapNode): number =>
     breadthOf(node) / ringOf(depth);
 
@@ -178,7 +181,7 @@ export function radialLayout(
     const out = new Map<number, number>();
     let outward = 0;
     for (const depth of depths) {
-      outward = Math.max(outward + ringGap, want(depth));
+      outward = Math.max(outward + RING_GAP, want(depth));
       out.set(depth, outward);
     }
     return out;
@@ -232,7 +235,7 @@ export function radialLayout(
     rings = ringsFrom((depth) => {
       const at = used.get(depth);
       const span = at === undefined ? 0 : at.high - at.low;
-      return (rings.get(depth) ?? ringGap) * Math.max(1, span / TAU);
+      return (rings.get(depth) ?? RING_GAP) * Math.max(1, span / TAU);
     });
 
     laid = pack();
@@ -285,14 +288,15 @@ export function radialLayout(
     });
   }
   const reserved = new Map(generations.map((g) => [g.depth, g.loosest]));
-  const seats = placeBands(generations, reachOf(root), ringGap);
+  const seats = placeBands(generations, reachOf(root), RING_GAP);
+  const spread = options.spread ?? 1;
   for (const node of nodes) {
     const seat = seats.get(node.path);
     if (seat === undefined) continue;
-    node.radius = seat.radius;
+    node.radius = seat.radius * spread;
     node.lane = seat.lane;
-    node.x = seat.radius * Math.sin(node.angle);
-    node.y = -seat.radius * Math.cos(node.angle);
+    node.x = node.radius * Math.sin(node.angle);
+    node.y = -node.radius * Math.cos(node.angle);
     node.labelAnchor = node.x < 0 ? "end" : "start";
   }
 

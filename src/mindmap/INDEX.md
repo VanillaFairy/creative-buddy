@@ -19,6 +19,10 @@ and a radial one — which is why `geometry.ts` is separate from both.
   were *reserved* against, while `node.radius` is where `bands.ts` actually
   seated it, usually nearer the hub. An arc reserved for a note is an angle
   times the ring, never times `node.radius`.
+- Density (`density.ts`) never re-runs a layout with different gaps: both
+  shapes pack tight, then every anchor is scaled by the step's spread (≥ 1),
+  which can only widen gaps between fixed-size notes. Feeding density into a
+  gap instead lets `placeBands` absorb it and makes the steps non-monotonic.
 - `highlight.ts` decides Highlight: the state, its transitions, and the two
   drawing questions (is this note lit, is this edge lit). `MindmapView.tsx`
   only holds the `Highlight | null` in memory and asks `drawnLit` once per draw.
@@ -33,7 +37,7 @@ and a radial one — which is why `geometry.ts` is separate from both.
 - Several constants here are **measurements, not preferences**, and each was
   taken by drawing real graphs and watching where the layout stopped moving:
   `SETTLING_PASSES` (6) and `RADIUS_TRIES` (28) in the layout loops,
-  `MAX_CAPTION_WIDTH` (155) against `RING_GAP` (170), `MAX_FIT_SCALE` (1.6).
+  `MAX_CAPTION_WIDTH` (155), `RING_GAP` (90, the tight layout), `MAX_FIT_SCALE` (1.6).
   Anything that changes what a node reserves — caption font, dot radius, the
   fold suffix — invalidates them. Re-measure on a real vault; do not carry the
   numbers forward on the assumption they still hold.

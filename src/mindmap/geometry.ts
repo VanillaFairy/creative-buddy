@@ -99,10 +99,8 @@ const MAX_WIDTH = 240;
  * this to 80 to shrink the map was tried and bought little except shorter
  * titles.
  *
- * 155 is the largest value that stays inside `radial.ts`'s RING_GAP: a ring
- * needs `DOT_RADIUS + CAPTION_GAP + this` of clearance to the next ring out,
- * and 6 + 7 + 155 = 168 against a gap of 170. Past that, captions near 3 and 9
- * o'clock begin crossing onto the ring outside them.
+ * Ring spacing does not bound it: `bands.ts` seats every band clear of the
+ * captions reaching out from the band inside it, however long they are.
  */
 const MAX_CAPTION_WIDTH = 155;
 const ELLIPSIS = "…";
