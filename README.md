@@ -40,7 +40,7 @@ it through. It won't write prose for you or look things up – until you ask.
 - Privacy: the conversation, and any notes the interviewer reads, go to
   Anthropic, the same as when you use Claude Code directly. It can read any note
   in the vault, not just the project's.
-- Status: installed by hand for now (see Install). MIT licensed.
+- Status: available in Obsidian's community plugins (see Install). MIT licensed.
 
 ## Before you start
 
@@ -81,7 +81,6 @@ them; here's what they're for.
 - Obsidian desktop 1.13 or newer, on Windows, macOS or Linux, with the vault on
   a local disk. Mobile isn't supported.
 - [Claude Code](https://claude.com/claude-code), installed and logged in.
-- Git and Node.js, to build the plugin.
 
 ## Install
 
@@ -100,28 +99,21 @@ Install it and log in by following
 
 ### The plugin
 
-The plugin isn't in Obsidian's community catalogue yet, so you build it and
-copy it in:
+Creative Buddy is in Obsidian's community plugins. You can
+[open its page](https://community.obsidian.md/plugins/creative-buddy) and click
+Install, or do it from inside Obsidian:
 
-1. Build it:
-   ```
-   git clone https://github.com/VanillaFairy/creative-buddy.git
-   cd creative-buddy
-   npm ci && npm run build
-   ```
-2. Create the folder `<your vault>/.obsidian/plugins/creative-buddy/` and copy
-   `main.js`, `manifest.json` and `styles.css` into it.
-3. In Obsidian, open Settings, Community plugins. Turn community plugins on if
-   they're off, reload the list, and enable Creative Buddy.
-4. In Creative Buddy's settings, press Run next to Health check. It should
+1. Open Settings, Community plugins. Turn community plugins on if they're off.
+2. Click Browse, search for "Creative Buddy", click Install, then Enable.
+3. In Creative Buddy's settings, press Run next to Health check. It should
    report your Claude Code version. If it can't find Claude Code, put the path
    to the `claude` executable in the setting above it.
 
-To update, pull, build again, copy the three files over the old ones, and turn
-the plugin off and on.
+Updates come through Obsidian like any other community plugin: Settings,
+Community plugins, Check for updates.
 
-To uninstall, disable it and delete its plugin folder. Your notes are plain
-markdown and stay as they are.
+To uninstall, click the trash icon next to Creative Buddy in Community plugins.
+Your notes are plain markdown and stay as they are.
 
 ## Your first session
 
@@ -245,6 +237,18 @@ It checks paths as written, so a folder symlinked into the vault counts as part
 of the vault even if it points somewhere else.
 
 ## Development
+
+To run it from source, you need Git and Node.js:
+
+```
+git clone https://github.com/VanillaFairy/creative-buddy.git
+cd creative-buddy
+npm ci && npm run build
+```
+
+Then copy `main.js`, `manifest.json` and `styles.css` into
+`<your vault>/.obsidian/plugins/creative-buddy/`, replacing the installed
+version, and turn the plugin off and on.
 
 Build, test and deploy details are in [docs/kb/BUILD.md](docs/kb/BUILD.md) and
 [docs/kb/TESTING.md](docs/kb/TESTING.md).
