@@ -51,4 +51,4 @@ and a radial one — which is why `geometry.ts` is separate from both.
 `src/graph` for the model, the hierarchy and the note index. `src/open-questions`
 for the per-note count `heat.ts` maps to a palette step. `d3-hierarchy`,
 `d3-flextree`, `d3-selection`, `d3-zoom`. The eleven `cb-mm-heat-*` classes and
-the cross-link chord style live in `styles.css`.
+the cross-link style (hidden until hovered, in both views) live in `styles.css`.

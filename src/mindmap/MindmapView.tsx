@@ -376,10 +376,8 @@ export class MindmapView extends ItemView {
     const hubPath = data.root.path;
     const measure = this.measurers(host);
 
-    // Cross-links sit at a texture's weight and light up only for the node
-    // under the pointer or the keyboard. A real graph draws dozens of them,
-    // and at a readable weight they scribble over the tree they annotate;
-    // indexed by both ends, either end can call its own out of the mesh.
+    // Cross-links are drawn only for the node under the pointer or the
+    // keyboard; indexed by both ends, so either end can call its own out.
     const crossByPath = new Map<string, SVGPathElement[]>();
     let lit: SVGPathElement[] = [];
     const setActive = (node: MindmapNode | null): void => {
@@ -716,7 +714,7 @@ export class MindmapView extends ItemView {
       if (!shown(cross.from) || !shown(cross.to)) continue;
       const path = canvas
         .append("path")
-        .attr("class", "cb-mm-crosslink cb-mm-crosslink-chord")
+        .attr("class", "cb-mm-crosslink")
         .classed("cb-mm-dimmed", dimmedLink(cross.from, cross.to))
         .attr("d", crossLinkPath(from, to))
         .node();

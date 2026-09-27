@@ -360,13 +360,10 @@ older than the code.
       Heat switch. Nothing else — no "· N off the hub", and no amber warning on
       a flat graph. That number is the whole graph's note count; check it against
       the hub's Shape section.
-- [ ] On a graph with many wikilinks, the dashed cross-links read as a faint
-      mesh rather than a scribble over the tree; hover or focus a node and its
-      own cross-links light up at both ends.
-- [ ] The solid parent edges and the dashed cross-links are drawn at the **same
-      weight** — they differ by dash and colour, not by thickness, so the tree
-      does not shout over the links. Depth still shows: an edge leaving the hub
-      is darker than one four levels down.
+- [ ] On a graph with many wikilinks, no dashed cross-links are drawn at rest;
+      hover or focus a node and its own cross-links appear at both ends, and
+      panning a big map stays smooth. Depth still shows on the parent edges: an
+      edge leaving the hub is darker than one four levels down.
 - [ ] Two notes that link **each other** get one dashed arc between them, not
       two stacked on the same pair. Same for a note that names the same target
       twice, or reaches it once by name and once by alias.

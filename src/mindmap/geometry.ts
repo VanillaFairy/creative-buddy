@@ -95,7 +95,7 @@ const MAX_WIDTH = 240;
  *
  * That is a size worth watching but not worth paying for in clipped names.
  * A profile of panning that map put the cost in rasterising cross-link chords,
- * not in the canvas — see `.cb-mm-crosslink-chord` in `styles.css`. Cutting
+ * not in the canvas — see `.cb-mm-crosslink` in `styles.css`. Cutting
  * this to 80 to shrink the map was tried and bought little except shorter
  * titles.
  *
