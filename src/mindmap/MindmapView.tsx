@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFile, setIcon, Menu, ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, TFile, setIcon, setTooltip, Menu, ViewStateResult } from "obsidian";
 import { hierarchy } from "d3-hierarchy";
 import { flextree } from "d3-flextree";
 import { select } from "d3-selection";
@@ -203,23 +203,30 @@ export class MindmapView extends ItemView {
       gear.setAttr("aria-expanded", String(this.settingsOpen));
     };
 
-    const check = (label: string, on: boolean, set: (value: boolean) => void): void => {
+    const check = (label: string, tip: string, on: boolean, set: (value: boolean) => void): void => {
       const row = panel.createEl("label", { cls: "cb-mm-setting" });
+      setTooltip(row, tip, { placement: "left" });
       const input = row.createEl("input", { type: "checkbox" });
       input.checked = on;
       row.createSpan({ text: label });
       input.addEventListener("change", () => apply(() => set(input.checked)));
     };
 
-    check("Radial", this.radial, (on) => {
+    check("Radial", "Draw the project as rings around its hub instead of a left-to-right tree.", this.radial, (on) => {
       this.radial = on;
       // The stored pan and zoom belong to whichever shape was on screen; the
       // other would open somewhere off in the white with it.
       this.lastTransform = null;
     });
-    check("Heat", this.heatmap, (on) => { this.heatmap = on; });
+    check(
+      "Heat",
+      "Colour each note by how many open questions it still carries.",
+      this.heatmap,
+      (on) => { this.heatmap = on; },
+    );
 
     const row = panel.createEl("label", { cls: "cb-mm-setting cb-mm-setting-pick" });
+    setTooltip(row, "How far apart the notes are spread, in either shape. Near packs them as tight as their titles allow.", { placement: "left" });
     row.createSpan({ text: "Density" });
     const select = row.createEl("select", { cls: "cb-quiet-control" });
     for (const step of DENSITIES) {

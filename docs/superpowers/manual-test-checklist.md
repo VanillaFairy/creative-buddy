@@ -577,6 +577,7 @@ session with the original knowledge-graph skill on the same graph.
       panel stays open**. Toggle Heat → the colours come and go, panel still up.
 - [ ] The panel carries a **Density** row with a real dropdown reading
       Near / Medium / Far, showing the current one, with Radial on or off.
+- [ ] Hover each of Radial, Heat and Density → a tooltip says what it does.
 - [ ] Click anywhere outside the panel → it closes. Press Escape → it closes.
       Click the gear again → it toggles.
 - [ ] Radial on: step Near → Medium → Far → every ring moves outward at each
