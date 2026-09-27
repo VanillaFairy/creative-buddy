@@ -1,6 +1,6 @@
 {
   "name": "creative-buddy",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Knowledge-graph interviewer and mindmap for Obsidian, on the Claude Agent SDK",
   "main": "main.js",
   "type": "module",
